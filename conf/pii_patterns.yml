@@ -1,0 +1,328 @@
+PII_PATTERNS:
+  NAME: |
+    \b([A-ZÀ-Ÿ][a-zà-ÿ]+(?:['’\- ][A-ZÀ-Ÿ][a-zà-ÿ]+)*)\b
+  EMAIL: |
+    [a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@
+    [a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?
+    (?:\.[a-zA-Z]{2,})+
+  PHONE: |
+    \b(?:\+?(\d{1,3})[-.\s]?)?
+    (?:\(?\d{1,4}\)?[-.\s]?)?
+    \d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}\b
+  PHONE_FR: |
+    \b(?:0|\+33)[\s-]?([1-9])(?:[\s.-]?\d{2}){4}\b
+  SIRET: |
+    \b\d{3}\s?\d{3}\s?\d{3}\s?\d{5}\b
+  NIR: |
+    \b[12]\s?\d{2}\s?\d{2}\s?
+    (?:0[1-9]|[1-9][0-9]|2[AB])\s?\d{3}\s?\d{3}\s?\d{2}\b
+  ADDRESS: |
+    \b\d{1,5}(?:\s[\w\.\-]+\.?){1,5}(?:,\s?[\w\.\-]+\.?)*\b
+  COMPANY: |
+    \b[A-ZÀ-Ÿ][A-Za-zÀ-ÿ0-9&.\-', ]{2,}\b
+  CREDIT_CARD: |
+    \b(?:\d[ -]*?){13,19}\b
+  IBAN: |
+    \b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b
+  PASSPORT: |
+    \b[A-Z]{2}\d{6}\b|\b\d{9}\b
+  SSN: |
+    \b\d{3}-\d{2}-\d{4}\b
+  DATE: |
+    \b\d{1,2}/\d{1,2}/\d{2,4}\b
+  IP_ADDRESS: |
+    \b(?:\d{1,3}\.){3}\d{1,3}\b
+  LICENSE_PLATE: |
+    \b[A-Z]{2}-\d{3}-[A-Z]{2}\b
+  RIB_FR: |
+    \b\d{5}\s?\d{5}\s?\d{11}\s?\d{2}\b
+  TVA_FR: |
+    \bFR[0-9A-Z]{2}\s?\d{9}\b
+  NIF_ES: |
+    \b[XYZ]?\d{7,8}[A-Z]\b
+  NIE_ES: |
+    \b[XYZ]\d{7,8}[A-Z]\b
+  STEUER_ID_DE: |
+    \b\d{11}\b
+  PERSONALAUSWEIS_DE: |
+    \b[A-Z0-9]{9}\b
+  CODICE_FISCALE_IT: |
+    \b[A-Z]{6}\d{2}[A-Z]{1}\d{2}[A-Z]{1}\d{3}[A-Z]{1}\b
+  AHV_CH: |
+    \b\d{13}\b
+  UUID: |
+    \b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\b
+  DRIVING_LICENSE_FR: |
+    \b[A-Z]{2}\s?\d{2}\s?[A-Z]{2}\s?\d{2}\s?[A-Z]{2}\s?\d{5}\b
+  RCS_FR: |
+    \bRCS\s[A-Z]{3}\s\d{5,}\b
+  VAT_NUMBER_EU: |
+    \b[A-Z]{2}\d{9,12}\b
+  VAT_NUMBER_UK: |
+    \bGB\d{9}\b|\bGB\d{12}\b|\bGBGD\d{3}\b|\bGBHA\d{3}\b
+  VAT_NUMBER_NL: |
+    \bNL\d{9}B\d{2}\b
+  VAT_NUMBER_BE: |
+    \bBE0\d{9}\b
+  VAT_NUMBER_ES: |
+    \bES\d{8}[A-Z]\b
+  VAT_NUMBER_IT: |
+    \bIT\d{11}\b
+  VAT_NUMBER_DE: |
+    \bDE\d{9}\b
+  REGISTRY_NUMBER_DE: |
+    \bDE\d{9}\b
+  VAT_ID_FR: |
+    \bFR\d{2}\d{9}\b
+  INSEE_FR: |
+    \b\d{5}\b
+  SEX: |
+    \b(M|F|Masculin|Féminin)\b
+  GENDER: |
+    \b(M|F|Male|Female|Masculin|Féminin)\b
+  BIRTH_PLACE_FR: |
+    \b[A-ZÀ-Ÿ][a-zà-ÿ]+(?: [A-ZÀ-Ÿ][a-zà-ÿ]+)*\b
+  NATIONALITY_FR: |
+    \bFrançais|Française|Allemand|Allemande|Espagnol|Espagnole|Italien|Italienne|Suisse\b
+  EMPLOYEE_ID: |
+    \bEMP-\d{4,10}\b
+  TAX_ID_FR: |
+    \b\d{13}\b
+  BANK_ACCOUNT_FR: |
+    \b\d{11}\b
+  SOCIAL_SECURITY_FR: |
+    \b\d{15}\b
+  COMPANY_REGISTRATION_FR: |
+    \b\d{9}\b
+  DATA_PROTECTION_OFFICER: |
+    \bDPO\b
+  GDPR_COMPLIANCE: |
+    \bGDPR\b
+  BREACH_NOTIFICATION: |
+    \bBreach\b
+  LEGAL_ENTITY_NAME: |
+    \b[A-ZÀ-Ÿ][A-Za-zÀ-ÿ0-9&.\-', ()]{2,}\b
+  VAT_REGISTRATION: |
+    \bVAT\s?Registration\b
+  REGISTERED_OFFICE_ADDRESS: |
+    \bRegistered\sOffice\sAddress\b
+  DIRECTOR_NAME: |
+    \bDirector\sName\b
+  SECRETARY_NAME: |
+    \bSecretary\sName\b
+  SHAREHOLDER_NAME: |
+    \bShareholder\sName\b
+  BENEFICIAL_OWNER: |
+    \bBeneficial\sOwner\b
+  BOARD_MEMBER: |
+    \bBoard\sMember\b
+  EXECUTIVE_NAME: |
+    \bExecutive\sName\b
+  FINANCIAL_REPORT: |
+    \bFinancial\sReport\b
+  ANNUAL_REPORT: |
+    \bAnnual\sReport\b
+  TAX_REPORT: |
+    \bTax\sReport\b
+  PROCUREMENT_DETAILS: |
+    \bProcurement\sDetails\b
+  CONTRACT_NUMBER: |
+    \bContract\sNumber\b
+  AGREEMENT_ID: |
+    \bAgreement\sID\b
+  INVOICE_NUMBER: |
+    \bInvoice\sNumber\b
+  PURCHASE_ORDER: |
+    \bPurchase\sOrder\b
+  DELIVERY_ADDRESS: |
+    \bDelivery\sAddress\b
+  BILLING_ADDRESS: |
+    \bBilling\sAddress\b
+  COMPANY_EMAIL: |
+    \b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b
+  COMPANY_PHONE: |
+    \b\+?\d{1,3}[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}\b
+  COMPANY_WEBSITE: |
+    \bhttps?://(?:www\.)?[A-Za-z0-9.-]+\.[A-Z]{2,}\b
+  COMPANY_TAX_ID: |
+    \b\d{2}[A-Z]{1}\d{9}\b
+  CORPORATE_IDENTIFICATION_NUMBER: |
+    \bCIN\s?\d{7,9}\b
+  BUSINESS_LICENSE: |
+    \bBusiness\sLicense\sNumber:\s?\d{8,10}\b
+  ORGANIZATION_NUMBER: |
+    \bOrganization\sNumber:\s?\d{9}\b
+  LEGISLATIVE_REFERENCE: |
+    \b(Law|Legislation|Regulation)\s?\d{4,5}\b
+  POLICY_NUMBER: |
+    \bPolicy\sNumber:\s?\d{10}\b
+  INSURANCE_NUMBER: |
+    \bInsurance\sNumber:\s?\d{9,12}\b
+  BENEFICIARY_NAME: |
+    \bBeneficiary\sName:\s?[A-ZÀ-Ÿ][a-zà-ÿ]+(?: [A-ZÀ-Ÿ][a-zà-ÿ]+)*\b
+  BENEFICIARY_ACCOUNT: |
+    \bBeneficiary\sAccount:\s?\d{11}\b
+  BANK_ROUTING_NUMBER: |
+    \bRouting\sNumber:\s?\d{9}\b
+  SWIFT_BIC: |
+    \b[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?\b
+  SORT_CODE: |
+    \b\d{2}-\d{2}-\d{2}\b
+  ACCOUNT_NUMBER: |
+    \b\d{8,12}\b
+  CREDIT_LIMIT: |
+    \bCredit\sLimit:\s?\d{1,12}\b
+  BALANCE: |
+    \bBalance:\s?\d{1,12}\b
+  TRANSACTION_ID: |
+    \bTransaction\sID:\s?\d{10,15}\b
+  CARDHOLDER_NAME: |
+    \bCardholder\sName:\s?[A-ZÀ-Ÿ][a-zà-ÿ]+(?: [A-ZÀ-Ÿ][a-zà-ÿ]+)*\b
+  CARD_EXPIRY_DATE: |
+    \b\d{2}/\d{2}\b
+  CVV: |
+    \b\d{3,4}\b
+  BANK_NAME: |
+    \b[A-ZÀ-Ÿ][A-Za-zÀ-ÿ\s]{2,}\b
+  ACCOUNT_TYPE: |
+    \b(Account\sType|Type\sof\sAccount):\s?(Savings|Checking|Current|Business)\b
+  INTEREST_RATE: |
+    \bInterest\sRate:\s?\d+(\.\d+)?%\b
+  LOAN_NUMBER: |
+    \bLoan\sNumber:\s?\d{10}\b
+  MORTGAGE_NUMBER: |
+    \bMortgage\sNumber:\s?\d{10}\b
+  POLICY_EXPIRY_DATE: |
+    \bPolicy\sExpiry\sDate:\s?\d{2}/\d{2}/\d{4}\b
+  CLAIM_NUMBER: |
+    \bClaim\sNumber:\s?\d{10}\b
+  EMPLOYER_ID: |
+    \bEmployer\sID:\s?\d{9}\b
+  EMPLOYEE_NUMBER: |
+    \bEmployee\sNumber:\s?\d{6,10}\b
+  EMPLOYMENT_CONTRACT: |
+    \bEmployment\sContract\sID:\s?\d{10}\b
+  SALARY: |
+    \bSalary:\s?\d{1,12}\b
+  BONUS: |
+    \bBonus:\s?\d{1,12}\b
+  BENEFITS: |
+    \bBenefits:\s?(Health|Dental|Vision|Retirement|Life)\b
+  PERFORMANCE_REVIEW: |
+    \bPerformance\sReview\sID:\s?\d{10}\b
+  TERMINATION_DATE: |
+    \bTermination\sDate:\s?\d{2}/\d{2}/\d{4}\b
+  REFERENCE_NUMBER: |
+    \bReference\sNumber:\s?\d{8,12}\b
+  CONTRACT_ID: |
+    \bContract\sID:\s?\d{10}\b
+  PROJECT_CODE: |
+    \bProject\sCode:\s?[A-Z]{3}\d{4}\b
+  PURCHASE_DATE: |
+    \bPurchase\sDate:\s?\d{2}/\d{2}/\d{4}\b
+  DELIVERY_DATE: |
+    \bDelivery\sDate:\s?\d{2}/\d{2}/\d{4}\b
+  WARRANTY_NUMBER: |
+    \bWarranty\sNumber:\s?\d{10}\b
+  SERIAL_NUMBER: |
+    \bSerial\sNumber:\s?[A-Z0-9]{8,12}\b
+  PRODUCT_KEY: |
+    \bProduct\sKey:\s?[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}\b
+  DEVICE_ID: |
+    \bDevice\sID:\s?[A-Z0-9]{12}\b
+  MAC_ADDRESS: |
+    \b(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}\b
+  SERIAL_CODE: |
+    \bSerial\sCode:\s?[A-Z0-9]{10}\b
+  SOFTWARE_LICENSE: |
+    \bSoftware\sLicense:\s?[A-Z0-9]{15}\b
+  ACCESS_TOKEN: |
+    \bAccess\sToken:\s?[A-Za-z0-9\-_]{20,}\b
+  REFRESH_TOKEN: |
+    \bRefresh\sToken:\s?[A-Za-z0-9\-_]{20,}\b
+  API_KEY: |
+    \bAPI\sKey:\s?[A-Za-z0-9]{32}\b
+  SECRET_KEY: |
+    \bSecret\sKey:\s?[A-Za-z0-9]{32}\b
+  SESSION_ID: |
+    \bSession\sID:\s?[A-Za-z0-9]{24}\b
+  AUTH_TOKEN: |
+    \bAuth\sToken:\s?[A-Za-z0-9\-_]{20,}\b
+  PASSWORD_HASH: |
+    \b[A-Fa-f0-9]{64}\b
+  SECURITY_QUESTION: |
+    \bSecurity\sQuestion:\s?.+\b
+  SECURITY_ANSWER: |
+    \bSecurity\sAnswer:\s?.+\b
+  MFA_CODE: |
+    \bMFA\sCode:\s?\d{6}\b
+  OTP: |
+    \bOTP:\s?\d{6}\b
+  CREDIT_SCORE: |
+    \bCredit\sScore:\s?\d{3}\b
+  FINANCIAL_ASSET: |
+    \bFinancial\sAsset:\s?\d{1,12}\b
+  INSURANCE_POLICY: |
+    \bInsurance\sPolicy:\s?\d{10}\b
+  BENEFICIARY_CONTACT: |
+    \bBeneficiary\sContact:\s?[A-ZÀ-Ÿ][a-zà-ÿ]+(?: [A-ZÀ-Ÿ][a-zà-ÿ]+)*\b
+  EMPLOYER_CONTACT: |
+    \bEmployer\sContact:\s?[A-ZÀ-Ÿ][a-zà-ÿ]+(?: [A-ZÀ-Ÿ][a-zà-ÿ]+)*\b
+  CORPORATE_EMAIL: |
+    \b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b
+  CORPORATE_PHONE: |
+    \b\+?\d{1,3}[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}\b
+  CORPORATE_WEBSITE: |
+    \bhttps?://(?:www\.)?[A-Za-z0-9.-]+\.[A-Z]{2,}\b
+  CORPORATE_TAX_ID: |
+    \b\d{2}[A-Z]{1}\d{9}\b
+  CORPORATE_REGISTRATION_NUMBER: |
+    \bCIN\s?\d{7,9}\b
+  CORPORATE_LICENSE: |
+    \bBusiness\sLicense\sNumber:\s?\d{8,10}\b
+  CORPORATE_ORGANIZATION_NUMBER: |
+    \bOrganization\sNumber:\s?\d{9}\b
+  CORPORATE_LEGISLATIVE_REFERENCE: |
+    \b(Law|Legislation|Regulation)\s?\d{4,5}\b
+  CORPORATE_POLICY_NUMBER: |
+    \bPolicy\sNumber:\s?\d{10}\b
+  CORPORATE_INSURANCE_NUMBER: |
+    \bInsurance\sNumber:\s?\d{9,12}\b
+  CORPORATE_BENEFICIARY_NAME: |
+    \bBeneficiary\sName:\s?[A-ZÀ-Ÿ][a-zà-ÿ]+(?: [A-ZÀ-Ÿ][a-zà-ÿ]+)*\b
+  CORPORATE_BENEFICIARY_ACCOUNT: |
+    \bBeneficiary\sAccount:\s?\d{11}\b
+  CORPORATE_BANK_ROUTING_NUMBER: |
+    \bRouting\sNumber:\s?\d{9}\b
+  CORPORATE_SWIFT_BIC: |
+    \b[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?\b
+  CORPORATE_SORT_CODE: |
+    \b\d{2}-\d{2}-\d{2}\b
+  CORPORATE_ACCOUNT_NUMBER: |
+    \b\d{8,12}\b
+  CORPORATE_CREDIT_LIMIT: |
+    \bCredit\sLimit:\s?\d{1,12}\b
+  CORPORATE_BALANCE: |
+    \bBalance:\s?\d{1,12}\b
+  CORPORATE_TRANSACTION_ID: |
+    \bTransaction\sID:\s?\d{10,15}\b
+  CORPORATE_CARDHOLDER_NAME: |
+    \bCardholder\sName:\s?[A-ZÀ-Ÿ][a-zà-ÿ]+(?: [A-ZÀ-Ÿ][a-zà-ÿ]+)*\b
+  CORPORATE_CARD_EXPIRY_DATE: |
+    \b\d{2}/\d{2}\b
+  CORPORATE_CVV: |
+    \b\d{3,4}\b
+  CORPORATE_BANK_NAME: |
+    \b[A-ZÀ-Ÿ][A-Za-zÀ-ÿ\s]{2,}\b
+  CORPORATE_ACCOUNT_TYPE: |
+    \b(Account\sType|Type\sof\sAccount):\s?(Savings|Checking|Current|Business)\b
+  CORPORATE_INTEREST_RATE: |
+    \bInterest\sRate:\s?\d+(\.\d+)?%\b
+  CORPORATE_LOAN_NUMBER: |
+    \bLoan\sNumber:\s?\d{10}\b
+  CORPORATE_MORTGAGE_NUMBER: |
+    \bMortgage\sNumber:\s?\d{10}\b
+  CORPORATE_POLICY_EXPIRY_DATE: |
+    \bPolicy\sExpiry\sDate:\s?\d{2}/\d{2}/\d{4}\b
+  CORPORATE_CLAIM_NUMBER: |
+    \bClaim\sNumber:\s?\d{10}\b

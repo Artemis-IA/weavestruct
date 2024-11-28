@@ -1,0 +1,7 @@
+sudo apt install nvidia-modprobe
+sudo nvidia-modprobe -u
+sudo rmmod nvidia_uvm
+sudo modprobe nvidia_uvm
+sudo systemctl restart ollama
+
+rm /tmp/.codecarbon.lock

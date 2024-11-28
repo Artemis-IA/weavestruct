@@ -1,0 +1,52 @@
+# fastapi
+# uvicorn
+# alembic
+# pydantic
+# pydantic-settings
+# python-multipart
+# psycopg2-binary
+# pillow
+# GPUtil
+# pdfminer.six
+# easyocr
+# torch
+# transformers
+# huggingface_hub
+# sentence-transformers
+# GPUtil
+# loguru
+# tqdm
+# mlflow
+# prometheus-client
+# python-jose[cryptography]
+# passlib[bcrypt]
+# flupy
+# gliner
+
+# pytest
+# pytest-asyncio
+# pytest-cov
+# httpx
+# sqlalchemy
+# alembic
+# mock
+
+
+
+# fastapi==0.115.0
+langchain==0.3.4
+langchain-community==0.3.3
+langchain-core==0.3.12
+langchain-experimental==0.3.2
+langchain-huggingface==0.1.0
+langchain-ollama==0.2.0
+langchain-text-splitters==0.3.0
+loguru==0.7.2
+neo4j==5.19.0
+prometheus-client==0.21.0
+PyYAML==6.0.1
+pydantic==2.9.2
+uvicorn==0.30.1
+prometheus-fastapi-instrumentator==7.0.0
+langsmith==0.1.137
+boto3
