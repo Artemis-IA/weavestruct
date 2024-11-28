@@ -22,11 +22,6 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
 
-    # Proxy settings
-    USE_ET_PROXY: bool = False
-    HTTP_PROXY: str = ""
-    HTTPS_PROXY: str = ""
-    NO_PROXY: str = ""
 
     # Neo4j settings
     NEO4J_URI: str = "bolt://neo4j:7687"
@@ -41,6 +36,8 @@ class Settings(BaseSettings):
     POSTGRE_DB: str = "postgre_db"
     POSTGRE_HOST: str = "localhost"
     DJANGO_DB: str = "default"
+    PGVECTOR_TABLE_NAME: str = "documents_embeddings"
+    EMBEDDING_MODEL_NAME: str = "nomic-embed-text"
 
     # Derived PostgreSQL settings
     DATABASE_URL: str = "postgresql://postgre_user:postgre_password@localhost:5432/postgre_db"
@@ -68,7 +65,10 @@ class Settings(BaseSettings):
     MINIO_ROOT_PASSWORD: str = "minio123"
     MINIO_API_URL: str = "http://minio:9000"
     MINIO_URL: str = "http://minio:9000"
-
+    INPUT_BUCKET: str = "docs-input"
+    OUTPUT_BUCKET: str = "docs-output"
+    LAYOUTS_BUCKET: str = "layouts"
+    
     # AWS settings for MinIO compatibility
     AWS_ACCESS_KEY_ID: str = "minio"
     AWS_SECRET_ACCESS_KEY: str = "minio123"

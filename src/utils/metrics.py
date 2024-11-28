@@ -44,7 +44,7 @@ class MetricsManager:
             project_name="doc_processing",
             save_to_file=False,
             save_to_prometheus=True,
-            prometheus_url=f"localhost:{prometheus_port}",
+            prometheus_url=f"http://localhost:{prometheus_port}",
         )
 
         self.prometheus_port = prometheus_port
@@ -70,6 +70,9 @@ class MetricsManager:
             if gpus:
                 self.GPU_MEMORY_USAGE.set(gpus[0].memoryUsed)
 
+            # Ensure the emissions tracker is running
+            self.start_emissions_tracker()
+
             # Log CO2 emissions
             emissions = self.emissions_tracker.stop()
             if emissions is not None:
@@ -79,6 +82,13 @@ class MetricsManager:
                 logger.warning("No emissions data available.")
         except Exception as e:
             logger.warning(f"Error logging system metrics: {e}")
+
+    def start_emissions_tracker(self):
+        """
+        Ensure the emissions tracker is running.
+        """
+        if not self.emissions_tracker._is_running:
+            self.emissions_tracker.start()
 
     @staticmethod
     def get_system_metrics() -> dict:

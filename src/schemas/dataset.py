@@ -14,7 +14,7 @@ class DatasetUpdate(BaseModel):
 class DatasetResponse(BaseModel):
     id: int
     name: str
-    data: List[Dict]
+    data: Dict 
     created_at: datetime
 
     class Config:

@@ -37,9 +37,9 @@ def get_s3_service() -> S3Service:
         endpoint_url=settings.MINIO_URL,
         access_key=settings.MINIO_ACCESS_KEY,
         secret_key=settings.MINIO_SECRET_KEY,
-        input_bucket="docs-input",
-        output_bucket="docs-output",
-        layouts_bucket="layouts"
+        input_bucket=settings.INPUT_BUCKET,
+        output_bucket=settings.OUTPUT_BUCKET,
+        layouts_bucket=settings.LAYOUTS_BUCKET
     )
 
 # Dependency to get the MLflow service
@@ -51,23 +51,24 @@ def get_mlflow_service() -> MLFlowService:
 def get_pgvector_service() -> PGVectorService:
     return PGVectorService(
         db_url=settings.DATABASE_URL,
-        table_name="document_embeddings"
+        table_name=settings.PGVECTOR_TABLE_NAME
     )
-
 
 # Dependency for embedding service
 def get_embedding_service() -> EmbeddingService:
-    return EmbeddingService(model_name=settings.OLLAMA_MODEL)
+    return EmbeddingService(model_name=settings.EMBEDDING_MODEL_NAME)
 
 
 # Dependency for PGVector vector store
 def get_pgvector_vector_store() -> PGVector:
     embedding_service = get_embedding_service()
     return PGVector(
-        collection_name="document_embeddings",
+        collection_name=settings.PGVECTOR_TABLE_NAME,
         connection=settings.DATABASE_URL,
-        embeddings=embedding_service.embedding_model.embed_documents
+        embedding_function=embedding_service.embed_documents,
+        use_jsonb=True
     )
+
 
 # Dependency to get the Neo4j driver
 def get_neo4j_driver() -> GraphDatabase:
@@ -104,6 +105,13 @@ def get_gliner_extractor() -> GLiNERLinkExtractor:
         model=settings.GLINER_MODEL_NAME,
     )
 
+def get_gliner_link_extractor() -> GLiNERLinkExtractor:
+    with open(settings.CONF_FILE, 'r') as file:
+        config = yaml.safe_load(file)
+    return GLiNERLinkExtractor(
+        labels=config.get("labels", []),
+        model=settings.GLINER_MODEL_NAME,
+    )
 
 def get_graph_transformer() -> GlinerGraphTransformer:
     with open(settings.CONF_FILE, 'r') as file:
