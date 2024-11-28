@@ -1,8 +1,8 @@
 ### README.md
 
-# **WeaveStruct : Système Avancé de Traitement de Documents et Construction de Graphes de Connaissances**
+# ** DocGraph & WeaveStruct : API de Traitement de Documents, Extraction d'Entités Nommées et Relations, et Construction de Graphes de Connaissances**
 
-**WeaveStruct** est une plateforme avancée pour le **traitement de documents**, la **reconnaissance d'entités nommées (NER)**, l'extraction de **relations**, et la construction de **graphes de connaissances**. Ce projet repose sur un ensemble de technologies modernes pour transformer des données non structurées en informations exploitables, tout en offrant des capacités de suivi et de monitoring.
+**WeaveStruct** est une plateforme avancée pour le **traitement de documents**, la **reconnaissance d'entités nommées (NER)**, l'extraction de **relations**, et la construction de **graphes de connaissances**. Ce projet repose sur un ensemble de composants logiciels et de modèles de deep learning récents pour transformer des données non structurées en informations exploitables, tout en offrant des capacités de suivi et de monitoring.
 
 ---
 
