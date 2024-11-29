@@ -457,6 +457,3 @@ class DocumentProcessor:
             logger.error(f"Error processing and indexing document {s3_url}: {e}")
             self.mlflow_service.log_metrics({"error": 1})
             raise
-        finally:
-            if self.mlflow_service.start_run():
-                self.mlflow_service.end_run()

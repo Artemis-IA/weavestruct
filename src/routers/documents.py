@@ -124,7 +124,6 @@ async def upload_path(
 @router.post("/index_document/")
 async def index_document(
     file: Optional[UploadFile] = File(None),
-    s3_url: Optional[str] = Query(None, description="S3 URL of the document to index"),
     document_processor: DocumentProcessor = Depends(get_document_processor),
     s3_service: S3Service = Depends(get_s3_service),
 ):
