@@ -11,7 +11,7 @@ from pathlib import Path
 from dependencies import (
     get_s3_service,
     get_mlflow_service,
-    get_pgvector_service,
+    get_pgvector_vector_store,
     get_neo4j_service,
     get_embedding_service,
     get_text_splitter,
@@ -32,7 +32,7 @@ class DatasetService:
         self.db = db
         self.s3_service = get_s3_service()
         self.mlflow_service = get_mlflow_service()
-        self.pgvector_service = get_pgvector_service()
+        self.pgvector_service = get_pgvector_vector_store()
         self.neo4j_service = get_neo4j_service()
         self.embedding_service = get_embedding_service()
         self.session = db  # Use the passed-in database session

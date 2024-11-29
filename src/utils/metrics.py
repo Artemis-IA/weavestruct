@@ -5,7 +5,8 @@ import torch
 from loguru import logger
 from prometheus_client import Counter, Histogram, Gauge, start_http_server
 from codecarbon import EmissionsTracker
-
+from config import settings
+from dependencies import get_s3_service, get_mlflow_service, get_pgvector_vector_store, get_neo4j_service
 
 class MetricsManager:
     """
@@ -132,3 +133,39 @@ class MetricsManager:
                 logger.info("CodeCarbon lock file removed.")
             except Exception as e:
                 logger.warning(f"Error removing CodeCarbon lock file: {e}")
+
+
+    def validate_services(self):
+        """
+        Validate the availability of critical services at startup.
+        """
+        try:
+            # Check S3 service and required buckets
+            s3_service = get_s3_service()
+            required_buckets = [settings.INPUT_BUCKET, settings.OUTPUT_BUCKET, settings.LAYOUTS_BUCKET]
+            existing_buckets = s3_service.list_buckets()
+            for bucket in required_buckets:
+                if bucket not in existing_buckets:
+                    raise RuntimeError(f"S3 bucket '{bucket}' is missing.")
+            logger.info("S3 service and buckets validated successfully.")
+
+            # Check MLflow service
+            mlflow_service = get_mlflow_service()
+            mlflow_service.validate_connection()
+            logger.info("MLflow service validated successfully.")
+
+            # Check PostgreSQL connection (via PGVector)
+            pgvector_service = get_pgvector_vector_store()
+            pgvector_service.validate_connection()
+            logger.info("PostgreSQL service validated successfully.")
+
+            # Check Neo4j service
+            neo4j_service = get_neo4j_service()
+            neo4j_service.validate_connection()
+            logger.info("Neo4j service validated successfully.")
+
+        except Exception as e:
+            logger.error(f"Service check failed: {e}")
+            raise RuntimeError("Startup failed due to unavailable services.") from e
+
+        logger.info("All services validated successfully.")

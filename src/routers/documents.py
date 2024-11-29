@@ -1,60 +1,63 @@
 # routers/documents.py
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, Query, Response
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from loguru import logger
 import aiofiles
 
-from services.document_processor import DocumentProcessor
-from services.rag_service import RAGChainService
-from dependencies import get_document_processor, get_rag_service
+from dependencies import get_document_processor, get_s3_service
+from services.document_processor import DocumentProcessor, ExportFormat, InputFormat
+from services.s3_service import S3Service
 
 router = APIRouter()
 
-# Dependency injection
-document_processor: DocumentProcessor = get_document_processor()
-rag_service: RAGChainService = get_rag_service()
-
-
+# Endpoint pour uploader et traiter des fichiers
 @router.post("/upload/")
 async def upload_files(
     files: List[UploadFile] = File(...),
-    export_formats: List[str] = Form(default=["json"]),
-    use_ocr: bool = Form(False),
-    export_figures: bool = Form(True),
-    export_tables: bool = Form(True),
-    enrich_figures: bool = Form(False),
+    export_formats: List[ExportFormat] = Query(
+        default=[ExportFormat.JSON],
+        title="Formats d'exportation",
+        description="Choisissez les formats d'exportation",
+        enum=[ExportFormat.JSON, ExportFormat.YAML, ExportFormat.MARKDOWN]
+    ),
+    use_ocr: bool = Query(False, title="Utiliser OCR", description="Activez l'OCR lors de la conversion."),
+    export_figures: bool = Query(True, title="Exporter les figures", description="Activer ou désactiver l'exportation des figures"),
+    export_tables: bool = Query(True, title="Exporter les tableaux", description="Activer ou désactiver l'exportation des tableaux"),
+    enrich_figures: bool = Query(False, title="Enrichir les figures", description="Activer ou désactiver l'enrichissement des figures"),
+    s3_service: S3Service = Depends(get_s3_service),
+    document_processor: DocumentProcessor = Depends(get_document_processor),
 ):
     """
-    Endpoint pour télécharger et traiter des fichiers pour l'extraction de données.
+    Upload files to S3, process them using the DocumentProcessor, and export results in specified formats.
     """
-    logger.info(f"Received {len(files)} files for upload")
+    logger.info(f"Received {len(files)} files for processing.")
     success_count, failure_count = 0, 0
 
     for file in files:
-        temp_file = Path(f"/tmp/{file.filename}")
         try:
-            # Sauvegarde du fichier en utilisant aiofiles pour compatibilité async
-            async with aiofiles.open(temp_file, "wb") as out_file:
-                content = await file.read()
-                await out_file.write(content)
+            # Upload the file to the input bucket
+            s3_input_key = f"input/{file.filename}"
+            s3_service.upload_fileobj(file.file, s3_service.input_bucket, s3_input_key)
+            logger.info(f"File {file.filename} uploaded to S3 input bucket.")
 
-            # Traitement du document
-            result = document_processor.process_and_index_document(temp_file)
-
-            # Exportation
-            document_processor.export_document(
-                result, temp_file.parent, export_formats, export_figures, export_tables
+            # Process the document
+            s3_input_url = s3_service.get_s3_url(s3_service.input_bucket, s3_input_key)
+            document_processor.process_documents(
+                s3_url=s3_input_url,
+                export_formats=export_formats,
+                use_ocr=use_ocr,
+                export_figures=export_figures,
+                export_tables=export_tables,
+                enrich_figures=enrich_figures,
             )
-
             logger.info(f"File {file.filename} processed successfully.")
             success_count += 1
         except Exception as e:
             logger.error(f"Error processing file {file.filename}: {e}")
             failure_count += 1
         finally:
-            if temp_file.exists():
-                temp_file.unlink()  # Suppression du fichier temporaire
+            await file.close()
 
     return {
         "message": "Files processed",
@@ -65,42 +68,50 @@ async def upload_files(
 
 @router.post("/upload_path/")
 async def upload_path(
-    file_path: str = Form("/home/pi/Documents/IF-SRV/4pdfs_subset/"),
-    export_formats: List[str] = Form(default=["json"]),
+    directory_path: str = Form(...),
+    export_formats: List[ExportFormat] = Form(default=["json", "yaml", "md"]),
     use_ocr: bool = Form(False),
     export_figures: bool = Form(True),
     export_tables: bool = Form(True),
     enrich_figures: bool = Form(False),
+    s3_service: S3Service = Depends(get_s3_service),
+    document_processor: DocumentProcessor = Depends(get_document_processor),
 ):
     """
-    Endpoint pour traiter un répertoire de fichiers.
+    Upload all files from a directory to the `input` bucket, process them,
+    and store results in the `output` and `layouts` buckets.
     """
-    logger.info(f"Processing directory: {file_path}")
-
-    input_dir_path = Path(file_path)
-    if not input_dir_path.exists() or not input_dir_path.is_dir():
+    dir_path = Path(directory_path)
+    if not dir_path.is_dir():
         raise HTTPException(status_code=400, detail="Invalid directory path")
 
-    input_file_paths = [
-        file for file in input_dir_path.glob("*")
-        if file.suffix.lower() in [".pdf", ".docx"]
-    ]
-    logger.info(f"Found {len(input_file_paths)} valid files in directory")
+    files = [f for f in dir_path.iterdir() if f.is_file()]
+    logger.info(f"Found {len(files)} files in directory {directory_path}")
 
     success_count, failure_count = 0, 0
 
-    for doc_path in input_file_paths:
+    for file_path in files:
         try:
-            result = document_processor.process_and_index_document(doc_path)
+            # Upload file to the `input` bucket
+            s3_input_key = f"input/{file_path.name}"
+            with file_path.open("rb") as file_obj:
+                s3_service.upload_fileobj(file_obj, s3_service.input_bucket, s3_input_key)
+            logger.info(f"File {file_path.name} uploaded to input bucket")
 
-            document_processor.export_document(
-                result, doc_path.parent, export_formats, export_figures, export_tables
+            # Process the document and store results in the `output` and `layouts` buckets
+            s3_input_url = s3_service.get_s3_url(s3_service.input_bucket, s3_input_key)
+            document_processor.process_documents(
+                s3_url=s3_input_url,
+                export_formats=export_formats,
+                use_ocr=use_ocr,
+                export_figures=export_figures,
+                export_tables=export_tables,
+                enrich_figures=enrich_figures,
             )
-
-            logger.info(f"File {doc_path.name} processed successfully.")
+            logger.info(f"File {file_path.name} processed and results exported to S3")
             success_count += 1
         except Exception as e:
-            logger.error(f"Error processing file {doc_path.name}: {e}")
+            logger.error(f"Error processing file {file_path.name}: {e}")
             failure_count += 1
 
     return {
@@ -109,51 +120,85 @@ async def upload_path(
         "failure_count": failure_count,
     }
 
-
+# Indexing endpoints (NER, Embeddings, and Graph Indexing)
 @router.post("/index_document/")
-async def index_document(file: UploadFile = File(...)):
+async def index_document(
+    file: Optional[UploadFile] = File(None),
+    s3_url: Optional[str] = Query(None, description="S3 URL of the document to index"),
+    document_processor: DocumentProcessor = Depends(get_document_processor),
+    s3_service: S3Service = Depends(get_s3_service),
+):
     """
-    Index a single document by extracting entities and relationships.
+    Index a document by extracting entities, embeddings, and relationships. 
+    Allows indexing either by uploading a document or providing its S3 URL.
     """
-    logger.info(f"Indexing document: {file.filename}")
-    temp_file = Path(f"/tmp/{file.filename}")
+    logger.info(f"Indexing document: {file.filename if file else s3_url}")
 
-    # Use aiofiles for asynchronous file writing
-    import aiofiles
-    async with aiofiles.open(temp_file, "wb") as out_file:
-        content = await file.read()
-        await out_file.write(content)
+    if not file and not s3_url:
+        raise HTTPException(status_code=400, detail="Either 'file' or 's3_url' must be provided.")
 
     try:
-        document_processor.process_and_index_document(temp_file)
-        logger.info(f"Successfully indexed document: {file.filename}")
-        return {"message": f"Document {file.filename} indexed successfully."}
+        if file:
+            # Upload the file to the input bucket if provided
+            s3_input_key = f"input/{file.filename}"
+            s3_service.upload_fileobj(file.file, s3_service.input_bucket, s3_input_key)
+            logger.info(f"File {file.filename} uploaded to S3 input bucket.")
+            s3_url = s3_service.get_s3_url(s3_service.input_bucket, s3_input_key)
+
+        # Process and index the document using the S3 URL
+        document_processor.process_and_index_document(s3_url=s3_url)
+
+        logger.info(f"Successfully indexed document: {file.filename if file else s3_url}.")
+        return {"message": f"Document {file.filename if file else s3_url} indexed successfully."}
     except Exception as e:
-        logger.error(f"Error indexing document {file.filename}: {e}")
+        logger.error(f"Error indexing document {file.filename if file else s3_url}: {e}")
         raise HTTPException(status_code=500, detail=f"Error indexing document: {e}")
     finally:
-        temp_file.unlink()
+        if file:
+            await file.close()
 
 
-
-@router.post("/rag_process/")
-async def process_rag_document(file: UploadFile = File(...)):
+@router.post("/index_path/")
+async def index_path(
+    directory_path: str = Form(...),
+    document_processor: DocumentProcessor = Depends(get_document_processor),
+    s3_service: S3Service = Depends(get_s3_service)
+):
     """
-    Process a document for RAG, splitting it, embedding it, and storing it in the vector store.
+    Index all valid files in a directory.
     """
-    logger.info(f"Processing document for RAG: {file.filename}")
-    temp_file = Path(f"/tmp/{file.filename}")
+    logger.info(f"Indexing directory: {directory_path}")
+    input_dir_path = Path(directory_path)
 
-    async with temp_file.open("wb") as out_file:
-        content = await file.read()
-        await out_file.write(content)
+    if not input_dir_path.is_dir():
+        raise HTTPException(status_code=400, detail="Invalid directory path")
 
-    try:
-        result = rag_service.process_document_for_rag(temp_file)
-        logger.info(f"Document successfully processed for RAG: {file.filename}")
-        return {"message": "Document successfully processed for RAG.", "details": result}
-    except Exception as e:
-        logger.error(f"Error processing document for RAG: {file.filename}. Error: {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing document for RAG: {e}")
-    finally:
-        temp_file.unlink()
+    input_file_paths = [
+        file for file in input_dir_path.glob("*") if file.suffix.lower() in [".pdf", ".png"]
+    ]
+    logger.info(f"Found {len(input_file_paths)} valid files in directory")
+
+    success_count, failure_count = 0, 0
+
+    for doc_path in input_file_paths:
+        try:
+            # Upload le fichier dans le bucket S3 'input'
+            s3_input_key = f"input/{doc_path.name}"
+            with doc_path.open("rb") as f:
+                await s3_service.upload_file(f, s3_input_key, bucket_name=s3_service.input_bucket)
+            s3_input_url = s3_service.get_s3_url(s3_input_key)
+
+            # Traite et indexe le document depuis S3
+            document_processor.process_and_index_document(s3_url=s3_input_url)
+
+            logger.info(f"Indexed file {doc_path.name} successfully.")
+            success_count += 1
+        except Exception as e:
+            logger.error(f"Error indexing file {doc_path.name}: {e}")
+            failure_count += 1
+
+    return {
+        "message": "Directory indexed",
+        "success_count": success_count,
+        "failure_count": failure_count,
+    }

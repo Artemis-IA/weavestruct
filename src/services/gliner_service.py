@@ -40,7 +40,7 @@ class GLiNERService:
             glirel_model=settings.GLIREL_MODEL_NAME,
             entity_confidence_threshold=0.1,
             relationship_confidence_threshold=0.1,
-        ).to(self.device)
+        )
         logger.info("GlinerGraphTransformer initialized.")
 
     def extract_entities(self, texts):

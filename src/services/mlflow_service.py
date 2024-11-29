@@ -84,3 +84,21 @@ class MLFlowService:
     def set_tracking_uri(self, uri: str):
         mlflow.set_tracking_uri(uri)
         logger.info(f"MLflow tracking URI updated to: {uri}")
+
+    def validate_connection(self):
+        """Validate connection to MLflow tracking server."""
+        try:
+            # Use search_experiments as a connectivity check
+            experiments = self.client.search_experiments(max_results=1)
+            logger.info(
+                f"MLflow service is accessible. Found {len(experiments)} experiment(s)."
+            )
+        except AttributeError as e:
+            # Provide hints for known issues
+            if "search_experiments" in str(e):
+                raise Exception(
+                    f"MLflowClient object lacks 'search_experiments'. Possible version mismatch. {e}"
+                )
+            raise
+        except Exception as e:
+            raise Exception(f"Failed to connect to MLflow: {e}")

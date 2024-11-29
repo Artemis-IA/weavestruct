@@ -1,8 +1,9 @@
 # dependencies.py
 import yaml
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Generator
+from functools import lru_cache
 
 from config import settings
 from utils.database import SessionLocal
@@ -13,12 +14,17 @@ from services.pgvector_service import PGVectorService
 from services.neo4j_service import Neo4jService
 from services.rag_service import RAGChainService
 from services.embedding_service import EmbeddingService
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from services.gliner_service import GLiNERService
+from services.glirel_service import GLiRELService
+
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_experimental.graph_transformers.gliner import GlinerGraphTransformer
 from langchain_community.graph_vectorstores.extractors import GLiNERLinkExtractor
-from langchain_postgres import PGVector
 from langchain_ollama.embeddings import OllamaEmbeddings
 from neo4j import GraphDatabase
+
+from enum import Enum
+
 
 # Dependency to get the SQLAlchemy session
 def get_db() -> Generator[Session, None, None]:
@@ -29,12 +35,14 @@ def get_db() -> Generator[Session, None, None]:
     finally:
         db.close()
 
+
 # Dependency to get the S3 service
+@lru_cache
 def get_s3_service() -> S3Service:
-    """Returns an instance of the S3 service."""
-    return S3Service(
-        s3_client=None,
+    """Returns an instance of the S3 service and validates connection."""
+    s3_service = S3Service(
         endpoint_url=settings.MINIO_URL,
+        s3_client=None,
         access_key=settings.MINIO_ACCESS_KEY,
         secret_key=settings.MINIO_SECRET_KEY,
         input_bucket=settings.INPUT_BUCKET,
@@ -42,35 +50,67 @@ def get_s3_service() -> S3Service:
         layouts_bucket=settings.LAYOUTS_BUCKET
     )
 
+    # Validate bucket existence by listing buckets
+    if settings.INPUT_BUCKET not in s3_service.list_buckets():
+        raise HTTPException(
+            status_code=500,
+            detail=f"S3 input bucket '{settings.INPUT_BUCKET}' does not exist."
+        )
+    if settings.OUTPUT_BUCKET not in s3_service.list_buckets():
+        raise HTTPException(
+            status_code=500,
+            detail=f"S3 output bucket '{settings.OUTPUT_BUCKET}' does not exist."
+        )
+    if settings.LAYOUTS_BUCKET not in s3_service.list_buckets():
+        raise HTTPException(
+            status_code=500,
+            detail=f"S3 layouts bucket '{settings.LAYOUTS_BUCKET}' does not exist."
+        )
+
+    return s3_service
+
 # Dependency to get the MLflow service
+@lru_cache
 def get_mlflow_service() -> MLFlowService:
     """Returns an instance of the MLflow service."""
-    return MLFlowService(tracking_uri=settings.MLFLOW_TRACKING_URI)
+    try:
+        mlflow_service = MLFlowService(tracking_uri=settings.MLFLOW_TRACKING_URI)
+        mlflow_service.validate_connection()  # Assumes a `validate_connection` method
+        return mlflow_service
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"MLflow service is not accessible: {str(e)}"
+        )
 
-# Dependency for PGVector service
-def get_pgvector_service() -> PGVectorService:
-    return PGVectorService(
-        db_url=settings.DATABASE_URL,
-        table_name=settings.PGVECTOR_TABLE_NAME
-    )
 
 # Dependency for embedding service
+@lru_cache
 def get_embedding_service() -> EmbeddingService:
+    """Returns an instance of the Embedding service."""
     return EmbeddingService(model_name=settings.EMBEDDING_MODEL_NAME)
 
 
 # Dependency for PGVector vector store
-def get_pgvector_vector_store() -> PGVector:
-    embedding_service = get_embedding_service()
-    return PGVector(
-        collection_name=settings.PGVECTOR_TABLE_NAME,
-        connection=settings.DATABASE_URL,
-        embeddings=embedding_service.embed_documents,
-        use_jsonb=True
-    )
+@lru_cache
+def get_pgvector_vector_store() -> PGVectorService:
+    """Returns an instance of the PGVectorService."""
+    try:
+        pgvector_service = PGVectorService(
+            db_url=settings.DATABASE_URL,  # PostgreSQL connection string
+            table_name=settings.PGVECTOR_TABLE_NAME  # Table to store vectors
+        )
+        pgvector_service.validate_connection()
+        return pgvector_service
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"PGVector service is not accessible: {str(e)}"
+        )
 
 
 # Dependency to get the Neo4j driver
+@lru_cache
 def get_neo4j_driver() -> GraphDatabase:
     """Returns a Neo4j driver instance."""
     return GraphDatabase.driver(
@@ -78,16 +118,26 @@ def get_neo4j_driver() -> GraphDatabase:
         auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD)
     )
 
-# Dependency to get the Neo4j service
+@lru_cache
 def get_neo4j_service() -> Neo4jService:
-    """Returns an instance of the Neo4j service."""
-    return Neo4jService(
-        uri=settings.NEO4J_URI,
-        user=settings.NEO4J_USER,
-        password=settings.NEO4J_PASSWORD
-    )
+    """Returns an instance of the Neo4jService."""
+    try:
+        neo4j_service = Neo4jService(
+            uri=settings.NEO4J_URI,
+            user=settings.NEO4J_USER,
+            password=settings.NEO4J_PASSWORD
+        )
+        neo4j_service.validate_connection()
+        return neo4j_service
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Neo4j service is not accessible: {str(e)}"
+        )
+
 
 # Initialize reusable text splitter
+@lru_cache
 def get_text_splitter() -> RecursiveCharacterTextSplitter:
     """Returns an instance of the text splitter."""
     return RecursiveCharacterTextSplitter(
@@ -96,16 +146,9 @@ def get_text_splitter() -> RecursiveCharacterTextSplitter:
     )
 
 # Dependency to get the GLiNER extractor
-
+@lru_cache
 def get_gliner_extractor() -> GLiNERLinkExtractor:
-    with open(settings.CONF_FILE, 'r') as file:
-        config = yaml.safe_load(file)
-    return GLiNERLinkExtractor(
-        labels=config["labels"],
-        model=settings.GLINER_MODEL_NAME,
-    )
-
-def get_gliner_link_extractor() -> GLiNERLinkExtractor:
+    """Returns an instance of the GLiNERLinkExtractor."""
     with open(settings.CONF_FILE, 'r') as file:
         config = yaml.safe_load(file)
     return GLiNERLinkExtractor(
@@ -113,43 +156,69 @@ def get_gliner_link_extractor() -> GLiNERLinkExtractor:
         model=settings.GLINER_MODEL_NAME,
     )
 
+# Dependency to get the GLiNER service
+@lru_cache
+def get_gliner_service() -> GLiNERService:
+    """Returns an instance of the GLiNER service."""
+    return GLiNERService()
+
+
+# Dependency to get the GLiREL service
+@lru_cache
+def get_glirel_service() -> GLiRELService:
+    """Returns an instance of the GLiREL service."""
+    return GLiRELService()
+
+# Dependency to get the Graph Transformer
+@lru_cache
 def get_graph_transformer() -> GlinerGraphTransformer:
+    """Returns an instance of the GlinerGraphTransformer."""
     with open(settings.CONF_FILE, 'r') as file:
         config = yaml.safe_load(file)
     return GlinerGraphTransformer(
-        allowed_nodes=config["allowed_nodes"],
-        allowed_relationships=config["allowed_relationships"],
+        allowed_nodes=config.get("allowed_nodes", []),
+        allowed_relationships=config.get("allowed_relationships", []),
         gliner_model=settings.GLINER_MODEL_NAME,
         glirel_model=settings.GLIREL_MODEL_NAME,
         entity_confidence_threshold=0.1,
         relationship_confidence_threshold=0.1,
     )
 
+# Dependency to get the RAG service
+@lru_cache
+def get_rag_service() -> RAGChainService:
+    """Returns an instance of the RAG Chain Service."""
+    vector_store = get_pgvector_vector_store()
+    return RAGChainService(retriever=vector_store.as_retriever())
 
-def get_document_processor(db: Session = Depends(get_db)) -> DocumentProcessor:
+
+# Updated Dependency to get the DocumentProcessor
+@lru_cache
+def get_document_processor(
+    db: Session = Depends(get_db),
+    gliner_service: GLiNERService = Depends(get_gliner_service),
+    glirel_service: GLiRELService = Depends(get_glirel_service)
+) -> DocumentProcessor:
+    """Returns an instance of the DocumentProcessor with all dependencies."""
     s3_service = get_s3_service()
     mlflow_service = get_mlflow_service()
-    pgvector_service = get_pgvector_service()
+    pgvector_service = get_pgvector_vector_store()
     text_splitter = get_text_splitter()
     neo4j_service = get_neo4j_service()
     embedding_service = get_embedding_service()
     gliner_extractor = get_gliner_extractor()
     graph_transformer = get_graph_transformer()
-    
+
     return DocumentProcessor(
         s3_service=s3_service,
         mlflow_service=mlflow_service,
         pgvector_service=pgvector_service,
         neo4j_service=neo4j_service,
         embedding_service=embedding_service,
+        gliner_service=gliner_service,
+        glirel_service=glirel_service,
         session=db,
         text_splitter=text_splitter,
         graph_transformer=graph_transformer,
         gliner_extractor=gliner_extractor,
     )
-
-# Dependency to get the RAG service
-def get_rag_service() -> RAGChainService:
-    """Returns an instance of the RAG Chain Service."""
-    vector_store = get_pgvector_vector_store()
-    return RAGChainService(retriever=vector_store.as_retriever())

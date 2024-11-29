@@ -165,3 +165,17 @@ class Neo4jService:
             nodes = session.read_transaction(self._get_all_entities_transaction)
             relationships = session.read_transaction(self._get_all_relationships_transaction)
             return {"nodes": nodes, "relationships": relationships}
+
+
+    def validate_connection(self):
+        """
+        Validate the connection to the Neo4j database by running a test query.
+        """
+        try:
+            with self.driver.session() as session:
+                result = session.run("RETURN 1")
+                if result.single()[0] == 1:
+                    logger.info("Neo4j connection validated successfully.")
+        except Exception as e:
+            logger.error(f"Failed to validate Neo4j connection: {e}")
+            raise

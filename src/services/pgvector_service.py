@@ -144,3 +144,14 @@ class PGVectorService:
             logger.info("Database connection closed.")
         except Exception as e:
             logger.error(f"Error closing database connection: {e}")
+
+
+    def validate_connection(self):
+        """Validate the connection to the PostgreSQL database."""
+        try:
+            self.cursor.execute("SELECT 1;")
+            self.connection.commit()
+            logger.info("PostgreSQL connection validated.")
+        except Exception as e:
+            logger.error(f"Failed to validate PostgreSQL connection: {e}")
+            raise

@@ -90,6 +90,7 @@ async def startup_event():
     system_metrics = metrics_manager.get_system_metrics()
     device_type = "cuda" if system_metrics.get("cuda") else "CPU"
     logger.info(f"Device Type: {device_type}")
+    metrics_manager.validate_services()
 
 
 @app.on_event("shutdown")
