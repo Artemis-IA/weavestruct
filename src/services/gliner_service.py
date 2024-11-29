@@ -15,8 +15,8 @@ class GLiNERService:
 
     def __init__(self):
         # Load configurations
-        config_path = os.path.join(settings.CONFIG_DIR, 'gli_config.yml')
-        with open(config_path, 'r') as file:
+        config_file = settings.CONF_FILE
+        with open(config_file, 'r') as file:
             self.config = yaml.safe_load(file)
 
         # Initialize device

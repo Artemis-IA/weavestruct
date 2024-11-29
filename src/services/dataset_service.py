@@ -8,7 +8,15 @@ from schemas.dataset import DatasetResponse
 from loguru import logger
 import aiofiles
 from pathlib import Path
-from dependencies import get_s3_service, get_mlflow_service, get_pgvector_service, get_neo4j_service, get_embedding_service, get_session
+from dependencies import (
+    get_s3_service,
+    get_mlflow_service,
+    get_pgvector_service,
+    get_neo4j_service,
+    get_embedding_service,
+    get_text_splitter,
+    get_graph_transformer,
+)
 from config import settings
 from services.document_processor import DocumentProcessor
 from services.gliner_service import GLiNERService
@@ -27,9 +35,9 @@ class DatasetService:
         self.pgvector_service = get_pgvector_service()
         self.neo4j_service = get_neo4j_service()
         self.embedding_service = get_embedding_service()
-        self.session = get_session()
-        self.text_splitter = None  # Initialize as needed
-        self.graph_transformer = None  # Initialize as needed
+        self.session = db  # Use the passed-in database session
+        self.text_splitter = get_text_splitter()
+        self.graph_transformer = get_graph_transformer()
         self.gliner_extractor = GLiNERService()
         self.document_processor = DocumentProcessor(
             s3_service=self.s3_service,
@@ -114,7 +122,7 @@ class DatasetService:
                 await dataset_file.write(dataset_content)
 
             s3_url = self.s3_service.upload_file(
-                dataset_file_path, bucket_name=settings.S3_OUTPUT_BUCKET
+                dataset_file_path, bucket_name=settings.OUTPUT_BUCKET
             )
 
             # Save to database
@@ -143,6 +151,7 @@ class DatasetService:
             for temp_file in temp_files:
                 if temp_file.exists():
                     temp_file.unlink()
+
 
     def clean_text(self, text: str) -> str:
         """

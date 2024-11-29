@@ -65,7 +65,7 @@ def get_pgvector_vector_store() -> PGVector:
     return PGVector(
         collection_name=settings.PGVECTOR_TABLE_NAME,
         connection=settings.DATABASE_URL,
-        embedding_function=embedding_service.embed_documents,
+        embeddings=embedding_service.embed_documents,
         use_jsonb=True
     )
 
