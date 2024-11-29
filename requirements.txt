@@ -1,52 +1,285 @@
-# fastapi
-# uvicorn
-# alembic
-# pydantic
-# pydantic-settings
-# python-multipart
-# psycopg2-binary
-# pillow
-# GPUtil
-# pdfminer.six
-# easyocr
-# torch
-# transformers
-# huggingface_hub
-# sentence-transformers
-# GPUtil
-# loguru
-# tqdm
-# mlflow
-# prometheus-client
-# python-jose[cryptography]
-# passlib[bcrypt]
-# flupy
-# gliner
-
-# pytest
-# pytest-asyncio
-# pytest-cov
-# httpx
-# sqlalchemy
-# alembic
-# mock
-
-
-
-# fastapi==0.115.0
+accelerate==1.1.1
+aiofiles==24.1.0
+aiohappyeyeballs==2.4.3
+aiohttp==3.10.10
+aiosignal==1.3.1
+alembic==1.14.0
+annotated-types==0.7.0
+anyio==4.6.2.post1
+arrow==1.3.0
+attrs==24.2.0
+beautifulsoup4==4.12.3
+bioc==2.1
+bleach==6.2.0
+blinker==1.8.2
+blis==1.0.1
+boto3==1.35.55
+botocore==1.35.55
+cachetools==5.5.0
+catalogue==2.0.10
+certifi==2024.8.30
+cffi==1.17.1
+charset-normalizer==3.4.0
+click==8.1.7
+cloudpathlib==0.20.0
+cloudpickle==3.1.0
+codecarbon==2.7.2
+coloredlogs==15.0.1
+confection==0.1.5
+conllu==4.5.3
+contourpy==1.3.0
+cryptography==43.0.3
+cycler==0.12.1
+cymem==2.0.8
+databricks-sdk==0.36.0
+dataclasses-json==0.6.7
+datasets==3.1.0
+deepsearch-glm==0.26.1
+Deprecated==1.2.14
+dill==0.3.8
+docker==7.1.0
+docling==2.4.0
+docling-core==2.3.1
+docling-ibm-models==2.0.3
+docling-parse==2.0.3
+docopt==0.6.2
+docutils==0.21.2
+easyocr==1.7.2
+ecdsa==0.19.0
+fastapi==0.115.4
+fief-client==0.20.0
+filelock==3.16.1
+filetype==1.2.0
+flair==0.14.0
+Flask==3.0.3
+flatbuffers==24.3.25
+fonttools==4.54.1
+frozenlist==1.5.0
+fsspec==2024.9.0
+ftfy==6.3.1
+gdown==5.2.0
+git-filter-repo==2.45.0
+gitdb==4.0.11
+GitPython==3.1.43
+gliner==0.2.13
+gliner-spacy==0.0.10
+glirel @ git+https://github.com/jackboyla/GLiREL.git@c6ddd8eea31a337170e2abccdcdf6ad039bc08fc
+google-api-core==2.23.0
+google-api-python-client==2.154.0
+google-auth==2.36.0
+google-auth-httplib2==0.2.0
+googleapis-common-protos==1.66.0
+GPUtil==1.4.0
+graphene==3.4.1
+graphql-core==3.2.5
+graphql-relay==3.2.0
+greenlet==3.1.1
+gunicorn==23.0.0
+h11==0.14.0
+httpcore==1.0.6
+httplib2==0.22.0
+httpx==0.27.2
+httpx-sse==0.4.0
+huggingface-hub==0.26.2
+humanfriendly==10.0
+idna==3.10
+imageio==2.36.0
+importlib_metadata==8.5.0
+interchange==2021.0.4
+intervaltree==3.1.0
+itsdangerous==2.2.0
+Jinja2==3.1.4
+jmespath==1.0.1
+joblib==1.4.2
+jsonlines==3.1.0
+jsonpatch==1.33
+jsonpointer==3.0.0
+jsonref==1.1.0
+jsonschema==4.23.0
+jsonschema-specifications==2024.10.1
+jwcrypto==1.5.6
+kaggle==1.6.17
+kiwisolver==1.4.7
 langchain==0.3.4
 langchain-community==0.3.3
 langchain-core==0.3.12
 langchain-experimental==0.3.2
 langchain-huggingface==0.1.0
 langchain-ollama==0.2.0
+langchain-postgres==0.0.12
 langchain-text-splitters==0.3.0
-loguru==0.7.2
-neo4j==5.19.0
-prometheus-client==0.21.0
-PyYAML==6.0.1
-pydantic==2.9.2
-uvicorn==0.30.1
-prometheus-fastapi-instrumentator==7.0.0
+langcodes==3.4.1
+langdetect==1.0.9
 langsmith==0.1.137
-boto3
+language_data==1.2.0
+lazy_loader==0.4
+loguru==0.7.2
+lxml==4.9.4
+Mako==1.3.6
+marisa-trie==1.2.1
+Markdown==3.7
+markdown-it-py==3.0.0
+marko==2.1.2
+MarkupSafe==3.0.2
+marshmallow==3.23.1
+matplotlib==3.9.2
+mdurl==0.1.2
+mean-average-precision==2021.4.26.0
+mlflow==2.17.2
+mlflow-skinny==2.17.2
+monotonic==1.6
+more-itertools==10.5.0
+mpire==2.10.2
+mpld3==0.5.10
+mpmath==1.3.0
+multidict==6.1.0
+multiprocess==0.70.16
+murmurhash==1.0.10
+mypy-extensions==1.0.0
+neo4j==5.19.0
+networkx==3.4.2
+ninja==1.11.1.1
+numpy==1.26.4
+nvidia-cublas-cu12==12.4.5.8
+nvidia-cuda-cupti-cu12==12.4.127
+nvidia-cuda-nvrtc-cu12==12.4.127
+nvidia-cuda-runtime-cu12==12.4.127
+nvidia-cudnn-cu12==9.1.0.70
+nvidia-cufft-cu12==11.2.1.3
+nvidia-curand-cu12==10.3.5.147
+nvidia-cusolver-cu12==11.6.1.9
+nvidia-cusparse-cu12==12.3.1.170
+nvidia-nccl-cu12==2.21.5
+nvidia-nvjitlink-cu12==12.4.127
+nvidia-nvtx-cu12==12.4.127
+oauth2client==4.1.3
+ollama==0.3.3
+onnxruntime==1.20.0
+opencv-python-headless==4.10.0.84
+opentelemetry-api==1.28.0
+opentelemetry-sdk==1.28.0
+opentelemetry-semantic-conventions==0.49b0
+orjson==3.10.11
+packaging==24.1
+pandas==2.2.3
+pansi==2024.11.0
+passlib==1.7.4
+pgvector==0.2.5
+pillow==10.4.0
+pptree==3.1
+preshed==3.0.9
+prometheus-fastapi-instrumentator==7.0.0
+prometheus_client==0.21.0
+prompt-toolkit==3.0.36
+propcache==0.2.0
+proto-plus==1.25.0
+protobuf==5.28.3
+psutil==6.1.0
+psycopg==3.2.3
+psycopg-pool==3.2.3
+psycopg2==2.9.10
+py-cpuinfo==9.0.0
+py2neo==2021.2.4
+pyarrow==16.1.0
+pyasn1==0.6.1
+pyasn1_modules==0.4.1
+pyclipper==1.3.0.post6
+pycparser==2.22
+pydantic==2.9.2
+pydantic-settings==2.6.1
+pydantic_core==2.23.4
+PyDrive==1.3.1
+Pygments==2.18.0
+pynvml==11.5.3
+pyparsing==3.2.0
+pypdf==5.1.0
+pypdfium2==4.30.0
+PySocks==1.7.1
+python-bidi==0.6.3
+python-dateutil==2.9.0.post0
+python-docx==1.1.2
+python-dotenv==1.0.1
+python-jose==3.3.0
+python-multipart==0.0.17
+python-pptx==1.0.2
+python-slugify==8.0.4
+pytorch_revgrad==0.2.0
+pytz==2024.2
+PyYAML==6.0.1
+questionary==2.0.1
+RapidFuzz==3.10.1
+referencing==0.35.1
+regex==2024.11.6
+relik==1.0.6
+requests==2.32.3
+requests-toolbelt==1.0.0
+rich==13.9.4
+rpds-py==0.21.0
+rsa==4.9
+Rtree==1.3.0
+s3transfer==0.10.3
+safetensors==0.4.5
+scikit-image==0.24.0
+scikit-learn==1.5.2
+scipy==1.14.1
+seaborn==0.13.2
+segtok==1.5.11
+semchunk==2.2.0
+semver==3.0.2
+sentence-transformers==3.2.1
+sentencepiece==0.2.0
+seqeval==1.2.2
+setuptools==75.1.0
+shapely==2.0.6
+shellingham==1.5.4
+six==1.16.0
+smart-open==7.0.5
+smmap==5.0.1
+sniffio==1.3.1
+sortedcontainers==2.4.0
+soupsieve==2.6
+spacy==3.8.2
+spacy-legacy==3.0.12
+spacy-loggers==1.0.5
+SQLAlchemy==2.0.35
+sqlitedict==2.1.0
+sqlparse==0.5.1
+srsly==2.4.8
+starlette==0.41.2
+sympy==1.13.1
+tabulate==0.9.0
+tenacity==9.0.0
+termcolor==2.3.0
+text-unidecode==1.3
+thinc==8.3.2
+threadpoolctl==3.5.0
+tifffile==2024.9.20
+tokenizers==0.20.3
+torch==2.5.1
+torchaudio==2.5.1
+torchvision==0.20.1
+tqdm==4.67.0
+transformer-smaller-training-vocab==0.4.0
+transformers==4.46.2
+triton==3.1.0
+typer==0.12.5
+types-python-dateutil==2.9.0.20241003
+typing-inspect==0.9.0
+typing_extensions==4.12.2
+tzdata==2024.2
+uritemplate==4.1.1
+urllib3==2.2.3
+uvicorn==0.30.1
+wasabi==1.1.3
+wcwidth==0.2.13
+weasel==0.4.1
+webencodings==0.5.1
+Werkzeug==3.1.2
+wheel==0.44.0
+Wikipedia-API==0.7.1
+wrapt==1.16.0
+XlsxWriter==3.2.0
+xxhash==3.5.0
+yarl==1.17.1
+yaspin==3.1.0
+zipp==3.20.2
