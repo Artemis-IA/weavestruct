@@ -153,7 +153,7 @@ torchvision --extra-index-url https://download.pytorch.org/whl/cu125
 torchaudio --extra-index-url https://download.pytorch.org/whl/cu125
 tqdm==4.67.0
 transformer-smaller-training-vocab==0.4.0
-transformers==4.46.2
+transformers
 triton==3.1.0
 typer==0.12.5
 types-python-dateutil==2.9.0.20241003
