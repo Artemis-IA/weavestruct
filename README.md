@@ -1,163 +1,99 @@
-### README.md
-
-# ** DocGraph & WeaveStruct : API de Traitement de Documents, Extraction d'Entités Nommées et Relations, et Construction de Graphes de Connaissances**
-
-**WeaveStruct** est une plateforme avancée pour le **traitement de documents**, la **reconnaissance d'entités nommées (NER)**, l'extraction de **relations**, et la construction de **graphes de connaissances**. Ce projet repose sur un ensemble de composants logiciels et de modèles de deep learning récents pour transformer des données non structurées en informations exploitables, tout en offrant des capacités de suivi et de monitoring.
+Voici le README mis à jour avec une section sur les briques utilisées et une description concise de chaque service de l'API :
 
 ---
 
-## **Caractéristiques**
+# 🌀 **WeaveStruct**  
+> **De la donnée brute à l'information exploitable : traitement de documents, extraction d'entités et relations, et construction de graphes de connaissances.**  
 
-### **Traitement de Documents**
-- Prise en charge des formats **PDF** et **DOCX** avec options pour l’OCR.
-- Extraction des **tableaux**, **figures**, et leur export en **JSON**, **YAML**, **Markdown** ou **CSV**.
-- Nettoyage et prétraitement du texte (normalisation et suppression des caractères indésirables).
-
-### **Reconnaissance d'Entités et Extraction de Relations**
-- **NER (Named Entity Recognition)** : Identification des entités comme les personnes, organisations, lieux, etc., grâce à des modèles avancés (`GLiNER`).
-- **Relation Extraction** : Détection des liens logiques entre entités avec des modèles tels que `GLIREL`.
-
-### **Construction de Graphes de Connaissances**
-- **Stockage dans Neo4j** : Représentation structurée des entités et relations dans une base orientée graphes.
-- **Visualisation des relations** : Génération de données prêtes pour des outils de visualisation.
-
-### **Recherche Vectorielle et Embeddings**
-- Génération d’**embeddings vectoriels** pour les documents avec le modèle `Ollama`.
-- Recherche vectorielle rapide dans **PostgreSQL** avec l’extension **PGVector**.
-
-### **Pipeline Modulaire et Suivi**
-- **Extensible** : Architecture permettant l'ajout ou la modification de modules pour des cas d'usage spécifiques.
-- **Suivi des modèles et métriques** avec **MLflow**.
-- **Monitoring des performances** via **Prometheus**.
+WeaveStruct est une plateforme modulaire et évolutive dédiée au traitement intelligent de documents. Grâce à l'intégration de technologies avancées en NLP et en Machine Learning, elle permet d'analyser, structurer et exploiter des données non structurées en informations prêtes à l'emploi.
 
 ---
 
-## **Technologies Utilisées**
+## 🚀 **Fonctionnalités clés**
+### 📄 **Traitement des documents**
+- **Formats pris en charge** : PDF, DOCX, avec prise en charge de l'OCR pour les documents scannés.
+- **Extraction avancée** : Extraction des tableaux, figures, et métadonnées.
+- **Conversion multi-format** : Export en JSON, YAML, Markdown ou CSV pour une intégration aisée.
 
-### Backend
-- **[FastAPI](https://fastapi.tiangolo.com/)** : Framework rapide et moderne pour construire des APIs avec Python.
-- **[SQLAlchemy](https://www.sqlalchemy.org/)** : ORM pour interagir avec PostgreSQL.
+### 🧠 **Reconnaissance d'entités et extraction de relations**
+- **Modèles avancés** :  
+  - **GLiNER** : Reconnaissance d'entités nommées (personnes, organisations, lieux, etc.).
+  - **GLIREL** : Extraction de relations logiques et hiérarchiques.
+- **Résultats exploitables** : Stockage des entités et relations dans une base de données orientée graphes (Neo4j).
 
-### Bases de Données et Stockage
-- **[PostgreSQL](https://www.postgresql.org/)** : Base de données relationnelle robuste.
-- **[PGVector](https://github.com/pgvector/pgvector)** : Extension pour la recherche vectorielle dans PostgreSQL.
-- **[Neo4j](https://neo4j.com/)** : Base de données orientée graphes pour la gestion des relations entre entités.
-- **[MinIO](https://min.io/)** : Système de stockage compatible S3 pour les fichiers et résultats analytiques.
+### 🌐 **Construction de graphes de connaissances**
+- **Stockage relationnel** : Construction automatique de graphes dans Neo4j.
+- **Visualisation intuitive** : Données prêtes pour des outils de visualisation tels que Cytoscape ou GraphXR.
 
-### Machine Learning
-- **[GLiNER](https://github.com/E3-JSI/gliner)** : Modèle avancé pour la reconnaissance d’entités nommées.
-- **[GLIREL](https://huggingface.co/models)** : Modèle pour l’extraction des relations entre entités.
-- **[Ollama](https://ollama.ai/)** : Génération d’embeddings pour documents et requêtes.
-- **[Transformers](https://huggingface.co/docs/transformers/)** : Bibliothèque pour utiliser des modèles pré-entraînés.
+### 🔍 **Recherche vectorielle et embeddings**
+- **Modèles d'embeddings** : Intégration du modèle Ollama pour transformer les documents en représentations vectorielles.
+- **Indexation rapide** : Recherche vectorielle rapide grâce à PostgreSQL et l'extension PGVector.
 
-### Monitoring et Gestion
-- **[Prometheus](https://prometheus.io/)** : Solution open-source pour le monitoring et la collecte de métriques.
-- **[MLflow](https://mlflow.org/)** : Plateforme pour le suivi des expériences et des modèles.
-- **[Loguru](https://github.com/Delgan/loguru)** : Bibliothèque de gestion de logs simple et puissante.
-
----
-
-## **Installation et Configuration**
-
-### Prérequis
-
-1. Installez Python 3.8 ou supérieur.
-2. Configurez Docker pour les services (PostgreSQL, Neo4j, MinIO).
-
-### Installation des Dépendances
-
-1. Clonez le dépôt :
-   ```bash
-   git clone <URL_DU_DÉPÔT>
-   cd weavestruct
-   ```
-
-2. Installez les dépendances Python :
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. Configurez les variables d’environnement dans un fichier `.env` :
-   ```env
-   DATABASE_URL=postgresql://user:password@localhost:5432/weavestruct
-   NEO4J_URI=bolt://neo4j:7687
-   NEO4J_USER=neo4j
-   NEO4J_PASSWORD=your_password
-   MINIO_URL=http://minio:9000
-   ```
-
-4. Lancez les services nécessaires :
-   ```bash
-   docker-compose up -d
-   ```
-
-### Démarrage de l’Application
-
-1. Exécutez le serveur FastAPI :
-   ```bash
-   uvicorn main:app --host 0.0.0.0 --port 8000
-   ```
-
-2. Accédez à l’interface interactive de l’API : [http://localhost:8000](http://localhost:8000).
+### 📈 **Suivi des performances et monitoring**
+- **Tracking des modèles** : Intégration avec MLflow pour le suivi des expériences et métriques.
+- **Monitoring système** : Metrics exposées pour Prometheus pour une supervision en temps réel.
 
 ---
 
-## **API : Points d'Entrée Principaux**
-
-### Documents
-- **`POST /documents/upload/`** : Téléchargez et analysez un ou plusieurs documents.
-- **`POST /documents/index_document/`** : Indexe un document pour extraire les entités et relations.
-- **`POST /documents/rag_process/`** : Traite un document pour le transformer en embeddings vectoriels.
-
-### Graphes de Connaissances
-- **`GET /graph/entities/`** : Récupérez toutes les entités enregistrées dans le graphe.
-- **`GET /graph/relationships/`** : Récupérez toutes les relations extraites.
-- **`GET /graph/visualize/`** : Obtenez des données de visualisation des relations.
-
-### Jeux de Données
-- **`POST /datasets/`** : Créez un jeu de données annoté à partir de fichiers téléchargés.
-- **`POST /train/`** : Entraînez un modèle de reconnaissance d’entités sur un dataset spécifique.
-
-### Recherche
-- **`GET /search/entities/`** : Recherchez des entités à l’aide de mots-clés.
-- **`GET /search/relationships/`** : Recherchez des relations spécifiques.
-
-### Monitoring
-- **`GET /metrics/`** : Expose les métriques Prometheus pour le suivi de la performance.
+## 🧱 **Briques utilisées**
+- **[DoclingV2](https://github.com/your-doclingv2-link)** : Framework avancé pour le traitement et l'analyse de documents. C'est le point d'entrée des données.
+- **[LangChain](https://github.com/hwchase17/langchain)** : Gestion des flux conversationnels et chaînes d'appels de modèles pour des cas complexes, avec des classes clés comme :  
+  - **[`LinkExtractor`](https://python.langchain.com/api_reference/community/graph_vectorstores/langchain_community.graph_vectorstores.extractors.gliner_link_extractor.GLiNERLinkExtractor.html)** : Extraction des liens logiques entre les entités mentionnées dans un document.  
+  - **[`GraphTransformer`](https://python.langchain.com/api_reference/experimental/graph_transformers/langchain_experimental.graph_transformers.gliner.GlinerGraphTransformer.html#glinergraphtransformer)** : Transformation des données textuelles en graphes exploitables.  
+- **[GLiNER](https://github.com/urchade/GLiNER)** : Reconnaissance d'entités nommées à l'aide de modèles NLP préentraînés.  
+- **[Ollama](https://www.ollama.ai/)** : Génération d'embeddings vectoriels et analyse de documents pour la recherche vectorielle.  
 
 ---
 
-## **Exemple d'Utilisation**
+## ⚙️ **API : Points d'entrée principaux et description**
+### 📂 **Gestion des documents**
+- `POST /documents/upload/`  
+  **Description** : Télécharge un document pour traitement initial (extraction de texte, OCR, etc.).
+  
+- `POST /documents/index_document/`  
+  **Description** : Indexe un document pour exécuter des tâches d'extraction d'entités et de relations.
 
-### Étapes pour Analyser un Document PDF
+- `POST /documents/rag_process/`  
+  **Description** : Convertit un document en embeddings vectoriels pour une recherche rapide.
 
-1. **Téléchargez le fichier** via l’API :
-   ```bash
-   curl -X POST "http://localhost:8000/documents/upload/" -F "files=@document.pdf"
-   ```
+### 🔗 **Graphes de connaissances**
+- `GET /graph/entities/`  
+  **Description** : Renvoie toutes les entités extraites et enregistrées dans la base de données de graphes.
 
-2. **Récupérez les entités extraites** :
-   ```bash
-   curl -X GET "http://localhost:8000/graph/entities/"
-   ```
+- `GET /graph/relationships/`  
+  **Description** : Récupère toutes les relations entre les entités identifiées.
 
-3. **Visualisez les relations** dans un graphe :
-   ```bash
-   curl -X GET "http://localhost:8000/graph/visualize/"
-   ```
+- `GET /graph/visualize/`  
+  **Description** : Renvoie les données formatées pour visualiser le graphe des entités et relations.
+
+### 🔍 **Recherche**
+- `GET /search/entities/`  
+  **Description** : Permet de rechercher des entités spécifiques dans la base à l'aide de mots-clés.
+
+- `GET /search/relationships/`  
+  **Description** : Effectue une recherche sur les relations existantes dans le graphe.
+
+### 🛠️ **Administration et suivi**
+- `GET /metrics/`  
+  **Description** : Expose les métriques système pour le monitoring via Prometheus.
 
 ---
 
-## **Surveillance et Suivi**
-
-- **Prometheus** : Collecte des métriques sur les performances et ressources système (exposées à `/metrics`).
-- **Logs** : Gestion centralisée des logs avec Loguru.
+## 🌟 **Contribuer**
+Les contributions sont les bienvenues !  
+1. Forkez le projet.  
+2. Créez une branche pour votre fonctionnalité (`git checkout -b feature/awesome-feature`).  
+3. Commitez vos modifications (`git commit -m 'Add awesome feature'`).  
+4. Poussez la branche (`git push origin feature/awesome-feature`).  
+5. Ouvrez une Pull Request.
 
 ---
 
-## **Contributeur**
+## 📜 **Licence**
+Ce projet est sous licence MIT. Consultez le fichier [LICENSE](LICENSE) pour plus d'informations.
 
-- **P3 Simplon**  
-  Développeur principal
+---
 
-Pour toute suggestion ou contribution, merci de créer une **issue** ou une **pull request** sur le dépôt GitHub.
+## 📞 **Support**
+- **Issues** : N'hésitez pas à signaler des problèmes via la section [Issues](https://github.com/Artemis-IA/weavestruct/issues).  
+---

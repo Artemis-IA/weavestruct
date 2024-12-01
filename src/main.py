@@ -85,7 +85,7 @@ app = create_app()
 async def startup_event():
     """Application startup event."""
     logger.info("Application starting...")
-    metrics_manager._remove_codecarbon_lock()
+    metrics_manager.start_emissions_tracker()
     metrics_manager.start_metrics_server()
     system_metrics = metrics_manager.get_system_metrics()
     device_type = "cuda" if system_metrics.get("cuda") else "CPU"
@@ -96,6 +96,7 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Application shutdown event."""
+    metrics_manager.emissions_tracker.stop()
     logger.info("Application shutting down...")
 
 

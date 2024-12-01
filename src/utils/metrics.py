@@ -76,7 +76,7 @@ class MetricsManager:
             self.start_emissions_tracker()
 
             # Log CO2 emissions
-            emissions = self.emissions_tracker.flush()  # Flush ensures continuous tracking
+            emissions = self.emissions_tracker.flush() if getattr(self.emissions_tracker, "_started", False) else None
             if emissions is not None:
                 self.CARBON_EMISSIONS.set(emissions)
                 logger.info(f"CO2 emissions logged: {emissions:.6f} kgCO₂eq")

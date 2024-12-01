@@ -4,6 +4,8 @@ import torch
 from glirel import GLiREL
 from loguru import logger
 from config import settings
+from py2neo import Graph, NodeMatcher, Relationship
+from typing import List
 
 class GLiRELService:
     """
@@ -43,3 +45,29 @@ class GLiRELService:
         except Exception as e:
             logger.error(f"Error extracting relationships: {e}")
             raise
+
+    def add_relationships(tx, relationships: List[Relationship]):
+        """Ajoute des relations extraites dans la base Neo4j."""
+        for rel in relationships:
+            try:
+                # Validation des données
+                if not rel.source or not rel.target or not rel.type:
+                    logger.warning(f"Relation invalide, ignorée : {rel}")
+                    continue
+                
+                logger.info(f"Ajout de la relation : {rel.type} ({rel.source.id} -> {rel.target.id})")
+                
+                # Cypher pour ajouter la relation
+                tx.run(
+                    """
+                    MATCH (source:Entity {id: $source_id}), (target:Entity {id: $target_id})
+                    MERGE (source)-[r:RELATES_TO {type: $type, created_at: timestamp()}]->(target)
+                    """,
+                    {
+                        "source_id": rel.source.id,
+                        "target_id": rel.target.id,
+                        "type": rel.type.upper(),  # Normalisation du type
+                    },
+                )
+            except Exception as e:
+                logger.error(f"Échec de l'ajout de la relation {rel.type}: {e}")

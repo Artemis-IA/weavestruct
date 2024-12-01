@@ -124,6 +124,12 @@ async def upload_path(
 @router.post("/index_document/")
 async def index_document(
     file: Optional[UploadFile] = File(None),
+    export_formats: List[ExportFormat] = Query(
+        default=[ExportFormat.JSON],
+        title="Formats d'exportation",
+        description="Choisissez les formats d'exportation",
+        enum=[ExportFormat.JSON, ExportFormat.YAML, ExportFormat.MARKDOWN]
+    ),
     document_processor: DocumentProcessor = Depends(get_document_processor),
     s3_service: S3Service = Depends(get_s3_service),
 ):
@@ -131,10 +137,7 @@ async def index_document(
     Index a document by extracting entities, embeddings, and relationships. 
     Allows indexing either by uploading a document or providing its S3 URL.
     """
-    logger.info(f"Indexing document: {file.filename if file else s3_url}")
-
-    if not file and not s3_url:
-        raise HTTPException(status_code=400, detail="Either 'file' or 's3_url' must be provided.")
+    logger.info(f"Indexing document: {file.filename if file else 'from S3 URL'}")
 
     try:
         if file:
@@ -145,7 +148,7 @@ async def index_document(
             s3_url = s3_service.get_s3_url(s3_service.input_bucket, s3_input_key)
 
         # Process and index the document using the S3 URL
-        document_processor.process_and_index_document(s3_url=s3_url)
+        document_processor.process_and_index_document(s3_url=s3_url, export_formats=export_formats)
 
         logger.info(f"Successfully indexed document: {file.filename if file else s3_url}.")
         return {"message": f"Document {file.filename if file else s3_url} indexed successfully."}
