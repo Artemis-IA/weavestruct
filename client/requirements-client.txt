@@ -1,0 +1,11 @@
+streamlit
+boto3
+py2neo
+minio
+pandas
+markdown
+PyPDF2
+plotly
+dash
+httpx
+streamlit-agraph

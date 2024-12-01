@@ -28,6 +28,8 @@ class DocumentLogService:
                 log_entry = DocumentLog(file_name=file_name, s3_url=s3_url)
                 session.add(log_entry)
                 session.commit()
+                logger.info(f"Document enregistré : {file_name}")
         except SQLAlchemyError as e:
             session.rollback()
+            logger.error(f"Échec de l'enregistrement du document {file_name} : {e}")
             raise RuntimeError(f"Failed to log document: {e}")

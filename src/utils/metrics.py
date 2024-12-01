@@ -1,3 +1,5 @@
+
+# utils/metrics.py
 import os
 import psutil
 import GPUtil
@@ -6,7 +8,6 @@ from loguru import logger
 from prometheus_client import Counter, Histogram, Gauge, start_http_server
 from codecarbon import EmissionsTracker
 from config import settings
-from dependencies import get_s3_service, get_mlflow_service, get_pgvector_vector_store, get_neo4j_service
 
 class MetricsManager:
     """
@@ -75,7 +76,7 @@ class MetricsManager:
             self.start_emissions_tracker()
 
             # Log CO2 emissions
-            emissions = self.emissions_tracker.stop()
+            emissions = self.emissions_tracker.flush()  # Flush ensures continuous tracking
             if emissions is not None:
                 self.CARBON_EMISSIONS.set(emissions)
                 logger.info(f"CO2 emissions logged: {emissions:.6f} kgCO₂eq")
@@ -88,8 +89,24 @@ class MetricsManager:
         """
         Ensure the emissions tracker is running.
         """
-        if not self.emissions_tracker._is_running:
-            self.emissions_tracker.start()
+        try:
+            if self.emissions_tracker and not getattr(self.emissions_tracker._scheduler, '_stopped', True):
+                self.emissions_tracker.start()
+                logger.info("Emissions tracker started.")
+        except Exception as e:
+            logger.error(f"Error starting emissions tracker: {e}")
+            self._remove_codecarbon_lock()
+
+    def stop_emissions_tracker(self):
+        """
+        Gracefully stop the emissions tracker.
+        """
+        try:
+            if self.emissions_tracker and not getattr(self.emissions_tracker._scheduler, '_stopped', True):
+                self.emissions_tracker.stop()
+                logger.info("Emissions tracker stopped.")
+        except Exception as e:
+            logger.error(f"Error stopping emissions tracker: {e}")
 
     @staticmethod
     def get_system_metrics() -> dict:
@@ -134,11 +151,12 @@ class MetricsManager:
             except Exception as e:
                 logger.warning(f"Error removing CodeCarbon lock file: {e}")
 
-
     def validate_services(self):
         """
         Validate the availability of critical services at startup.
         """
+        from dependencies import get_s3_service, get_mlflow_service, get_pgvector_vector_store, get_neo4j_service
+
         try:
             # Check S3 service and required buckets
             s3_service = get_s3_service()

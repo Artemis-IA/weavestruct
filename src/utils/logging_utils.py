@@ -26,6 +26,7 @@ class ModelLoggerService:
             "GLiNER Extractor Model": ("E3-JSI/gliner-multi-pii-domains-v1", os.path.join(self.huggingface_cache, "models--E3-JSI--gliner-multi-pii-domains-v1")),
             "Gliner Transformer Model": ("knowledgator/gliner-multitask-large-v0.5", os.path.join(self.huggingface_cache, "models--knowledgator--gliner-multitask-large-v0.5")),
             "Tokenizer Model": ("microsoft/deberta-v3-large", os.path.join(self.huggingface_cache, "models--microsoft--deberta-v3-large"))
+            ("ds4sd/docling-models", os.path.join(self.huggingface_cache, "models--ds4sd--docling-models"))
         }
         self.initialize_emissions_tracker()
 

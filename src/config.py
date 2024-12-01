@@ -24,7 +24,7 @@ class Settings(BaseSettings):
 
 
     # Neo4j settings
-    NEO4J_URI: str = "bolt://neo4j:7687"
+    NEO4J_URI: str = "bolt://localhost:7687"
     NEO4J_USER: str = "neo4j"
     NEO4J_PASSWORD: str = "your_password"
 
@@ -47,8 +47,8 @@ class Settings(BaseSettings):
     MLFLOW_PASSWORD: str = "mlflow_password"
     MLFLOW_DB: str = "mlflow_db"
     MLFLOW_PORT: int = 5002
-    MLFLOW_TRACKING_URI: str = "http://mlflow:5002"
-    MLFLOW_S3_ENDPOINT_URL: str = "http://minio:9000"
+    MLFLOW_TRACKING_URI: str = "http://localhost:5002"
+    MLFLOW_S3_ENDPOINT_URL: str = "http://localhost:9000"
     MLFLOW_S3_IGNORE_TLS: bool = True
 
     # Derived MLflow settings
@@ -64,7 +64,7 @@ class Settings(BaseSettings):
     MINIO_ROOT_USER: str = "minio"
     MINIO_ROOT_PASSWORD: str = "minio123"
     MINIO_API_URL: str = "http://minio:9000"
-    MINIO_URL: str = "http://minio:9000"
+    MINIO_URL: str = "http://localhost:9000"
     INPUT_BUCKET: str = "docs-input"
     OUTPUT_BUCKET: str = "docs-output"
     LAYOUTS_BUCKET: str = "layouts"

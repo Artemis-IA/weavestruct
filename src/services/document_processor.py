@@ -34,9 +34,9 @@ from services.embedding_service import EmbeddingService
 from services.gliner_service import GLiNERService
 from services.glirel_service import GLiRELService
 
-from models.document_log import DocumentLog
+from models.document_log import DocumentLog, DocumentLogService
 from models.document import Document
-from utils.database import SessionLocal  # Assurez-vous que ce module est correctement défini
+from utils.database import SessionLocal
 
 class CustomPdfPipelineOptions(PdfPipelineOptions):
     """Custom pipeline options for PDF processing."""
@@ -163,7 +163,7 @@ class DocumentProcessor:
         try:
             doc_filename = Path(result.input.file).stem
             if result.status == ConversionStatus.SUCCESS:
-                output_dir = Path("/tmp/exports")  # Utilisé temporairement pour le stockage local avant l'upload
+                output_dir = Path(self.s3_service.output_bucket)  # Utilisé temporairement pour le stockage local avant l'upload
                 output_dir.mkdir(parents=True, exist_ok=True)
                 self._export_file(
                     result=result,
@@ -302,7 +302,7 @@ class DocumentProcessor:
         logger.info(f"Document {local_path.name} converted successfully")
 
         # Step 4: Export processed document results to S3
-        output_dir = Path("/tmp/exports")
+        output_dir = Path(self.s3_service.output_bucket)
         output_dir.mkdir(parents=True, exist_ok=True)
 
         for fmt in export_formats:
@@ -352,7 +352,7 @@ class DocumentProcessor:
         # Log document metadata
         self.log_document(file_name=local_path.name, s3_url=s3_output_key)
 
-        # Log metrics to MLFlow
+        # Log metrics to Prometheus
         metrics = {
             "documents_loaded": 1,
             "chunks_processed": 1,
@@ -374,6 +374,18 @@ class DocumentProcessor:
         try:
             logger.info(f"Starting full processing and indexing for document: {s3_url}")
             self.mlflow_service.start_run(run_name=f"Processing and Indexing {Path(s3_url).stem}")
+
+            metrics = {
+                "documents_loaded": 0,
+                "chunks_processed": 0,
+                "embeddings_generated": 0,
+                "entities_extracted": 0,
+                "relationships_extracted": 0,
+                "nodes_indexed": 0,
+                "edges_indexed": 0,
+                "errors": 0,
+            }
+            metrics["documents_loaded"] = 1
 
             # Step 1: Process documents without indexing
             split_docs = self.process_documents(
@@ -440,7 +452,7 @@ class DocumentProcessor:
             self.neo4j_service.index_graph(nodes=nodes, edges=edges)
             logger.info("Neo4j indexing completed")
 
-            # Step 7: Log metrics to MLFlow
+            # Step 7: Log metrics to Prometheus
             metrics = {
                 "documents_loaded": len(split_docs),
                 "chunks_processed": len(split_docs),

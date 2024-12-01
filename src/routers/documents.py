@@ -6,7 +6,7 @@ from loguru import logger
 import aiofiles
 
 from dependencies import get_document_processor, get_s3_service
-from services.document_processor import DocumentProcessor, ExportFormat, InputFormat
+from services.document_processor import DocumentProcessor, ExportFormat, ImportFormat
 from services.s3_service import S3Service
 
 router = APIRouter()

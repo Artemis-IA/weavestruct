@@ -7,6 +7,7 @@ from functools import lru_cache
 
 from config import settings
 from utils.database import SessionLocal
+from utils.metrics import MetricsManager
 from services.s3_service import S3Service
 from services.mlflow_service import MLFlowService
 from services.document_processor import DocumentProcessor
@@ -34,7 +35,11 @@ def get_db() -> Generator[Session, None, None]:
         yield db
     finally:
         db.close()
-
+        
+@lru_cache
+def get_metrics_manager() -> MetricsManager:
+    """Returns a singleton instance of MetricsManager."""
+    return MetricsManager(prometheus_port=settings.PROMETHEUS_PORT)
 
 # Dependency to get the S3 service
 @lru_cache
