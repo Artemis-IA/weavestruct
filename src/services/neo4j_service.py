@@ -179,3 +179,85 @@ class Neo4jService:
         except Exception as e:
             logger.error(f"Failed to validate Neo4j connection: {e}")
             raise
+
+
+    def create_entity(self, entity: Dict[str, Any]):
+        """
+        Crée une entité dans Neo4j.
+        """
+        with self.driver.session() as session:
+            return session.write_transaction(self._create_entity, entity)
+
+    @staticmethod
+    def _create_entity(tx: Transaction, entity: Dict[str, Any]):
+        query = """
+        MERGE (e:Entity {id: $id})
+        SET e += $properties
+        RETURN e
+        """
+        result = tx.run(query, id=entity["id"], properties=entity.get("properties", {}))
+        return result.single()
+
+    def update_entity(self, entity_id: str, properties: Dict[str, Any]):
+        """
+        Met à jour une entité existante dans Neo4j.
+        """
+        with self.driver.session() as session:
+            return session.write_transaction(self._update_entity, entity_id, properties)
+
+    @staticmethod
+    def _update_entity(tx: Transaction, entity_id: str, properties: Dict[str, Any]):
+        query = """
+        MATCH (e:Entity {id: $id})
+        SET e += $properties
+        RETURN e
+        """
+        result = tx.run(query, id=entity_id, properties=properties)
+        return result.single()
+
+    def delete_entity(self, entity_id: str):
+        """
+        Supprime une entité de Neo4j.
+        """
+        with self.driver.session() as session:
+            session.write_transaction(self._delete_entity, entity_id)
+
+    @staticmethod
+    def _delete_entity(tx: Transaction, entity_id: str):
+        query = """
+        MATCH (e:Entity {id: $id})
+        DETACH DELETE e
+        """
+        tx.run(query, id=entity_id)
+
+    def get_entity(self, entity_id: str):
+        """
+        Récupère une entité spécifique par son ID.
+        """
+        with self.driver.session() as session:
+            return session.read_transaction(self._get_entity, entity_id)
+
+    @staticmethod
+    def _get_entity(tx: Transaction, entity_id: str):
+        query = """
+        MATCH (e:Entity {id: $id})
+        RETURN e
+        """
+        result = tx.run(query, id=entity_id)
+        return result.single()
+
+    def get_relationships_by_entity(self, entity_id: str):
+        """
+        Récupère les relations liées à une entité spécifique.
+        """
+        with self.driver.session() as session:
+            return session.read_transaction(self._get_relationships_by_entity, entity_id)
+
+    @staticmethod
+    def _get_relationships_by_entity(tx: Transaction, entity_id: str):
+        query = """
+        MATCH (e:Entity {id: $id})-[r]->(related)
+        RETURN type(r) AS type, properties(r) AS properties, related
+        """
+        result = tx.run(query, id=entity_id)
+        return [{"type": record["type"], "properties": record["properties"], "related": record["related"]} for record in result]

@@ -1,5 +1,3 @@
-
-# utils/metrics.py
 import os
 import psutil
 import GPUtil
@@ -8,6 +6,7 @@ from loguru import logger
 from prometheus_client import Counter, Histogram, Gauge, start_http_server
 from codecarbon import EmissionsTracker
 from config import settings
+
 
 class MetricsManager:
     """
@@ -45,8 +44,6 @@ class MetricsManager:
         self.emissions_tracker = EmissionsTracker(
             project_name="doc_processing",
             save_to_file=False,
-            save_to_prometheus=True,
-            prometheus_url=f"http://localhost:{prometheus_port}",
         )
 
         self.prometheus_port = prometheus_port
@@ -72,16 +69,18 @@ class MetricsManager:
             if gpus:
                 self.GPU_MEMORY_USAGE.set(gpus[0].memoryUsed)
 
-            # Ensure the emissions tracker is running
-            self.start_emissions_tracker()
-
-            # Log CO2 emissions
-            emissions = self.emissions_tracker.flush() if getattr(self.emissions_tracker, "_started", False) else None
-            if emissions is not None:
-                self.CARBON_EMISSIONS.set(emissions)
-                logger.info(f"CO2 emissions logged: {emissions:.6f} kgCO₂eq")
+            # Log CO2 emissions if the tracker is running
+            emissions = None
+            if self.emissions_tracker._start_time:  # Check if the tracker is running
+                emissions_data = self.emissions_tracker.flush()  # Returns the current emissions in kg
+                if emissions_data is not None:
+                    emissions = emissions_data * 1000  # Convert kg to grams
+                    self.CARBON_EMISSIONS.set(emissions)
+                    logger.info(f"CO2 emissions logged: {emissions:.6f} grams")
+                else:
+                    logger.warning("No emissions data available.")
             else:
-                logger.warning("No emissions data available.")
+                logger.warning("Emissions tracker is not running. No emissions data logged.")
         except Exception as e:
             logger.warning(f"Error logging system metrics: {e}")
 
@@ -90,7 +89,7 @@ class MetricsManager:
         Ensure the emissions tracker is running.
         """
         try:
-            if self.emissions_tracker and not getattr(self.emissions_tracker._scheduler, '_stopped', True):
+            if not getattr(self.emissions_tracker, "_started", False):
                 self.emissions_tracker.start()
                 logger.info("Emissions tracker started.")
         except Exception as e:
@@ -102,7 +101,7 @@ class MetricsManager:
         Gracefully stop the emissions tracker.
         """
         try:
-            if self.emissions_tracker and not getattr(self.emissions_tracker._scheduler, '_stopped', True):
+            if getattr(self.emissions_tracker, "_started", False):
                 self.emissions_tracker.stop()
                 logger.info("Emissions tracker stopped.")
         except Exception as e:

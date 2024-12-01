@@ -1,0 +1,33 @@
+# Weavestruct - DocGraphAPI
+services:
+  weavestruct-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: weavestruct-api
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - NEO4J_URI=${NEO4J_URI}
+      - MINIO_API_URL=${MINIO_API_URL}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+
+    ports:
+      - "8000:8000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.weavestruct-api.rule=Host(`${WEAVESTRUCT_HOST}`)"
+      - "traefik.http.routers.weavestruct-api.entrypoints=websecure"
+      - "traefik.http.routers.weavestruct-api.tls.certresolver=cloudflare"
+      - "traefik.http.routers.weavestruct-api.middlewares=authelia@docker,secureHeaders@docker"
+      - "traefik.docker.network=shared-network"
+      - "traefik.http.services.weavestruct-api.loadbalancer.server.port=8000"
+    networks:
+      - shared-network
+    restart: always
+
+networks:
+  shared-network:
+    external: true

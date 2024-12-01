@@ -1,61 +1,75 @@
 # routers/entities.py
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from typing import List
-from loguru import logger
-
 from services.neo4j_service import Neo4jService
-from models.entity import EntityCreate, Entity
-from dependencies import get_neo4j_service
+from schemas.ner_rel import (
+    EntityCreate,
+    EntityUpdate,
+    EntityResponse,
+    RelationshipCreate,
+    RelationshipResponse,
+    EntityRelationshipsResponse,
+)
 
 router = APIRouter()
+neo4j_service = Neo4jService(uri="bolt://localhost:7687", user="neo4j", password="password")
 
-# Dependency injection
-neo4j_service: Neo4jService = get_neo4j_service()
+@router.post("/entities", response_model=EntityResponse)
+def create_entity(entity: EntityCreate):
+    result = neo4j_service.create_entity(entity.dict())
+    if not result:
+        raise HTTPException(status_code=400, detail="Failed to create entity")
+    return {"id": entity.id, "type": entity.type, "properties": entity.properties}
 
-@router.post("/entities/", response_model=Entity)
-async def create_entity(entity: EntityCreate):
-    logger.info(f"Creating entity: {entity.name}")
-    try:
-        created_entity = neo4j_service.create_entity(entity)
-        logger.info(f"Successfully created entity: {created_entity.name}")
-        return created_entity
-    except Exception as e:
-        logger.error(f"Error creating entity: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+@router.get("/entities/{entity_id}", response_model=EntityResponse)
+def get_entity(entity_id: str):
+    entity = neo4j_service.get_entity(entity_id)
+    if not entity:
+        raise HTTPException(status_code=404, detail="Entity not found")
+    return {
+        "id": entity["e"]["id"],
+        "type": entity["e"].get("type", "Unknown"),
+        "properties": entity["e"].get("properties", {}),
+    }
 
-@router.get("/entities/", response_model=List[Entity])
-async def get_entities():
-    logger.info("Retrieving all entities")
-    try:
-        entities = neo4j_service.get_all_entities()
-        logger.info(f"Retrieved {len(entities)} entities")
-        return entities
-    except Exception as e:
-        logger.error(f"Error retrieving entities: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+@router.put("/entities/{entity_id}", response_model=EntityResponse)
+def update_entity(entity_id: str, update_data: EntityUpdate):
+    result = neo4j_service.update_entity(entity_id, update_data.dict(exclude_none=True))
+    if not result:
+        raise HTTPException(status_code=400, detail="Failed to update entity")
+    return {"id": entity_id, "type": result["e"].get("type", "Unknown"), "properties": result["e"].get("properties", {})}
 
-@router.get("/entities/{entity_id}", response_model=Entity)
-async def get_entity(entity_id: str):
-    logger.info(f"Retrieving entity with ID: {entity_id}")
-    try:
-        entity = neo4j_service.get_entity(entity_id)
-        if not entity:
-            raise HTTPException(status_code=404, detail="Entity not found")
-        logger.info(f"Successfully retrieved entity: {entity.name}")
-        return entity
-    except Exception as e:
-        logger.error(f"Error retrieving entity: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+@router.delete("/entities/{entity_id}")
+def delete_entity(entity_id: str):
+    neo4j_service.delete_entity(entity_id)
+    return {"message": f"Entity {entity_id} deleted successfully"}
 
-@router.delete("/entities/{entity_id}", response_model=dict)
-async def delete_entity(entity_id: str):
-    logger.info(f"Deleting entity with ID: {entity_id}")
-    try:
-        success = neo4j_service.delete_entity(entity_id)
-        if not success:
-            raise HTTPException(status_code=404, detail="Entity not found")
-        logger.info(f"Successfully deleted entity with ID: {entity_id}")
-        return {"message": f"Entity {entity_id} deleted successfully"}
-    except Exception as e:
-        logger.error(f"Error deleting entity: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+@router.post("/relationships", response_model=RelationshipResponse)
+def create_relationship(relationship: RelationshipCreate):
+    result = neo4j_service.create_relationship(relationship.dict())
+    if not result:
+        raise HTTPException(status_code=400, detail="Failed to create relationship")
+    return relationship
+
+@router.get("/entities/{entity_id}/relationships", response_model=EntityRelationshipsResponse)
+def get_relationships(entity_id: str):
+    entity = neo4j_service.get_entity(entity_id)
+    if not entity:
+        raise HTTPException(status_code=404, detail="Entity not found")
+    relationships = neo4j_service.get_relationships_by_entity(entity_id)
+    return {
+        "entity": {
+            "id": entity["e"]["id"],
+            "type": entity["e"].get("type", "Unknown"),
+            "properties": entity["e"].get("properties", {}),
+        },
+        "relationships": [
+            {
+                "source": entity_id,
+                "target": rel["related"]["id"],
+                "type": rel["type"],
+                "properties": rel["properties"],
+            }
+            for rel in relationships
+        ],
+    }

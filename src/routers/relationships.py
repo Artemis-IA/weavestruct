@@ -1,61 +1,70 @@
 # # routers/relationships.py
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from typing import List
-from loguru import logger
-
 from services.neo4j_service import Neo4jService
-from models.relationship import RelationshipCreate, Relationship
-from dependencies import get_neo4j_service
+from schemas.ner_rel import RelationshipCreate, RelationshipResponse
 
 router = APIRouter()
+neo4j_service = Neo4jService(uri="bolt://localhost:7687", user="neo4j", password="password")
 
-# Dependency injection
-neo4j_service: Neo4jService = get_neo4j_service()
 
-@router.post("/relationships/", response_model=Relationship)
-async def create_relationship(relationship: RelationshipCreate):
-    logger.info(f"Creating relationship: {relationship.type} between {relationship.source_id} and {relationship.target_id}")
-    try:
-        created_relationship = neo4j_service.create_relationship(relationship)
-        logger.info(f"Successfully created relationship: {created_relationship.type}")
-        return created_relationship
-    except Exception as e:
-        logger.error(f"Error creating relationship: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+@router.post("/relationships", response_model=RelationshipResponse)
+def create_relationship(relationship: RelationshipCreate):
+    """
+    Crée une nouvelle relation entre deux entités dans Neo4j.
+    """
+    result = neo4j_service.create_relationship(relationship.dict())
+    if not result:
+        raise HTTPException(status_code=400, detail="Failed to create relationship")
+    return {
+        "source": relationship.source,
+        "target": relationship.target,
+        "type": relationship.type,
+        "properties": relationship.properties,
+    }
 
-@router.get("/relationships/", response_model=List[Relationship])
-async def get_relationships():
-    logger.info("Retrieving all relationships")
-    try:
-        relationships = neo4j_service.get_all_relationships()
-        logger.info(f"Retrieved {len(relationships)} relationships")
-        return relationships
-    except Exception as e:
-        logger.error(f"Error retrieving relationships: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/relationships/{relationship_id}", response_model=Relationship)
-async def get_relationship(relationship_id: str):
-    logger.info(f"Retrieving relationship with ID: {relationship_id}")
-    try:
-        relationship = neo4j_service.get_relationship(relationship_id)
-        if not relationship:
-            raise HTTPException(status_code=404, detail="Relationship not found")
-        logger.info(f"Successfully retrieved relationship: {relationship.type}")
-        return relationship
-    except Exception as e:
-        logger.error(f"Error retrieving relationship: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+@router.get("/relationships/{relationship_id}", response_model=RelationshipResponse)
+def get_relationship(relationship_id: str):
+    """
+    Récupère une relation spécifique par son ID.
+    """
+    relationship = neo4j_service.get_relationship(relationship_id)
+    if not relationship:
+        raise HTTPException(status_code=404, detail="Relationship not found")
+    return {
+        "source": relationship["start"]["id"],
+        "target": relationship["end"]["id"],
+        "type": relationship["type"],
+        "properties": relationship.get("properties", {}),
+    }
 
-@router.delete("/relationships/{relationship_id}", response_model=dict)
-async def delete_relationship(relationship_id: str):
-    logger.info(f"Deleting relationship with ID: {relationship_id}")
-    try:
-        success = neo4j_service.delete_relationship(relationship_id)
-        if not success:
-            raise HTTPException(status_code=404, detail="Relationship not found")
-        logger.info(f"Successfully deleted relationship with ID: {relationship_id}")
-        return {"message": f"Relationship {relationship_id} deleted successfully"}
-    except Exception as e:
-        logger.error(f"Error deleting relationship: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/relationships/{relationship_id}")
+def delete_relationship(relationship_id: str):
+    """
+    Supprime une relation spécifique par son ID.
+    """
+    success = neo4j_service.delete_relationship(relationship_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Relationship not found or could not be deleted")
+    return {"message": f"Relationship {relationship_id} deleted successfully"}
+
+
+@router.get("/relationships", response_model=List[RelationshipResponse])
+def get_all_relationships():
+    """
+    Récupère toutes les relations dans Neo4j.
+    """
+    relationships = neo4j_service.get_all_relationships()
+    if not relationships:
+        raise HTTPException(status_code=404, detail="No relationships found")
+    return [
+        {
+            "source": rel["start"]["id"],
+            "target": rel["end"]["id"],
+            "type": rel["type"],
+            "properties": rel.get("properties", {}),
+        }
+        for rel in relationships
+    ]

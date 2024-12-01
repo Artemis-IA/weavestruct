@@ -19,6 +19,10 @@ class MLFlowService:
         mlflow.start_run(run_name=run_name)
         logger.info(f"MLflow run started: {run_name}")
 
+    def end_run(self):
+        mlflow.end_run()
+        logger.info("MLflow run ended.")
+
     def log_params(self, params: Dict[str, Any]):
         try:
             mlflow.log_params(params)

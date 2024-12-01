@@ -5,6 +5,7 @@ from loguru import logger
 from prometheus_fastapi_instrumentator import Instrumentator
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from routers import documents, entities, relationships, search, graph, datasets, train
+
 from utils.metrics import MetricsManager
 from config import settings
 
@@ -46,8 +47,8 @@ def create_app() -> FastAPI:
 
     # Include Routers
     app.include_router(documents.router, prefix="/documents", tags=["Documents"])
-    app.include_router(entities.router, prefix="/entities", tags=["Entities"])
-    app.include_router(relationships.router, prefix="/relationships", tags=["Relationships"])
+    app.include_router(entities.router, prefix="/ner", tags=["Entities"])
+    app.include_router(relationships.router, prefix="/rel", tags=["Relationships"])
     app.include_router(search.router, prefix="/search", tags=["Search"])
     app.include_router(graph.router, prefix="/graph", tags=["Graph"])
     app.include_router(datasets.router, prefix="/datasets", tags=["Datasets"])
