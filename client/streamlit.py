@@ -153,18 +153,46 @@ elif page == "Logs de la Base de Données":
     else:
         st.warning("Aucun log disponible.")
 
-elif page == "Gestion de Fichiers MinIO":
-    st.title("Gestion de Fichiers MinIO")
-    buckets = list_buckets()
-    selected_bucket = st.selectbox("Choisissez un bucket", [bucket.name for bucket in buckets])
 
-    if selected_bucket:
-        objects = list_objects(selected_bucket)
-        st.write(f"Fichiers dans le bucket `{selected_bucket}` :")
-        for obj in objects:
-            st.write(obj.object_name)
-        
-        uploaded_file = st.file_uploader("Télécharger un fichier dans MinIO")
-        if uploaded_file:
-            upload_to_minio(selected_bucket, uploaded_file)
-            st.success(f"Fichier `{uploaded_file.name}` téléchargé avec succès dans `{selected_bucket}`.")
+# Visualisation des Buckets MinIO
+elif menu == "Visualisation des Buckets MinIO":
+    st.header("Visualisation des fichiers dans les buckets MinIO")
+
+    selected_bucket = st.selectbox("Choisissez un bucket", BUCKETS)
+    if st.button("Lister les fichiers"):
+        try:
+            # Récupérer les fichiers du bucket sélectionné
+            response = requests.get(f"{FASTAPI_URL}/minio/list-bucket/", params={"bucket_name": selected_bucket})
+            if response.status_code == 200:
+                files = response.json().get("objects", [])
+                if files:
+                    st.write(f"Fichiers dans le bucket **{selected_bucket}** :")
+                    file_data = [
+                        {
+                            "Nom du fichier": obj["Key"],
+                            "Taille (bytes)": obj["Size"],
+                            "Dernière modification": obj["LastModified"]
+                        }
+                        for obj in files
+                    ]
+                    df_files = pd.DataFrame(file_data)
+                    st.dataframe(df_files)
+
+                    # Télécharger un fichier
+                    selected_file = st.selectbox("Choisissez un fichier à télécharger", [f["Nom du fichier"] for f in file_data])
+                    if st.button("Télécharger"):
+                        url_response = requests.get(
+                            f"{FASTAPI_URL}/minio/download-url/",
+                            params={"bucket_name": selected_bucket, "object_key": selected_file}
+                        )
+                        if url_response.status_code == 200:
+                            download_url = url_response.json().get("url")
+                            st.markdown(f"[Cliquez ici pour télécharger le fichier]({download_url})", unsafe_allow_html=True)
+                        else:
+                            st.error(f"Erreur lors de la génération de l'URL : {url_response.text}")
+                else:
+                    st.warning(f"Aucun fichier trouvé dans le bucket **{selected_bucket}**.")
+            else:
+                st.error(f"Erreur lors de la récupération des fichiers : {response.text}")
+        except Exception as e:
+            st.error(f"Erreur : {e}")
