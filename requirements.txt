@@ -25,3 +25,4 @@ boto3
 psycopg2
 gliner
 glirel
+py2neo

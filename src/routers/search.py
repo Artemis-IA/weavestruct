@@ -1,9 +1,8 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import List
 from loguru import logger
-
-from services.neo4j_service import Neo4jService
 from dependencies import get_neo4j_service
+from services.neo4j_service import Neo4jService
 from models.entity import Entity
 from models.relationship import Relationship
 

@@ -12,3 +12,5 @@ Thumbs.db
 all.py
 */all.py
 */**/all.py
+services/all.py
+routers/all.py

@@ -1,0 +1,41 @@
+site_name: "WeaveStruct Documentation"
+site_description: "Documentation officielle de l'API WeaveStruct"
+site_author: "Artemis-IA"
+site_url: "https://weavestruct.readthedocs.io"
+theme:
+  name: material
+  logo: assets/logo.png
+  favicon: assets/favicon.ico
+  features:
+    - navigation.tabs
+    - navigation.top
+    - instant
+
+markdown_extensions:
+  - admonition
+  - codehilite:
+      guess_lang: false
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.details
+  - pymdownx.critic
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed
+
+plugins:
+  - search
+  - markdownextradata
+
+nav:
+  - Accueil: index.md
+  - Installation: installation.md
+  - Fonctionnalités:
+      - Présentation: features.md
+  - API:
+      - Documentation Swagger: api.md
+      - Endpoints: usage.md
+  - Configuration: configuration.md
+  - À propos: about.md

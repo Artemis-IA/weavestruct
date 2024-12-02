@@ -1,96 +1,93 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import List
-import boto3
 import os
-import spacy
-from transformers import AutoTokenizer, AutoModelForTokenClassification, Trainer, TrainingArguments
+import mlflow
+import mlflow.pytorch
+from transformers import AutoModelForTokenClassification, AutoTokenizer, Trainer, TrainingArguments
+from datasets import load_dataset
+import evaluate
+from sklearn.metrics import precision_recall_fscore_support
+from seqeval.metrics import classification_report
+from dotenv import load_dotenv
+
+# Import GLiNER and related components
+from gliner import GLiNER, GLiNERConfig
+from transformers import AutoTokenizer, TrainingArguments, Trainer
 from datasets import Dataset
+import evaluate
 
-app = FastAPI()
+load_dotenv()
 
-# AWS S3 Configuration
-AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY")
-AWS_SECRET_KEY = os.getenv("AWS_SECRET_KEY")
-BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
+# Configuration MLflow
+mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI"))
+mlflow.set_experiment("GLiNER_FineTuning")
 
-# S3 Client
-s3 = boto3.client(
-    "s3",
-    aws_access_key_id=AWS_ACCESS_KEY,
-    aws_secret_access_key=AWS_SECRET_KEY,
+# Charger le modèle et le tokenizer
+model_name = "urchade/gliner_mediumv2.1"
+model = GLiNER.from_pretrained(model_name, num_labels=10)
+tokenizer = GLiNER.from_pretrained(model_name)
+
+# Charger les données
+dataset = load_dataset("conll2003")
+metric = evaluate.load_metric("seqeval")
+
+# Préparation des données
+def tokenize_and_align_labels(examples):
+    tokenized_inputs = tokenizer(examples["tokens"], truncation=True, is_split_into_words=True, padding=True)
+    labels = []
+    for i, label in enumerate(examples[f"ner_tags"]):
+        word_ids = tokenized_inputs.word_ids(batch_index=i)
+        label_ids = [-100 if word_id is None else label[word_id] for word_id in word_ids]
+        labels.append(label_ids)
+    tokenized_inputs["labels"] = labels
+    return tokenized_inputs
+
+tokenized_datasets = dataset.map(tokenize_and_align_labels, batched=True, trust_remote_code=True)
+# Définir des métriques de validation
+def compute_metrics(p):
+    predictions, labels = p
+    predictions = predictions.argmax(axis=-1)
+    true_labels = [[label for label in example if label != -100] for example in labels]
+    true_predictions = [[pred for (pred, label) in zip(prediction, label) if label != -100]
+                        for prediction, label in zip(predictions, labels)]
+    results = metric.compute(predictions=true_predictions, references=true_labels)
+    return {
+        "precision": results["overall_precision"],
+        "recall": results["overall_recall"],
+        "f1": results["overall_f1"],
+        "accuracy": results["overall_accuracy"],
+    }
+
+# Arguments d'entraînement
+training_args = TrainingArguments(
+    output_dir="./results",
+    evaluation_strategy="epoch",
+    logging_strategy="epoch",
+    save_strategy="epoch",
+    learning_rate=2e-5,
+    per_device_train_batch_size=16,
+    num_train_epochs=3,  # Réduisez pour un entraînement rapide
+    weight_decay=0.01,
+    logging_dir="./logs",
+    save_total_limit=2,
+    report_to="none",
 )
 
-# BaseModel for API Requests
-class TrainRequest(BaseModel):
-    model_name: str
-    output_dir: str
-
-# Helper: Fetch files from S3
-def fetch_files_from_s3(bucket_name: str, extensions: List[str]) -> List[str]:
-    try:
-        response = s3.list_objects_v2(Bucket=bucket_name)
-        files = [
-            obj["Key"]
-            for obj in response.get("Contents", [])
-            if any(obj["Key"].endswith(ext) for ext in extensions)
-        ]
-        for file_key in files:
-            s3.download_file(bucket_name, file_key, file_key.split("/")[-1])
-        return files
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching files: {str(e)}")
-
-# Helper: Convert documents to NER dataset
-def preprocess_documents(file_paths: List[str]) -> Dataset:
-    data = []
-    for file_path in file_paths:
-        with open(file_path, "r") as f:
-            content = f.read()
-        # Example preprocessing logic
-        tokens = content.split()
-        entities = [{"start": 0, "end": len(token), "label": "ENTITY"} for token in tokens]
-        data.append({"tokens": tokens, "ner_tags": entities})
-    return Dataset.from_list(data)
-
-# Helper: Fine-tune a NER model
-def train_ner_model(dataset: Dataset, model_name: str, output_dir: str):
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForTokenClassification.from_pretrained(model_name)
-
-    def tokenize_and_align_labels(examples):
-        tokenized_inputs = tokenizer(examples["tokens"], truncation=True, is_split_into_words=True)
-        labels = examples["ner_tags"]
-        tokenized_inputs["labels"] = labels
-        return tokenized_inputs
-
-    tokenized_dataset = dataset.map(tokenize_and_align_labels, batched=True)
-    training_args = TrainingArguments(
-        output_dir=output_dir,
-        evaluation_strategy="epoch",
-        logging_dir=f"{output_dir}/logs",
-        save_steps=10,
-        num_train_epochs=3,
-        per_device_train_batch_size=8,
-    )
+# Entraîner le modèle avec MLflow
+with mlflow.start_run():
     trainer = Trainer(
         model=model,
         args=training_args,
-        train_dataset=tokenized_dataset,
+        train_dataset=tokenized_datasets["train"],
+        eval_dataset=tokenized_datasets["validation"],
+        tokenizer=tokenizer,
+        compute_metrics=compute_metrics,
     )
     trainer.train()
-    model.save_pretrained(output_dir)
-    tokenizer.save_pretrained(output_dir)
 
-@app.post("/train")
-async def train_ner(request: TrainRequest):
-    try:
-        # Fetch and preprocess files
-        files = fetch_files_from_s3(BUCKET_NAME, [".md", ".yaml", ".json"])
-        dataset = preprocess_documents(files)
+    # Log des métriques sur MLflow
+    metrics = trainer.evaluate()
+    for key, value in metrics.items():
+        mlflow.log_metric(key, value)
 
-        # Train and fine-tune model
-        train_ner_model(dataset, request.model_name, request.output_dir)
-        return {"message": "Training completed successfully!"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    # Log du modèle sur MLflow
+    mlflow.pytorch.log_model(trainer.model, "model")
+    mlflow.log_artifact("./results", artifact_path="results")

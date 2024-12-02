@@ -1,14 +1,19 @@
 # services/train_service.py
+
 from sqlalchemy.orm import Session
 from schemas.train import TrainRequest, TrainResponse
 from models.training_run import TrainingRun
 from models.dataset import Dataset
 from loguru import logger
 from ml_models.ner_model import NERModel
+from services.s3_service import S3Service
+import json
+from dependencies import get_s3_service
 
 class TrainService:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, s3_service: S3Service):
         self.db = db
+        self.s3_service = s3_service
 
     def train_model(self, request: TrainRequest) -> TrainResponse:
         # Retrieve dataset
@@ -16,11 +21,35 @@ class TrainService:
         if not dataset:
             raise ValueError("Dataset not found.")
 
+        # Get the dataset S3 URL
+        s3_url = dataset.data.get('s3_url')
+        if not s3_url:
+            raise ValueError("Dataset S3 URL not found.")
+
+        # Parse S3 URL
+        s3_info = self.s3_service.parse_s3_url(s3_url)
+        if not s3_info:
+            raise ValueError("Invalid S3 URL.")
+        bucket_name, object_key = s3_info
+
+        # Download dataset file
+        local_dataset_path = f"/tmp/{object_key.split('/')[-1]}"
+        success = self.s3_service.download_file(bucket_name, object_key, local_dataset_path)
+        if not success:
+            raise ValueError("Failed to download dataset from S3.")
+
+        # Load dataset
+        with open(local_dataset_path, 'r', encoding='utf-8') as f:
+            if dataset.output_format.lower() == "json-ner":
+                train_data = json.load(f)
+            else:
+                raise ValueError(f"Unsupported dataset format: {dataset.output_format}")
+
         # Initialize NERModel and train
         ner_model = NERModel()
         ner_model.train(
-            train_data=dataset.train_data,
-            eval_data=dataset.eval_data,
+            train_data=train_data,
+            eval_data=None,  # Adjust if you have eval data
             epochs=request.epochs,
             batch_size=request.batch_size
         )

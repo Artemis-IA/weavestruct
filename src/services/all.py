@@ -965,16 +965,21 @@ class PGVectorService:
 # train_service.py
 #-----
 # services/train_service.py
+
 from sqlalchemy.orm import Session
 from schemas.train import TrainRequest, TrainResponse
 from models.training_run import TrainingRun
 from models.dataset import Dataset
 from loguru import logger
 from ml_models.ner_model import NERModel
+from services.s3_service import S3Service
+import json
+from dependencies import get_s3_service
 
 class TrainService:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, s3_service: S3Service):
         self.db = db
+        self.s3_service = s3_service
 
     def train_model(self, request: TrainRequest) -> TrainResponse:
         # Retrieve dataset
@@ -982,11 +987,35 @@ class TrainService:
         if not dataset:
             raise ValueError("Dataset not found.")
 
+        # Get the dataset S3 URL
+        s3_url = dataset.data.get('s3_url')
+        if not s3_url:
+            raise ValueError("Dataset S3 URL not found.")
+
+        # Parse S3 URL
+        s3_info = self.s3_service.parse_s3_url(s3_url)
+        if not s3_info:
+            raise ValueError("Invalid S3 URL.")
+        bucket_name, object_key = s3_info
+
+        # Download dataset file
+        local_dataset_path = f"/tmp/{object_key.split('/')[-1]}"
+        success = self.s3_service.download_file(bucket_name, object_key, local_dataset_path)
+        if not success:
+            raise ValueError("Failed to download dataset from S3.")
+
+        # Load dataset
+        with open(local_dataset_path, 'r', encoding='utf-8') as f:
+            if dataset.output_format.lower() == "json-ner":
+                train_data = json.load(f)
+            else:
+                raise ValueError(f"Unsupported dataset format: {dataset.output_format}")
+
         # Initialize NERModel and train
         ner_model = NERModel()
         ner_model.train(
-            train_data=dataset.train_data,
-            eval_data=dataset.eval_data,
+            train_data=train_data,
+            eval_data=None,  # Adjust if you have eval data
             epochs=request.epochs,
             batch_size=request.batch_size
         )
@@ -1174,7 +1203,7 @@ from services.embedding_service import EmbeddingService
 from services.gliner_service import GLiNERService
 from services.glirel_service import GLiRELService
 
-from models.document_log import DocumentLog
+from models.document_log import DocumentLog, DocumentLogService
 from models.document import Document
 from utils.database import SessionLocal
 
@@ -1502,113 +1531,120 @@ class DocumentProcessor:
         logger.info("Metrics logged to MLFlow")
 
         return []  # Retournez la liste des documents traités si nécessaire
+    
+    def index_graph(self, doc: Document):
+        """Process a document to extract nodes and relationships, adding them to Neo4j."""
+        try:
+            split_docs = self.text_splitter.split_documents([doc])
+            split_docs = [
+                Document(page_content=self.clean_text(chunk.page_content), metadata=chunk.metadata)
+                for chunk in split_docs
+            ]
+            logger.debug(f"Document split into {len(split_docs)} chunks.")
 
-    def process_and_index_document(self, s3_url: str):
+            # Extract graph data and links
+            graph_docs = self.graph_transformer.convert_to_graph_documents(split_docs)
+            doc_links = [self.gliner_extractor.extract_many(chunk) for chunk in split_docs]
+            driver = self.neo4j_service.driver
+            with driver.session() as session:
+                with session.begin_transaction() as tx:
+                    for graph_doc, links in zip(graph_docs, doc_links):
+                        # Add nodes
+                        if hasattr(graph_doc, "nodes") and graph_doc.nodes:
+                            for node in graph_doc.nodes:
+                                tx.run(
+                                    """
+                                    MERGE (e:Entity {id: $id, name: $name, type: $type})
+                                    ON CREATE SET e.created_at = timestamp()
+                                    """,
+                                    {
+                                        "id": node.id,
+                                        "name": node.properties.get("name", ""),
+                                        "type": node.type,
+                                    },
+                                )
+                                logger.info(f"Indexed Node: {node.id}, Type: {node.type}")
+
+                        # Add relationships
+                        if hasattr(graph_doc, "edges") and graph_doc.edges:
+                            GLiRELService.add_relationships(tx, graph_doc.edges)
+
+                        # Add links
+                        for link in links:
+                            if not link.tag or not link.kind:
+                                logger.warning(f"Skipping invalid link: {link}")
+                                continue
+                            logger.info(f"Adding Link: {link}")
+                            tx.run(
+                                """
+                                MERGE (e:Entity {name: $name})
+                                ON CREATE SET e.created_at = timestamp()
+                                RETURN e
+                                """,
+                                {"name": link.tag},
+                            )
+        except Exception as e:
+            logger.error(f"Error processing document: {doc.metadata.get('name', 'unknown')} - {e}")
+
+    def process_and_index_document(
+        self,
+        s3_url: str,
+        export_formats: List[ExportFormat],
+        use_ocr: bool = False,
+        export_figures: bool = True,
+        export_tables: bool = True,
+        enrich_figures: bool = False,
+    ):
         """
-        Process a document and index the results into Neo4j: load, split, generate embeddings, extract entities and relationships,
-        store embeddings, and index graph data in Neo4j.
+        Orchestrates the complete workflow: processes a document and indexes its content into Neo4j.
 
         Args:
             s3_url (str): S3 URL of the document file.
+            export_formats (List[ExportFormat]): Formats for exporting processed documents.
+            use_ocr (bool): Whether to use OCR during processing.
+            export_figures (bool): Whether to export figures from the document.
+            export_tables (bool): Whether to export tables from the document.
+            enrich_figures (bool): Whether to enrich figures during processing.
+
+        Returns:
+            None
         """
         try:
             logger.info(f"Starting full processing and indexing for document: {s3_url}")
-            self.mlflow_service.start_run(run_name=f"Processing and Indexing {Path(s3_url).stem}")
 
-            metrics = {
-                "documents_loaded": 0,
-                "chunks_processed": 0,
-                "embeddings_generated": 0,
-                "entities_extracted": 0,
-                "relationships_extracted": 0,
-                "nodes_indexed": 0,
-                "edges_indexed": 0,
-                "errors": 0,
-            }
-            metrics["documents_loaded"] = 1
+            # Start an MLFlow run for tracking
+            self.mlflow_service.start_run(run_name=f"Process and Index {Path(s3_url).stem}")
 
-            # Step 1: Process documents without indexing
-            split_docs = self.process_documents(
+            # Step 1: Process the document
+            processed_documents = self.process_documents(
                 s3_url=s3_url,
-                export_formats=["json", "yaml", "md"],
-                use_ocr=True,  # Ajustez selon vos besoins
-                export_figures=True,
-                export_tables=True,
-                enrich_figures=False  # Ajustez selon vos besoins
+                export_formats=export_formats,
+                use_ocr=use_ocr,
+                export_figures=export_figures,
+                export_tables=export_tables,
+                enrich_figures=enrich_figures,
             )
-
-            if not split_docs:
-                logger.warning(f"No chunks to index for document: {s3_url}")
+            if not processed_documents:
+                logger.error(f"Processing failed for document: {s3_url}")
                 return
 
-            # Step 2: Extract entities using GLiNER
-            logger.info("Extracting entities using GLiNER...")
-            entities = self.gliner_service.extract_entities([doc.page_content for doc in split_docs])
-            logger.info("Entities extraction completed")
+            logger.info(f"Processing completed for document: {s3_url}")
 
-            # Step 3: Extract relationships using GLiREL
-            logger.info("Extracting relationships using GLiREL...")
-            relationships = self.glirel_service.extract_relationships([doc.page_content for doc in split_docs])
-            logger.info("Relationships extraction completed")
+            # Step 2: Index the document into Neo4j
+            for doc in processed_documents:
+                self.index_graph(doc)
 
-            # Step 4: Transform documents into graph structure
-            logger.info("Transforming documents into graph structure...")
-            graph_docs = self.graph_transformer.convert_to_graph_documents(split_docs)
-            logger.info("Graph transformation completed")
-
-            # Step 5: Prepare nodes and edges for Neo4j
-            logger.info("Preparing nodes and edges for Neo4j indexing...")
-            nodes = []
-            edges = []
-            for doc_idx, graph_doc in enumerate(graph_docs):
-                # Add entities as nodes
-                for entity in entities[doc_idx]:
-                    node_id = f"entity_{doc_idx}_{entity['start']}_{entity['end']}"
-                    node = {
-                        "id": node_id,
-                        "properties": {
-                            "text": entity["text"],
-                            "label": entity["label"],
-                            "start": entity["start"],
-                            "end": entity["end"],
-                        }
-                    }
-                    nodes.append(node)
-
-                # Add relationships as edges
-                for rel in relationships[doc_idx]:
-                    edge = {
-                        "source": f"entity_{doc_idx}_{rel['source']['start']}_{rel['source']['end']}",
-                        "target": f"entity_{doc_idx}_{rel['target']['start']}_{rel['target']['end']}",
-                        "type": rel["type"],
-                        "properties": rel.get("properties", {})
-                    }
-                    edges.append(edge)
-
-            logger.info(f"Prepared {len(nodes)} nodes and {len(edges)} edges for Neo4j")
-
-            # Step 6: Index nodes and edges in Neo4j
-            logger.info("Indexing nodes and edges in Neo4j...")
-            self.neo4j_service.index_graph(nodes=nodes, edges=edges)
-            logger.info("Neo4j indexing completed")
-
-            # Step 7: Log metrics to Prometheus
-            metrics = {
-                "documents_loaded": len(split_docs),
-                "chunks_processed": len(split_docs),
-                "embeddings_generated": 0,  # Ajustez selon vos besoins
-                "entities_extracted": sum(len(e) for e in entities),
-                "relationships_extracted": sum(len(r) for r in relationships),
-                "nodes_indexed": len(nodes),
-                "edges_indexed": len(edges),
-            }
-            self.mlflow_service.log_metrics(metrics)
-            logger.info("Metrics logged to MLFlow")
+            logger.info(f"Indexing completed for document: {s3_url}")
 
         except Exception as e:
-            logger.error(f"Error processing and indexing document {s3_url}: {e}")
-            self.mlflow_service.log_metrics({"error": 1})
-            raise
+            logger.error(f"Error during process and index for document {s3_url}: {e}")
+            # Log the error in MLFlow
+            self.mlflow_service.log_metrics({"errors": 1})
+
+        finally:
+            # End the MLFlow run
+            self.mlflow_service.end_run()
+
 #-----
 
 # embedding_service.py
@@ -1656,6 +1692,8 @@ import torch
 from glirel import GLiREL
 from loguru import logger
 from config import settings
+from py2neo import Graph, NodeMatcher, Relationship
+from typing import List
 
 class GLiRELService:
     """
@@ -1695,5 +1733,116 @@ class GLiRELService:
         except Exception as e:
             logger.error(f"Error extracting relationships: {e}")
             raise
+
+    def add_relationships(tx, relationships: List[Relationship]):
+        """Ajoute des relations extraites dans la base Neo4j."""
+        for rel in relationships:
+            try:
+                # Validation des données
+                if not rel.source or not rel.target or not rel.type:
+                    logger.warning(f"Relation invalide, ignorée : {rel}")
+                    continue
+                
+                logger.info(f"Ajout de la relation : {rel.type} ({rel.source.id} -> {rel.target.id})")
+                
+                # Cypher pour ajouter la relation
+                tx.run(
+                    """
+                    MATCH (source:Entity {id: $source_id}), (target:Entity {id: $target_id})
+                    MERGE (source)-[r:RELATES_TO {type: $type, created_at: timestamp()}]->(target)
+                    """,
+                    {
+                        "source_id": rel.source.id,
+                        "target_id": rel.target.id,
+                        "type": rel.type.upper(),  # Normalisation du type
+                    },
+                )
+            except Exception as e:
+                logger.error(f"Échec de l'ajout de la relation {rel.type}: {e}")
+
+#-----
+
+# security.py
+#-----
+# services/security.py
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from datetime import datetime, timedelta
+
+from schemas.auth import User, UserInDB, TokenData
+
+# Configuration simplifiée pour l'exemple
+SECRET_KEY = "your_secret_key" 
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+# Création du contexte pour le hachage des mots de passe
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+# Utilisateurs fictifs pour l'exemple
+fake_users_db = {
+    "alice": {
+        "username": "alice",
+        "hashed_password": pwd_context.hash("wonderland"),
+        "disabled": False,
+    },
+    "bob": {
+        "username": "bob",
+        "hashed_password": pwd_context.hash("builder"),
+        "disabled": False,
+    },
+}
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_user(db, username: str):
+    if username in db:
+        user_dict = db[username]
+        return UserInDB(**user_dict)
+    return None
+
+def authenticate_user(db, username: str, password: str):
+    user = get_user(db, username)
+    if not user:
+        return False
+    if not verify_password(password, user.hashed_password):
+        return False
+    return user
+
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        # Par défaut, le token expire dans 15 minutes
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Impossible de valider les informations d'identification",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        token_data = TokenData(username=username)
+    except JWTError:
+        raise credentials_exception
+    user = get_user(fake_users_db, username=token_data.username)
+    if user is None:
+        raise credentials_exception
+    return user
 
 #-----
