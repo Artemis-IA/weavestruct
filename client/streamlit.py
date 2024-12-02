@@ -16,6 +16,7 @@ NEO4J_URI = os.getenv("NEO4J_URI")
 NEO4J_USER = os.getenv("NEO4J_USER")
 NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
 PROMETHEUS_URL = "http://localhost:8002/metrics"
+FASTAPI_URL = "http://localhost:8000"
 MINIO_ENDPOINT = "localhost:9000"
 MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
 MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
@@ -155,8 +156,12 @@ elif page == "Logs de la Base de Données":
 
 
 # Visualisation des Buckets MinIO
-elif menu == "Visualisation des Buckets MinIO":
+elif page == "Visualisation des Buckets MinIO":
     st.header("Visualisation des fichiers dans les buckets MinIO")
+
+    # List available buckets
+    buckets = list_buckets()
+    BUCKETS = [bucket.name for bucket in buckets]
 
     selected_bucket = st.selectbox("Choisissez un bucket", BUCKETS)
     if st.button("Lister les fichiers"):
