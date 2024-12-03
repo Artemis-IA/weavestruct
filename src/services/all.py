@@ -2,193 +2,6 @@
 # all.py
 #-----
 
-#-----
-
-# neo4j_service.py
-#-----
-from neo4j import GraphDatabase, Transaction
-from loguru import logger
-from typing import List, Dict, Any, Optional
-
-
-class Neo4jService:
-    def __init__(self, uri: str, user: str, password: str):
-        """
-        Initialize the connection to the Neo4j database.
-        
-        Args:
-            uri (str): URI of the Neo4j database.
-            user (str): Username for authentication.
-            password (str): Password for authentication.
-        """
-        self.driver = GraphDatabase.driver(uri, auth=(user, password))
-        logger.info(f"Connected to Neo4j at {uri}")
-
-    def close(self):
-        """Close the connection to the Neo4j database."""
-        if self.driver:
-            self.driver.close()
-            logger.info("Neo4j connection closed.")
-
-    def index_graph(self, nodes: List[Dict[str, Any]], edges: List[Dict[str, Any]]):
-        """
-        Index nodes and edges into the Neo4j database.
-        """
-        with self.driver.session() as session:
-            if nodes:
-                session.write_transaction(self._index_nodes, nodes)
-            if edges:
-                session.write_transaction(self._index_edges, edges)
-
-    @staticmethod
-    def _index_nodes(tx: Transaction, nodes: List[Dict[str, Any]]):
-        """
-        Helper function to index nodes into Neo4j.
-
-        Args:
-            tx (Transaction): Neo4j transaction object.
-            nodes (List[Dict[str, Any]]): List of nodes to index.
-        """
-        for node in nodes:
-            try:
-                query = """
-                MERGE (n {id: $id})
-                ON CREATE SET n += $properties
-                """
-                tx.run(query, id=node["id"], properties=node.get("properties", {}))
-                logger.info(f"Node {node['id']} indexed successfully.")
-            except Exception as e:
-                logger.error(f"Failed to index node {node['id']}: {e}")
-
-    @staticmethod
-    def _index_edges(tx: Transaction, edges: List[Dict[str, Any]]):
-        """
-        Helper function to index relationships into Neo4j.
-
-        Args:
-            tx (Transaction): Neo4j transaction object.
-            edges (List[Dict[str, Any]]): List of relationships to index.
-        """
-        for edge in edges:
-            try:
-                query = """
-                MATCH (a {id: $source}), (b {id: $target})
-                MERGE (a)-[r:$type]->(b)
-                SET r += $properties
-                """
-                tx.run(
-                    query,
-                    source=edge["source"],
-                    target=edge["target"],
-                    type=edge["type"],
-                    properties=edge.get("properties", {}),
-                )
-                logger.info(f"Edge from {edge['source']} to {edge['target']} indexed successfully.")
-            except Exception as e:
-                logger.error(f"Failed to index edge from {edge['source']} to {edge['target']}: {e}")
-
-    def get_all_entities(self) -> List[Dict[str, Any]]:
-        """
-        Retrieve all nodes from the Neo4j database.
-
-        Returns:
-            List[Dict[str, Any]]: List of all nodes with their properties.
-        """
-        with self.driver.session() as session:
-            return session.read_transaction(self._get_all_entities_transaction)
-
-    @staticmethod
-    def _get_all_entities_transaction(tx: Transaction) -> List[Dict[str, Any]]:
-        """
-        Helper function to retrieve all nodes.
-
-        Args:
-            tx (Transaction): Neo4j transaction object.
-
-        Returns:
-            List[Dict[str, Any]]: List of all nodes.
-        """
-        query = """
-        MATCH (e)
-        RETURN id(e) AS id, labels(e) AS labels, properties(e) AS properties
-        """
-        try:
-            result = tx.run(query)
-            entities = [{"id": record["id"], "labels": record["labels"], "properties": record["properties"]} for record in result]
-            return entities
-        except Exception as e:
-            logger.error(f"Failed to retrieve entities: {e}")
-            return []
-
-    def get_all_relationships(self) -> List[Dict[str, Any]]:
-        """
-        Retrieve all relationships from the Neo4j database.
-
-        Returns:
-            List[Dict[str, Any]]: List of all relationships with their properties.
-        """
-        with self.driver.session() as session:
-            return session.read_transaction(self._get_all_relationships_transaction)
-
-    @staticmethod
-    def _get_all_relationships_transaction(tx: Transaction) -> List[Dict[str, Any]]:
-        """
-        Helper function to retrieve all relationships.
-
-        Args:
-            tx (Transaction): Neo4j transaction object.
-
-        Returns:
-            List[Dict[str, Any]]: List of all relationships.
-        """
-        query = """
-        MATCH ()-[r]->()
-        RETURN id(r) AS id, type(r) AS type, startNode(r) AS source, endNode(r) AS target, properties(r) AS properties
-        """
-        try:
-            result = tx.run(query)
-            relationships = [
-                {
-                    "id": record["id"],
-                    "type": record["type"],
-                    "source": record["source"],
-                    "target": record["target"],
-                    "properties": record["properties"],
-                }
-                for record in result
-            ]
-            return relationships
-        except Exception as e:
-            logger.error(f"Failed to retrieve relationships: {e}")
-            return []
-
-    def generate_graph_visualization(self) -> dict:
-        """
-        Generate a visualization of the graph by retrieving all nodes and relationships.
-
-        Returns:
-            dict: Dictionary containing nodes and relationships.
-        """
-        with self.driver.session() as session:
-            nodes = session.read_transaction(self._get_all_entities_transaction)
-            relationships = session.read_transaction(self._get_all_relationships_transaction)
-            return {"nodes": nodes, "relationships": relationships}
-
-
-    def validate_connection(self):
-        """
-        Validate the connection to the Neo4j database by running a test query.
-        """
-        try:
-            with self.driver.session() as session:
-                result = session.run("RETURN 1")
-                if result.single()[0] == 1:
-                    logger.info("Neo4j connection validated successfully.")
-        except Exception as e:
-            logger.error(f"Failed to validate Neo4j connection: {e}")
-            raise
-#-----
-
 # gliner_service.py
 #-----
 # services/gliner_service.py
@@ -964,91 +777,171 @@ class PGVectorService:
 
 # train_service.py
 #-----
-# services/train_service.py
-
+# services/train_service.py# services/train_service.py
 from sqlalchemy.orm import Session
-from schemas.train import TrainRequest, TrainResponse
+from schemas.train import TrainInput, TrainResponse
 from models.training_run import TrainingRun
 from models.dataset import Dataset
 from loguru import logger
-from ml_models.ner_model import NERModel
 from services.s3_service import S3Service
+from services.mlflow_service import MLFlowService
+from services.model_manager import ModelManager
+from pathlib import Path
+import mlflow
+import os
 import json
-from dependencies import get_s3_service
+from typing import Optional
 
 class TrainService:
-    def __init__(self, db: Session, s3_service: S3Service):
+    def __init__(
+        self,
+        db: Session,
+        s3_service: S3Service,
+        mlflow_service: MLFlowService,
+        model_manager: ModelManager,
+    ):
+        """
+        Initializes the TrainService with dependencies.
+        """
         self.db = db
         self.s3_service = s3_service
+        self.mlflow_service = mlflow_service
+        self.model_manager = model_manager
 
-    def train_model(self, request: TrainRequest) -> TrainResponse:
-        # Retrieve dataset
-        dataset = self.db.query(Dataset).filter(Dataset.id == request.dataset_id).first()
-        if not dataset:
-            raise ValueError("Dataset not found.")
+    def split_dataset(self, data, split_ratio=0.9):
+        """
+        Splits data into training and evaluation sets.
+        """
+        from random import shuffle
 
-        # Get the dataset S3 URL
-        s3_url = dataset.data.get('s3_url')
-        if not s3_url:
-            raise ValueError("Dataset S3 URL not found.")
+        shuffle(data)
+        split_idx = int(len(data) * split_ratio)
+        return data[:split_idx], data[split_idx:]
 
-        # Parse S3 URL
+    def load_dataset(self, train_input: TrainInput) -> str:
+        """
+        Retrieves a dataset from the specified source.
+        """
+        if train_input.dataset_id:
+            # Load from database and S3
+            dataset = (
+                self.db.query(Dataset)
+                .filter(Dataset.id == train_input.dataset_id)
+                .first()
+            )
+            if not dataset:
+                raise ValueError("Dataset not found.")
+            s3_url = dataset.data.get("s3_url")
+        elif train_input.s3_url:
+            s3_url = train_input.s3_url
+        elif train_input.train_data:
+            # Assume local file
+            dataset_path = train_input.train_data
+            return dataset_path
+        else:
+            raise ValueError("No dataset provided.")
+
+        # Proceed to download from S3
         s3_info = self.s3_service.parse_s3_url(s3_url)
         if not s3_info:
             raise ValueError("Invalid S3 URL.")
         bucket_name, object_key = s3_info
-
-        # Download dataset file
-        local_dataset_path = f"/tmp/{object_key.split('/')[-1]}"
-        success = self.s3_service.download_file(bucket_name, object_key, local_dataset_path)
+        local_dataset_path = f"/tmp/{os.path.basename(object_key)}"
+        success = self.s3_service.download_file(
+            bucket_name, object_key, Path(local_dataset_path)
+        )
         if not success:
             raise ValueError("Failed to download dataset from S3.")
+        return local_dataset_path
 
-        # Load dataset
-        with open(local_dataset_path, 'r', encoding='utf-8') as f:
-            if dataset.output_format.lower() == "json-ner":
-                train_data = json.load(f)
-            else:
-                raise ValueError(f"Unsupported dataset format: {dataset.output_format}")
+    def train_model(self, train_input: TrainInput) -> TrainResponse:
+        try:
+            # Load dataset
+            dataset_path = self.load_dataset(train_input)
 
-        # Initialize NERModel and train
-        ner_model = NERModel()
-        ner_model.train(
-            train_data=train_data,
-            eval_data=None,  # Adjust if you have eval data
-            epochs=request.epochs,
-            batch_size=request.batch_size
-        )
+            if not os.path.exists(dataset_path):
+                raise FileNotFoundError(f"The dataset file {dataset_path} was not found.")
+            with open(dataset_path, "r") as f:
+                data = json.load(f)
 
-        # Log training run
-        training_run = TrainingRun(
-            dataset_id=request.dataset_id,
-            epochs=request.epochs,
-            batch_size=request.batch_size,
-            status="Completed"
-        )
-        self.db.add(training_run)
-        self.db.commit()
-        self.db.refresh(training_run)
+            train_data, test_data = self.split_dataset(data, train_input.split_ratio)
 
-        logger.info(f"Training completed for dataset {request.dataset_id}")
+            # Load model using ModelManager
+            model = self.model_manager.load_model(train_input.model_name)
 
-        return TrainResponse(
-            id=training_run.id,
-            run_id=str(training_run.run_id),
-            dataset_id=training_run.dataset_id,
-            epochs=training_run.epochs,
-            batch_size=training_run.batch_size,
-            status=training_run.status,
-            created_at=str(training_run.created_at)
-        )
+            # Start MLFlow run
+            run_name = f"Training: {train_input.custom_model_name or train_input.model_name}"
+            self.mlflow_service.start_run(run_name=run_name)
+            self.mlflow_service.log_params({
+                "model_name": train_input.model_name,
+                "custom_model_name": train_input.custom_model_name,
+                "split_ratio": train_input.split_ratio,
+                "learning_rate": train_input.learning_rate,
+                "weight_decay": train_input.weight_decay,
+                "batch_size": train_input.batch_size,
+                "epochs": train_input.epochs,
+                "compile_model": train_input.compile_model,
+            })
+
+            # Train model
+            model.train(
+                train_data=train_data,
+                eval_data={"samples": test_data},
+                learning_rate=train_input.learning_rate,
+                weight_decay=train_input.weight_decay,
+                batch_size=train_input.batch_size,
+                epochs=train_input.epochs,
+                compile=train_input.compile_model,
+            )
+
+            # Save the fine-tuned model
+            model_save_name = train_input.custom_model_name or train_input.model_name
+            model_save_path = Path(f"models/{model_save_name}")
+            model.save_pretrained(model_save_path)
+
+            # Zip and upload the trained model to S3
+            s3_url = self.model_manager.zip_and_upload_model(model_save_name)
+
+            # Log artifacts and register model
+            self.mlflow_service.log_artifact(str(model_save_path), artifact_path="trained_model")
+            self.mlflow_service.register_model(model_save_name, model_save_path)
+
+            # Log training run to the database
+            training_run = TrainingRun(
+                dataset_id=train_input.dataset_id,
+                epochs=train_input.epochs,
+                batch_size=train_input.batch_size,
+                status="Completed",
+                s3_url=s3_url
+            )
+            self.db.add(training_run)
+            self.db.commit()
+            self.db.refresh(training_run)
+
+            logger.info(f"Training completed and model saved at {model_save_path}")
+            self.mlflow_service.end_run()
+
+            return TrainResponse(
+                id=training_run.id,
+                run_id=mlflow.active_run().info.run_id,
+                dataset_id=training_run.dataset_id,
+                epochs=training_run.epochs,
+                batch_size=training_run.batch_size,
+                status=training_run.status,
+                created_at=training_run.created_at,
+            )
+        except Exception as e:
+            logger.error(f"Training failed: {e}")
+            self.mlflow_service.end_run(status="FAILED")
+            raise
 
 #-----
 
 # model_manager.py
 #-----
+# services/model_manager.py
 import torch
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from gliner import GLiNER
 from transformers import AutoTokenizer
 from services.s3_service import S3Service
@@ -1057,35 +950,101 @@ from loguru import logger
 import mlflow
 from mlflow.tracking import MlflowClient
 from pathlib import Path
-
-AVAILABLE_MODELS = [
-    "knowledgator/gliner-multitask-large-v0.5",
-    "urchade/gliner_multi-v2.1",
-    "urchade/gliner_large_bio-v0.1",
-    "numind/NuNER_Zero",
-    "EmergentMethods/gliner_medium_news-v2.1",
-]
+import os
 
 class ModelManager:
     def __init__(self, s3_service: S3Service):
         self.s3_service = s3_service
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.tracker_active = False
-        self.emissions_tracker = None
         self.mlflow_client = MlflowClient()
+        self.model_cache = {}
+        self.model_registry_uri = os.environ.get("MLFLOW_TRACKING_URI")
+        self.models_bucket = 'mlflow-artifacts'
+
         logger.info(f"Using device: {self.device}")
 
-    def load_model(self, model_name: str):
-        model_path = Path("models") / model_name
-        if model_path.exists():
-            model = GLiNER.from_pretrained(str(model_path)).to(self.device)
-            return model
-        elif model_name in AVAILABLE_MODELS:
-            model = GLiNER.from_pretrained(model_name).to(self.device)
-            model.save_pretrained(model_path)
-            return model
-        else:
-            raise ValueError(f"Model {model_name} not found.")
+    def fetch_available_models(self):
+        """
+        Fetch the list of available models from MLflow registered models.
+        """
+        models = self.mlflow_client.list_registered_models()
+        available_models = [model.name for model in models]
+        logger.info(f"Available models fetched from MLflow: {available_models}")
+        return available_models
+
+    def load_model(self, model_name: str) -> GLiNER:
+        """
+        Load a model from MLflow artifacts stored in S3.
+        """
+        if model_name in self.model_cache:
+            logger.info(f"Model {model_name} loaded from cache.")
+            return self.model_cache[model_name]
+
+        # Get the latest version of the model
+        versions = self.mlflow_client.get_latest_versions(model_name, stages=['None'])
+        if not versions:
+            raise ValueError(f"No versions found for model {model_name}")
+
+        version = versions[0]
+        model_uri = version.source
+
+        # Parse the S3 URI
+        s3_info = self.s3_service.parse_s3_url(model_uri)
+        if not s3_info:
+            raise ValueError(f"Invalid S3 URI: {model_uri}")
+        bucket_name, object_key = s3_info
+
+        # Download the model from S3
+        local_model_path = Path(f"/tmp/{model_name}")
+        local_model_path.mkdir(parents=True, exist_ok=True)
+        success = self.s3_service.download_file(bucket_name, object_key, local_model_path / "model.zip")
+        if not success:
+            raise ValueError(f"Failed to download model {model_name} from S3.")
+
+        # Unzip the model
+        import zipfile
+        with zipfile.ZipFile(local_model_path / "model.zip", 'r') as zip_ref:
+            zip_ref.extractall(local_model_path)
+
+        # Load the model
+        model = GLiNER.from_pretrained(str(local_model_path)).to(self.device)
+        self.model_cache[model_name] = model
+        logger.info(f"Model {model_name} loaded from S3 artifacts.")
+        return model
+
+    def register_models_at_startup(self, model_names: list):
+        """
+        Register and log models at startup if they are not already registered.
+        """
+        for model_name in model_names:
+            if not any(m.name == model_name for m in self.mlflow_client.list_registered_models()):
+                # Load the model from HuggingFace or another source
+                model = GLiNER.from_pretrained(model_name).to(self.device)
+                model_save_path = Path(f"models/{model_name}")
+                model.save_pretrained(model_save_path)
+
+                # Start MLflow run
+                mlflow.start_run(run_name=f"Registering {model_name}")
+
+                # Log the model as an artifact
+                mlflow.log_artifact(
+                    str(model_save_path), artifact_path="model_artifacts"
+                )
+
+                # Register the model
+                self.mlflow_client.create_registered_model(model_name)
+                self.mlflow_client.create_model_version(
+                    name=model_name,
+                    source=f"{mlflow.get_artifact_uri()}/model_artifacts",
+                    run_id=mlflow.active_run().info.run_id
+                )
+
+                # End MLflow run
+                mlflow.end_run()
+
+                logger.info(f"Model {model_name} registered and logged to MLflow.")
+            else:
+                logger.info(f"Model {model_name} is already registered in MLflow.")
 
     def log_model_metrics(self, metrics: Dict[str, Any]):
         try:
@@ -1099,16 +1058,6 @@ class ModelManager:
             mlflow.end_run()
 
         with mlflow.start_run(run_name=f"Processing {model_name}"):
-            # Initialize CodeCarbon tracker if none is active
-            if not self.tracker_active:
-                try:
-                    self.emissions_tracker = EmissionsTracker(project_name="model_processing")
-                    self.emissions_tracker.start()
-                    self.tracker_active = True
-                except Exception as e:
-                    logger.warning(f"Unable to start CodeCarbon: {e}")
-                    self.emissions_tracker = None
-
             # Load the model
             model = self.load_model(model_name)
             tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -1117,23 +1066,11 @@ class ModelManager:
             # Run inference
             output = model(**inputs_tokenized)
 
-            # Capture emissions if CodeCarbon tracker is active
-            emissions = None
-            if self.emissions_tracker and self.tracker_active:
-                try:
-                    emissions = self.emissions_tracker.stop()
-                except Exception as e:
-                    logger.warning(f"Error stopping CodeCarbon tracker: {e}")
-                finally:
-                    self.tracker_active = False  # Reset for next use
-
             # Log hardware resource usage
             metrics = {
                 "gpu_memory_usage": torch.cuda.memory_allocated() if torch.cuda.is_available() else 0,
                 "cpu_usage": torch.get_num_threads(),
             }
-            if emissions is not None:
-                metrics["carbon_emissions"] = emissions
 
             self.log_model_metrics(metrics)
 
@@ -1155,7 +1092,7 @@ class ModelManager:
             return None
 
         # Upload to S3 bucket
-        s3_url = self.s3_service.upload_file(zip_path, bucket_name=self.s3_service.output_bucket)
+        s3_url = self.s3_service.upload_file(zip_path, bucket_name=self.models_bucket)
         if s3_url:
             logger.info(f"Model {model_name} uploaded successfully to {s3_url}")
             return s3_url
@@ -1163,686 +1100,3 @@ class ModelManager:
             logger.error(f"Failed to upload model {model_name} to S3")
             return None
 
-#-----
-
-# document_processor.py
-#-----
-# services/document_processor.py
-import os
-import re
-import json
-import yaml
-from pathlib import Path
-from typing import List, Iterator, Optional, Dict, Any
-from enum import Enum
-
-import aiofiles
-from sqlalchemy.orm import Session
-from loguru import logger
-
-from langchain.text_splitter import CharacterTextSplitter
-from langchain_experimental.graph_transformers.gliner import GlinerGraphTransformer
-from langchain_community.graph_vectorstores.extractors import GLiNERLinkExtractor
-from langchain_core.document_loaders import BaseLoader
-from langchain_core.documents import Document as LCDocument
-from py2neo import Relationship, Node, Graph
-
-from docling.document_converter import DocumentConverter, PdfFormatOption
-from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import ConversionResult, ConversionStatus
-from docling.datamodel.pipeline_options import PdfPipelineOptions
-from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
-from docling_core.types.doc import PictureItem
-from docling.datamodel.base_models import InputFormat
-
-from services.s3_service import S3Service
-from services.mlflow_service import MLFlowService
-from services.pgvector_service import PGVectorService
-from services.neo4j_service import Neo4jService
-from services.embedding_service import EmbeddingService
-from services.gliner_service import GLiNERService
-from services.glirel_service import GLiRELService
-
-from models.document_log import DocumentLog, DocumentLogService
-from models.document import Document
-from utils.database import SessionLocal
-
-class CustomPdfPipelineOptions(PdfPipelineOptions):
-    """Custom pipeline options for PDF processing."""
-    do_picture_classifier: bool = False
-
-class DoclingPDFLoader(BaseLoader):
-    """Loader for converting PDFs to LCDocument format using Docling."""
-
-    def __init__(self, file_path: str) -> None:
-        self.file_path = file_path
-        self._converter = DocumentConverter(
-            allowed_formats=[InputFormat.PDF, InputFormat.DOCX],
-            format_options={
-                InputFormat.PDF: PdfFormatOption(
-                    pipeline_options=CustomPdfPipelineOptions(),
-                    backend=PyPdfiumDocumentBackend
-                )
-            }
-        )
-
-    def lazy_load(self) -> Iterator[LCDocument]:
-        try:
-            conversion_result = self._converter.convert(self.file_path)
-            if conversion_result.status == ConversionStatus.SUCCESS:
-                dl_doc = conversion_result.document
-                text = dl_doc.export_to_markdown()
-                yield LCDocument(page_content=text)
-            else:
-                logger.warning(f"Conversion failed for {self.file_path} with status {conversion_result.status}")
-        except Exception as e:
-            logger.error(f"Error loading document {self.file_path}: {e}")
-
-# Enumération des formats d'import et d'export
-class ImportFormat(str, Enum):
-    DOCX = "docx"
-    PPTX = "pptx"
-    HTML = "html"
-    IMAGE = "image"
-    PDF = "pdf"
-    ASCIIDOC = "asciidoc"
-    MD = "md"
-
-class ExportFormat(str, Enum):
-    JSON = "json"
-    YAML = "yaml"
-    TEXT = "text"
-    MARKDOWN = "md"
-    DOCTAGS = "doctags"
-
-class DocumentProcessor:
-    """Orchestrates the document processing pipeline: loading, splitting, embedding, extracting, and indexing."""
-
-    def __init__(
-        self,
-        s3_service: S3Service,
-        mlflow_service: MLFlowService,
-        pgvector_service: PGVectorService,
-        neo4j_service: Neo4jService,
-        embedding_service: EmbeddingService,
-        gliner_service: GLiNERService,
-        glirel_service: GLiRELService,
-        session: Session,
-        text_splitter: CharacterTextSplitter,
-        graph_transformer: GlinerGraphTransformer,
-        gliner_extractor: GLiNERLinkExtractor,
-    ):
-        self.s3_service = s3_service
-        self.mlflow_service = mlflow_service
-        self.pgvector_service = pgvector_service
-        self.neo4j_service = neo4j_service
-        self.embedding_service = embedding_service
-        self.gliner_service = gliner_service
-        self.glirel_service = glirel_service
-        self.session = session
-        self.text_splitter = text_splitter
-        self.graph_transformer = graph_transformer
-        self.gliner_extractor = gliner_extractor
-
-    def create_converter(
-        self,
-        use_ocr: bool,
-        export_figures: bool,
-        export_tables: bool,
-        enrich_figures: bool
-    ) -> DocumentConverter:
-        """Create and configure a document converter."""
-        options = CustomPdfPipelineOptions()
-        options.do_ocr = use_ocr
-        options.generate_page_images = True
-        options.generate_table_images = export_tables
-        options.generate_picture_images = export_figures
-        options.do_picture_classifier = enrich_figures
-
-        return DocumentConverter(
-            allowed_formats=[InputFormat.PDF, InputFormat.DOCX, InputFormat.PPTX, InputFormat.IMAGE, InputFormat.HTML],
-            format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=options, backend=PyPdfiumDocumentBackend)},
-        )
-
-    def clean_text(self, text: str) -> str:
-        """Clean up text by removing unwanted characters and normalizing whitespace."""
-        text = text.replace("\n", " ").strip()
-        return re.sub(r'\s+', ' ', text)
-
-    def log_document(self, file_name: str, s3_url: str):
-        """Log document metadata into the database."""
-        try:
-            log = DocumentLog(file_name=file_name, s3_url=s3_url)
-            self.session.add(log)
-            self.session.commit()
-            logger.info(f"Document logged: {file_name}")
-        except Exception as e:
-            logger.error(f"Failed to log document {file_name}: {e}")
-            self.session.rollback()
-            raise
-
-    def export_document(
-        self,
-        result: ConversionResult,
-        export_formats: List[ExportFormat],
-        export_figures: bool,
-        export_tables: bool
-    ):
-        """Export document into specified formats and upload to S3."""
-        try:
-            doc_filename = Path(result.input.file).stem
-            if result.status == ConversionStatus.SUCCESS:
-                output_dir = Path(self.s3_service.output_bucket)  # Utilisé temporairement pour le stockage local avant l'upload
-                output_dir.mkdir(parents=True, exist_ok=True)
-                self._export_file(
-                    result=result,
-                    output_dir=output_dir,
-                    export_formats=export_formats,
-                    export_figures=export_figures,
-                    export_tables=export_tables,
-                    doc_filename=doc_filename
-                )
-                logger.info(f"Document exported successfully: {doc_filename}")
-
-                # Upload exported files to S3 output bucket
-                for ext in export_formats:
-                    file_path = output_dir / f"{doc_filename}.{ext}"
-                    s3_output_key = f"output/{doc_filename}.{ext}"
-                    self.s3_service.upload_file(file_path, bucket_name=self.s3_service.output_bucket)
-                    logger.info(f"Uploaded {file_path} to {self.s3_service.output_bucket}/{s3_output_key}")
-
-                if export_figures:
-                    figures_dir = output_dir / "figures"
-                    for figure_file in figures_dir.glob("*.png"):
-                        s3_figures_key = f"layouts/figures/{figure_file.name}"
-                        self.s3_service.upload_file(figure_file, bucket_name=self.s3_service.layouts_bucket)
-                        logger.info(f"Uploaded {figure_file} to {self.s3_service.layouts_bucket}/{s3_figures_key}")
-
-                if export_tables:
-                    tables_dir = output_dir / "tables"
-                    for table_file in tables_dir.glob("*.csv"):
-                        s3_tables_key = f"layouts/tables/{table_file.name}"
-                        self.s3_service.upload_file(table_file, bucket_name=self.s3_service.layouts_bucket)
-                        logger.info(f"Uploaded {table_file} to {self.s3_service.layouts_bucket}/{s3_tables_key}")
-
-                # Log document metadata
-                self.log_document(file_name=result.input.file, s3_url=s3_output_key)
-
-                # Optionnel: Supprimer les fichiers exportés localement après l'upload
-                for ext in export_formats:
-                    file_path = output_dir / f"{doc_filename}.{ext}"
-                    if file_path.exists():
-                        file_path.unlink()
-                        logger.info(f"Deleted local file: {file_path}")
-
-                if export_figures:
-                    for figure_file in figures_dir.glob("*.png"):
-                        figure_file.unlink()
-                        logger.info(f"Deleted local figure file: {figure_file}")
-
-                if export_tables:
-                    for table_file in tables_dir.glob("*.csv"):
-                        table_file.unlink()
-                        logger.info(f"Deleted local table file: {table_file}")
-
-            else:
-                logger.warning(f"Document export failed for {doc_filename}: {result.status}")
-        except Exception as e:
-            logger.error(f"Error exporting document: {e}")
-            raise
-
-    def _export_file(
-        self,
-        result: ConversionResult,
-        output_dir: Path,
-        export_formats: List[ExportFormat],
-        export_figures: bool,
-        export_tables: bool,
-        doc_filename: str
-    ):
-        """Save a specific document format locally."""
-        for ext in export_formats:
-            file_path = output_dir / f"{doc_filename}.{ext}"
-            try:
-                with file_path.open("w", encoding="utf-8") as file:
-                    if ext == "json":
-                        json.dump(result.document.export_to_dict(), file, ensure_ascii=False, indent=2)
-                    elif ext == "yaml":
-                        yaml.dump(result.document.export_to_dict(), file, allow_unicode=True)
-                    elif ext == "md":
-                        file.write(result.document.export_to_markdown())
-                    else:
-                        logger.warning(f"Unsupported export format: {ext}")
-                        continue
-                logger.info(f"Exported file: {file_path}")
-            except Exception as e:
-                logger.error(f"Failed to export file {file_path}: {e}")
-                raise
-
-    def process_documents(
-        self,
-        s3_url: str,
-        export_formats: List[ExportFormat],
-        use_ocr: bool = False,
-        export_figures: bool = True,
-        export_tables: bool = True,
-        enrich_figures: bool = False,
-    ) -> List[LCDocument]:
-        """
-        Process a document: convert it using Docling, generate embeddings,
-        and export results to S3.
-
-        Args:
-            s3_url (str): S3 URL of the input document.
-            export_formats (List[str]): Formats for exporting the processed document.
-            use_ocr (bool): Whether to use OCR during processing.
-            export_figures (bool): Whether to export figures.
-            export_tables (bool): Whether to export tables.
-            enrich_figures (bool): Whether to enrich figures.
-
-        Returns:
-            List[LCDocument]: List of processed document chunks.
-        """
-        logger.info(f"Starting processing for document: {s3_url}")
-
-        # Step 1: Parse S3 URL to get bucket and object key
-        parsed = self.s3_service.parse_s3_url(s3_url)
-        if not parsed:
-            logger.error(f"Failed to parse S3 URL: {s3_url}")
-            return []
-        bucket_name, object_key = parsed
-
-        # Step 2: Download the file from S3
-        local_path = Path("/tmp") / Path(object_key).name
-        if not self.s3_service.download_file(bucket_name, object_key, local_path):
-            logger.error(f"Failed to download file from S3: {s3_url}")
-            return []
-
-        logger.info(f"Downloaded document {s3_url} to {local_path}")
-
-        # Step 3: Process the document using Docling
-        converter = self.create_converter(use_ocr, export_figures, export_tables, enrich_figures)
-        conversion_result = converter.convert(str(local_path))
-
-        if conversion_result.status != ConversionStatus.SUCCESS:
-            logger.error(f"Failed to process document {local_path}: {conversion_result.status}")
-            return []
-
-        logger.info(f"Document {local_path.name} converted successfully")
-
-        # Step 4: Export processed document results to S3
-        output_dir = Path(self.s3_service.output_bucket)
-        output_dir.mkdir(parents=True, exist_ok=True)
-
-        for fmt in export_formats:
-            export_path = output_dir / f"{local_path.stem}.{fmt}"
-            with export_path.open("w", encoding="utf-8") as f:
-                if fmt == "json":
-                    json.dump(conversion_result.document.export_to_dict(), f, indent=2)
-                elif fmt == "yaml":
-                    yaml.dump(conversion_result.document.export_to_dict(), f)
-                elif fmt == "md":
-                    f.write(conversion_result.document.export_to_markdown())
-
-            # Upload the exported file to the `output` bucket
-            s3_output_key = f"output/{local_path.stem}.{fmt}"
-            upload_url = self.s3_service.upload_file(export_path, bucket_name=self.s3_service.output_bucket)
-            if upload_url:
-                logger.info(f"Uploaded {export_path} to {self.s3_service.output_bucket}/{s3_output_key}")
-            else:
-                logger.error(f"Failed to upload {export_path} to S3")
-
-        # Optionnel: Supprimer les fichiers exportés localement après l'upload
-        for fmt in export_formats:
-            file_path = output_dir / f"{local_path.stem}.{fmt}"
-            if file_path.exists():
-                file_path.unlink()
-                logger.info(f"Deleted local file: {file_path}")
-
-        if export_figures:
-            figures_dir = output_dir / "figures"
-            if figures_dir.exists():
-                for figure_file in figures_dir.glob("*.png"):
-                    figure_file.unlink()
-                    logger.info(f"Deleted local figure file: {figure_file}")
-
-        if export_tables:
-            tables_dir = output_dir / "tables"
-            if tables_dir.exists():
-                for table_file in tables_dir.glob("*.csv"):
-                    table_file.unlink()
-                    logger.info(f"Deleted local table file: {table_file}")
-
-        # Clean up the downloaded file
-        if local_path.exists():
-            local_path.unlink()
-            logger.info(f"Deleted local file: {local_path}")
-
-        # Log document metadata
-        self.log_document(file_name=local_path.name, s3_url=s3_output_key)
-
-        # Log metrics to Prometheus
-        metrics = {
-            "documents_loaded": 1,
-            "chunks_processed": 1,
-            "embeddings_generated": 0,  # À ajuster selon vos besoins
-        }
-        self.mlflow_service.log_metrics(metrics)
-        logger.info("Metrics logged to MLFlow")
-
-        return []  # Retournez la liste des documents traités si nécessaire
-    
-    def index_graph(self, doc: Document):
-        """Process a document to extract nodes and relationships, adding them to Neo4j."""
-        try:
-            split_docs = self.text_splitter.split_documents([doc])
-            split_docs = [
-                Document(page_content=self.clean_text(chunk.page_content), metadata=chunk.metadata)
-                for chunk in split_docs
-            ]
-            logger.debug(f"Document split into {len(split_docs)} chunks.")
-
-            # Extract graph data and links
-            graph_docs = self.graph_transformer.convert_to_graph_documents(split_docs)
-            doc_links = [self.gliner_extractor.extract_many(chunk) for chunk in split_docs]
-            driver = self.neo4j_service.driver
-            with driver.session() as session:
-                with session.begin_transaction() as tx:
-                    for graph_doc, links in zip(graph_docs, doc_links):
-                        # Add nodes
-                        if hasattr(graph_doc, "nodes") and graph_doc.nodes:
-                            for node in graph_doc.nodes:
-                                tx.run(
-                                    """
-                                    MERGE (e:Entity {id: $id, name: $name, type: $type})
-                                    ON CREATE SET e.created_at = timestamp()
-                                    """,
-                                    {
-                                        "id": node.id,
-                                        "name": node.properties.get("name", ""),
-                                        "type": node.type,
-                                    },
-                                )
-                                logger.info(f"Indexed Node: {node.id}, Type: {node.type}")
-
-                        # Add relationships
-                        if hasattr(graph_doc, "edges") and graph_doc.edges:
-                            GLiRELService.add_relationships(tx, graph_doc.edges)
-
-                        # Add links
-                        for link in links:
-                            if not link.tag or not link.kind:
-                                logger.warning(f"Skipping invalid link: {link}")
-                                continue
-                            logger.info(f"Adding Link: {link}")
-                            tx.run(
-                                """
-                                MERGE (e:Entity {name: $name})
-                                ON CREATE SET e.created_at = timestamp()
-                                RETURN e
-                                """,
-                                {"name": link.tag},
-                            )
-        except Exception as e:
-            logger.error(f"Error processing document: {doc.metadata.get('name', 'unknown')} - {e}")
-
-    def process_and_index_document(
-        self,
-        s3_url: str,
-        export_formats: List[ExportFormat],
-        use_ocr: bool = False,
-        export_figures: bool = True,
-        export_tables: bool = True,
-        enrich_figures: bool = False,
-    ):
-        """
-        Orchestrates the complete workflow: processes a document and indexes its content into Neo4j.
-
-        Args:
-            s3_url (str): S3 URL of the document file.
-            export_formats (List[ExportFormat]): Formats for exporting processed documents.
-            use_ocr (bool): Whether to use OCR during processing.
-            export_figures (bool): Whether to export figures from the document.
-            export_tables (bool): Whether to export tables from the document.
-            enrich_figures (bool): Whether to enrich figures during processing.
-
-        Returns:
-            None
-        """
-        try:
-            logger.info(f"Starting full processing and indexing for document: {s3_url}")
-
-            # Start an MLFlow run for tracking
-            self.mlflow_service.start_run(run_name=f"Process and Index {Path(s3_url).stem}")
-
-            # Step 1: Process the document
-            processed_documents = self.process_documents(
-                s3_url=s3_url,
-                export_formats=export_formats,
-                use_ocr=use_ocr,
-                export_figures=export_figures,
-                export_tables=export_tables,
-                enrich_figures=enrich_figures,
-            )
-            if not processed_documents:
-                logger.error(f"Processing failed for document: {s3_url}")
-                return
-
-            logger.info(f"Processing completed for document: {s3_url}")
-
-            # Step 2: Index the document into Neo4j
-            for doc in processed_documents:
-                self.index_graph(doc)
-
-            logger.info(f"Indexing completed for document: {s3_url}")
-
-        except Exception as e:
-            logger.error(f"Error during process and index for document {s3_url}: {e}")
-            # Log the error in MLFlow
-            self.mlflow_service.log_metrics({"errors": 1})
-
-        finally:
-            # End the MLFlow run
-            self.mlflow_service.end_run()
-
-#-----
-
-# embedding_service.py
-#-----
-# services/embedding_service.py
-from langchain_ollama.embeddings import OllamaEmbeddings
-from loguru import logger
-from typing import List
-
-class EmbeddingService:
-    def __init__(self, model_name: str):
-        self.embedding_model = OllamaEmbeddings(model=model_name)
-        logger.info(f"Embedding model '{model_name}' initialized.")
-
-    def generate_embeddings(self, texts: List[str]) -> List[List[float]]:
-        try:
-            embeddings = self.embedding_model.embed_documents(texts)
-            logger.info(f"Generated embeddings for {len(texts)} texts.")
-            return embeddings
-        except Exception as e:
-            logger.error(f"Failed to generate embeddings: {e}")
-            return []
-
-    def generate_embedding(self, text: str) -> List[float]:
-        try:
-            embedding = self.embedding_model.embed_query(text)
-            logger.info(f"Generated embedding for the given text.")
-            return embedding
-        except Exception as e:
-            logger.error(f"Failed to generate embedding: {e}")
-            return []
-
-    def embed_documents(self, texts):
-        return self.embedding_model.embed_documents(texts)
-
-    def embed_query(self, text):
-        return self.embedding_model.embed_query(text)
-#-----
-
-# glirel_service.py
-#-----
-# services/glirel_service.py
-
-import torch
-from glirel import GLiREL
-from loguru import logger
-from config import settings
-from py2neo import Graph, NodeMatcher, Relationship
-from typing import List
-
-class GLiRELService:
-    """
-    Service class for GLiREL model operations.
-    """
-
-    def __init__(self):
-        # Initialize device
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        logger.info(f"Using device: {self.device}")
-
-        # Initialize GLiREL model
-        glirel_model_name = settings.GLIREL_MODEL_NAME
-        try:
-            self.glirel_model = GLiREL.from_pretrained(glirel_model_name).to(self.device)
-            logger.info(f"GLiREL model '{glirel_model_name}' loaded successfully.")
-        except Exception as e:
-            logger.error(f"Failed to load GLiREL model: {e}")
-            raise RuntimeError("GLiREL model loading failed.")
-
-    def extract_relationships(self, texts):
-        """
-        Extract relationships from a list of texts using GLiREL.
-
-        Args:
-            texts (List[str]): List of texts to process.
-
-        Returns:
-            List[List[Dict]]: A list where each element corresponds to the relationships extracted from a text.
-        """
-        try:
-            all_relationships = []
-            for text in texts:
-                relationships = self.glirel_model.predict_relationships(text)
-                all_relationships.append(relationships)
-            return all_relationships
-        except Exception as e:
-            logger.error(f"Error extracting relationships: {e}")
-            raise
-
-    def add_relationships(tx, relationships: List[Relationship]):
-        """Ajoute des relations extraites dans la base Neo4j."""
-        for rel in relationships:
-            try:
-                # Validation des données
-                if not rel.source or not rel.target or not rel.type:
-                    logger.warning(f"Relation invalide, ignorée : {rel}")
-                    continue
-                
-                logger.info(f"Ajout de la relation : {rel.type} ({rel.source.id} -> {rel.target.id})")
-                
-                # Cypher pour ajouter la relation
-                tx.run(
-                    """
-                    MATCH (source:Entity {id: $source_id}), (target:Entity {id: $target_id})
-                    MERGE (source)-[r:RELATES_TO {type: $type, created_at: timestamp()}]->(target)
-                    """,
-                    {
-                        "source_id": rel.source.id,
-                        "target_id": rel.target.id,
-                        "type": rel.type.upper(),  # Normalisation du type
-                    },
-                )
-            except Exception as e:
-                logger.error(f"Échec de l'ajout de la relation {rel.type}: {e}")
-
-#-----
-
-# security.py
-#-----
-# services/security.py
-
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import JWTError, jwt
-from passlib.context import CryptContext
-from datetime import datetime, timedelta
-
-from schemas.auth import User, UserInDB, TokenData
-
-# Configuration simplifiée pour l'exemple
-SECRET_KEY = "your_secret_key" 
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-# Création du contexte pour le hachage des mots de passe
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-# Utilisateurs fictifs pour l'exemple
-fake_users_db = {
-    "alice": {
-        "username": "alice",
-        "hashed_password": pwd_context.hash("wonderland"),
-        "disabled": False,
-    },
-    "bob": {
-        "username": "bob",
-        "hashed_password": pwd_context.hash("builder"),
-        "disabled": False,
-    },
-}
-
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_user(db, username: str):
-    if username in db:
-        user_dict = db[username]
-        return UserInDB(**user_dict)
-    return None
-
-def authenticate_user(db, username: str, password: str):
-    user = get_user(db, username)
-    if not user:
-        return False
-    if not verify_password(password, user.hashed_password):
-        return False
-    return user
-
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        # Par défaut, le token expire dans 15 minutes
-        expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-async def get_current_user(token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Impossible de valider les informations d'identification",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-        token_data = TokenData(username=username)
-    except JWTError:
-        raise credentials_exception
-    user = get_user(fake_users_db, username=token_data.username)
-    if user is None:
-        raise credentials_exception
-    return user
-
-#-----

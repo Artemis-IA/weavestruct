@@ -6,6 +6,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from routers import documents, entities, relationships, search, graph, datasets, train
 from utils.metrics import MetricsManager
+
 from config import settings
 
 # Initialize metrics manager

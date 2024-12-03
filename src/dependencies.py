@@ -10,6 +10,7 @@ from utils.database import SessionLocal
 from utils.metrics import MetricsManager
 from services.s3_service import S3Service
 from services.mlflow_service import MLFlowService
+from services.model_manager import ModelManager
 from services.document_processor import DocumentProcessor
 from services.pgvector_service import PGVectorService
 from services.neo4j_service import Neo4jService
@@ -87,6 +88,14 @@ def get_mlflow_service() -> MLFlowService:
             status_code=500,
             detail=f"MLflow service is not accessible: {str(e)}"
         )
+# Dependency to get the ModelManager
+@lru_cache
+def get_model_manager(
+    s3_service: S3Service = Depends(get_s3_service),
+    mlflow_service: MLFlowService = Depends(get_mlflow_service),
+) -> ModelManager:
+    """Returns an instance of the ModelManager."""
+    return ModelManager(s3_service=s3_service, mlflow_service=mlflow_service)
 
 
 # Dependency for embedding service

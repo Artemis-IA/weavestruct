@@ -1,10 +1,10 @@
+# services/mlflow_service.py
 import mlflow
 from mlflow.tracking import MlflowClient
 from loguru import logger
 from pathlib import Path
+from typing import Dict, Any, List, Optional
 import os
-import json
-from typing import Dict, Any
 
 class MLFlowService:
     def __init__(self, tracking_uri: str):
@@ -19,6 +19,10 @@ class MLFlowService:
         mlflow.start_run(run_name=run_name)
         logger.info(f"MLflow run started: {run_name}")
 
+    def end_run(self, status: str = None):
+        mlflow.end_run(status=status)
+        logger.info(f"MLflow run ended with status: {status}")
+
     def log_params(self, params: Dict[str, Any]):
         try:
             mlflow.log_params(params)
@@ -26,59 +30,99 @@ class MLFlowService:
         except Exception as e:
             logger.error(f"Failed to log parameters to MLflow: {e}")
 
-    def log_metrics(self, metrics: Dict[str, Any]):
+    def log_metrics(self, metrics: Dict[str, Any], step: Optional[int] = None):
         try:
-            mlflow.log_metrics(metrics)
-            logger.info(f"Logged metrics: {metrics}")
+            mlflow.log_metrics(metrics, step=step)
+            logger.info(f"Logged metrics: {metrics} at step {step}")
         except Exception as e:
             logger.error(f"Failed to log metrics to MLflow: {e}")
 
     def log_artifact(self, file_path: str, artifact_path: str = None):
         try:
             mlflow.log_artifact(file_path, artifact_path)
-            logger.info(f"Logged artifact: {file_path}")
+            logger.info(f"Logged artifact: {file_path} at {artifact_path}")
         except Exception as e:
             logger.error(f"Failed to log artifact to MLflow: {e}")
 
+    def log_transformers_model(
+        self,
+        transformers_model,
+        artifact_path: str,
+        model_name: str,
+        processor=None,
+        task: Optional[str] = None,
+        **kwargs
+    ):
+        try:
+            # Log the model using mlflow.transformers
+            mlflow_log_transformers_model(
+                transformers_model=transformers_model,
+                artifact_path=artifact_path,
+                processor=processor,
+                task=task,
+                **kwargs
+            )
+            logger.info(f"Transformers model logged to MLflow at {artifact_path}.")
+
+            # Register the model
+            model_uri = f"runs:/{mlflow.active_run().info.run_id}/{artifact_path}"
+            version = self.register_model(model_name, model_uri)
+            return version
+        except Exception as e:
+            logger.error(f"Failed to log and register transformers model {model_name}: {e}")
+            raise
+
     def register_model(self, model_name: str, model_dir: Path):
         try:
-            model_uri = f"{self.tracking_uri}/{model_dir}"
-            self.client.create_registered_model(model_name)
-            self.client.create_model_version(
-                name=model_name,
-                source=model_uri,
-                run_id=mlflow.active_run().info.run_id
+            model_uri = str(model_dir.resolve())
+            result = mlflow.register_model(
+                model_uri=model_uri,
+                name=model_name
             )
-            logger.info(f"Model {model_name} registered successfully.")
+            logger.info(f"Model {model_name} registered successfully with version {result.version}.")
         except Exception as e:
             logger.error(f"Failed to register model {model_name}: {e}")
 
-    def get_model_version(self, model_name: str):
+    def get_registered_model(self, model_name: str):
         try:
-            versions = self.client.search_model_versions(f"name='{model_name}'")
-            logger.info(f"Retrieved versions for model {model_name}: {versions}")
+            model = self.client.get_registered_model(model_name)
+            logger.info(f"Retrieved registered model: {model.name}")
+            return model
+        except Exception as e:
+            logger.error(f"Failed to get registered model {model_name}: {e}")
+            return None
+
+    def get_latest_versions(self, model_name: str, stages: Optional[List[str]] = None):
+        try:
+            versions = self.client.get_latest_versions(name=model_name, stages=stages)
+            logger.info(f"Retrieved latest versions for model {model_name}: {[v.version for v in versions]}")
             return versions
         except Exception as e:
-            logger.error(f"Failed to get model versions for {model_name}: {e}")
+            logger.error(f"Failed to get latest versions for model {model_name}: {e}")
             return None
 
     def download_model(self, model_name: str, version: str, download_dir: str):
         try:
             model_uri = f"models:/{model_name}/{version}"
-            local_path = mlflow.pyfunc.load_model(model_uri).save(download_dir)
+            local_path = mlflow.artifacts.download_artifacts(artifact_uri=model_uri, dst_path=download_dir)
             logger.info(f"Model {model_name} version {version} downloaded successfully to {local_path}")
             return local_path
         except Exception as e:
             logger.error(f"Failed to download model {model_name} version {version}: {e}")
             return None
 
-    def list_registered_models(self):
+    def search_registered_models(self, filter_string: str = '', max_results: int = None, order_by: List[str] = None, page_token: str = None):
         try:
-            models = self.client.list_registered_models()
-            logger.info(f"Retrieved registered models: {models}")
+            models = self.client.search_registered_models(
+                filter_string=filter_string,
+                max_results=max_results,
+                order_by=order_by,
+                page_token=page_token
+            )
+            logger.info(f"Retrieved registered models: {[model.name for model in models]}")
             return models
         except Exception as e:
-            logger.error(f"Failed to list registered models: {e}")
+            logger.error(f"Failed to search registered models: {e}")
             return []
 
     def set_tracking_uri(self, uri: str):
@@ -93,12 +137,5 @@ class MLFlowService:
             logger.info(
                 f"MLflow service is accessible. Found {len(experiments)} experiment(s)."
             )
-        except AttributeError as e:
-            # Provide hints for known issues
-            if "search_experiments" in str(e):
-                raise Exception(
-                    f"MLflowClient object lacks 'search_experiments'. Possible version mismatch. {e}"
-                )
-            raise
         except Exception as e:
             raise Exception(f"Failed to connect to MLflow: {e}")

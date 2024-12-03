@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     }
 
     DEVICE: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+    
     HOST: str = "0.0.0.0"
     PORT: int = 8000
 
