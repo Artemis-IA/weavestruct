@@ -85,20 +85,17 @@ class ModelManager:
                     "likes": model.likes or 0,
                     "description": description,
                 })
+        # Sorting
+            sort_key = {
+                ModelInfoFilter.size: lambda x: x["size"] or float("inf"),
+                ModelInfoFilter.recent: lambda x: x["lastModified"],
+                ModelInfoFilter.name: lambda x: x["modelId"],
+                ModelInfoFilter.downloads: lambda x: x["downloads"],
+                ModelInfoFilter.likes: lambda x: x["likes"],
+            }.get(sort_by, None)
 
-            # Handle sorting
-            if sort_by == ModelInfoFilter.size:
-                model_data = sorted(model_data, key=lambda x: x["size"] or float("inf"))
-            elif sort_by == ModelInfoFilter.recent:
-                model_data = sorted(model_data, key=lambda x: x["lastModified"], reverse=True)
-            elif sort_by == ModelInfoFilter.name:
-                model_data = sorted(model_data, key=lambda x: x["modelId"])
-            elif sort_by == ModelInfoFilter.downloads:
-                model_data = sorted(model_data, key=lambda x: x["downloads"], reverse=True)
-            elif sort_by == ModelInfoFilter.likes:
-                model_data = sorted(model_data, key=lambda x: x["likes"], reverse=True)
-            else:
-                raise ValueError("Invalid sort criteria. Use 'size', 'recent', 'name', 'downloads', or 'likes'.")
+            if sort_key:
+                model_data = sorted(model_data, key=sort_key, reverse=(sort_by != ModelInfoFilter.name))
 
             return model_data
         except Exception as e:

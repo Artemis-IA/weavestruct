@@ -123,8 +123,6 @@ async def get_gliner_models(
         logger.error(f"Failed to fetch GLiNER models: {e}")
         raise HTTPException(status_code=500, detail="Internal server error.")
 
-
-
 ALLOWED_MODELS =  ["gretelai/gretel-gliner-bi-small-v1.0"]
 
 @router.post("/upload_model_huggingface")

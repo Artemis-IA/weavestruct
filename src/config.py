@@ -50,7 +50,7 @@ class Settings(BaseSettings):
     MLFLOW_S3_ENDPOINT_URL: str = os.getenv("MLFLOW_S3_ENDPOINT_URL", "http://localhost:9000")
     MLFLOW_S3_IGNORE_TLS: bool = os.getenv("MLFLOW_S3_IGNORE_TLS", "true").lower() == "true"
     HF_API_TOKEN: str = os.getenv("HF_API_TOKEN", "")
-
+    HF_API_LIST_SIZE: int = int(os.getenv("HF_API_LIST_SIZE", 100))
     # Derived MLflow settings
     MLFLOW_BACKEND_STORE_URI: str = os.getenv(
         "MLFLOW_BACKEND_STORE_URI", 
