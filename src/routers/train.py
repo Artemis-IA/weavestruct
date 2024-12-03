@@ -1,13 +1,14 @@
 # routers/train.py
 
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, Query
+from enum import Enum
 from sqlalchemy.orm import Session
 from typing import Optional, List, Dict
 from pathlib import Path
 from dependencies import get_db, get_s3_service, get_mlflow_service, get_model_manager
 from config import settings
 from services.train_service import TrainService
-from services.model_manager import ModelManager, ModelSource
+from services.model_manager import ModelManager, ModelSource, ModelInfoFilter
 from services.s3_service import S3Service
 from services.mlflow_service import MLFlowService
 from schemas.train import TrainInput, TrainResponse
@@ -105,20 +106,39 @@ async def train_model(
         logger.error(f"Training failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/get_gliner_on_hf")
+async def get_gliner_models(
+    sort_by: ModelInfoFilter = Query(ModelInfoFilter.size, description="Sort models by 'size', 'recent', 'name', 'downloads', or 'likes'"),
+    model_manager: ModelManager = Depends(get_model_manager)
+):
+    """
+    Fetch all GLiNER models from Hugging Face and optionally sort them.
+    """
+    try:
+        models = model_manager.fetch_hf_models(sort_by=sort_by)
+        return models
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        logger.error(f"Failed to fetch GLiNER models: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error.")
+
+
+
+ALLOWED_MODELS =  ["gretelai/gretel-gliner-bi-small-v1.0"]
 
 @router.post("/upload_model_huggingface")
 async def upload_model_huggingface(
-    model_name: str = Form("knowledgator/gliner-multitask-large-v0.5", description="Name of the model from Hugging Face to be registered"),
+    model_name: str = Form("gretelai/gretel-gliner-bi-small-v1.0", description="Name of the model from Hugging Face to be registered"),
     task: Optional[str] = Form("text-classification", description="Task type for the model (e.g., 'ner', 'text-classification')"),
     model_manager: ModelManager = Depends(get_model_manager),
 ):
     """
     Upload a model artifact from Hugging Face to MLflow.
     """
-    ALLOWED_MODELS = settings.MODELS
     try:
         # Validate that model_name is in the list of allowed models
-        if model_name in ALLOWED_MODELS:
+        if model_name not in ALLOWED_MODELS:
             raise HTTPException(status_code=400, detail=f"Model '{model_name}' is not allowed. Allowed models: {ALLOWED_MODELS}")
 
         # Check if model_name already exists in MLflow

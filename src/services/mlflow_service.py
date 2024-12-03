@@ -55,7 +55,7 @@ class MLFlowService:
     ):
         try:
             # Log the model using mlflow.transformers
-            mlflow_log_transformers_model(
+            mlflow.transformers.log_model(
                 transformers_model=transformers_model,
                 artifact_path=artifact_path,
                 processor=processor,
