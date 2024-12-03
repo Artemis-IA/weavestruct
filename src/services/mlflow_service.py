@@ -53,7 +53,23 @@ class MLFlowService:
         task: Optional[str] = None,
         **kwargs
     ):
+        """
+        Log a transformers model to MLflow. Supports wrapping GLiNER in a Pipeline if necessary.
+        """
         try:
+            # Check if the model is a GLiNER instance
+            from gliner.model import GLiNER
+
+            if isinstance(transformers_model, GLiNER):
+                logger.info("Detected GLiNER model. Wrapping it in a transformers Pipeline.")
+                from transformers import pipeline
+                
+                # Wrap GLiNER in a transformers-compatible Pipeline
+                transformers_model = pipeline(
+                    task="ner",  # Adjust the task as per your GLiNER use case
+                    model=transformers_model,
+                )
+
             # Log the model using mlflow.transformers
             mlflow.transformers.log_model(
                 transformers_model=transformers_model,
@@ -68,6 +84,7 @@ class MLFlowService:
             model_uri = f"runs:/{mlflow.active_run().info.run_id}/{artifact_path}"
             version = self.register_model(model_name, model_uri)
             return version
+
         except Exception as e:
             logger.error(f"Failed to log and register transformers model {model_name}: {e}")
             raise

@@ -4,6 +4,9 @@ from enum import Enum
 from typing import Dict, Any, Optional, List, Literal, Dict, Any, List, Tuple, Union
 from gliner import GLiNER
 from transformers import AutoTokenizer, pipeline, AutoModelForTokenClassification
+from transformers import AutoModelForTokenClassification as BaseORTModel
+from transformers import AutoModelForTokenClassification as SpanORTModel
+from transformers import AutoModelForTokenClassification as TokenORTModel
 from huggingface_hub import HfApi
 from config import settings
 from services.s3_service import S3Service
@@ -140,8 +143,8 @@ class ModelManager:
     def upload_model_from_huggingface(self, model_name: str, task: Optional[str] = None, **kwargs):
         """Upload a model from Hugging Face to MLflow."""
         try:
-            model = GLiNER.from_pretrained(model_name).to(self.device)
-            tokenizer = GLiNER.from_pretrained(model_name)
+            model = BaseORTModel.from_pretrained(model_name).to(self.device)
+            tokenizer = AutoTokenizer.from_pretrained(model_name)
 
             self.mlflow_service.start_run(run_name=f"Uploading {model_name} from Hugging Face")
             artifact_path = f"{model_name}_artifact"
