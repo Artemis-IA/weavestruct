@@ -1,0 +1,967 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation officielle de l'API WeaveStruct">
+      
+      
+        <meta name="author" content="Artemis-IA">
+      
+      
+        <link rel="canonical" href="https://weavestruct.readthedocs.io/mlflow/">
+      
+      
+        <link rel="prev" href="../configuration/">
+      
+      
+        <link rel="next" href="../about/">
+      
+      
+      <link rel="icon" href="../assets/favicon.ico">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.46">
+    
+    
+      
+        <title>ML Flow - WeaveStruct Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.6f8fc17f.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#methodes-de-gestion-des-experiences" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="WeaveStruct Documentation" class="md-header__button md-logo" aria-label="WeaveStruct Documentation" data-md-component="logo">
+      
+  <img src="../assets/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            WeaveStruct Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              ML Flow
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+    
+  
+  Accueil
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../installation/" class="md-tabs__link">
+        
+  
+    
+  
+  Installation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../features/" class="md-tabs__link">
+          
+  
+  Fonctionnalités
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/" class="md-tabs__link">
+          
+  
+  API
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../configuration/" class="md-tabs__link">
+        
+  
+    
+  
+  Configuration
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+    
+  
+  ML Flow
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../about/" class="md-tabs__link">
+        
+  
+    
+  
+  À propos
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../license/" class="md-tabs__link">
+        
+  
+    
+  
+  License
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="WeaveStruct Documentation" class="md-nav__button md-logo" aria-label="WeaveStruct Documentation" data-md-component="logo">
+      
+  <img src="../assets/logo.png" alt="logo">
+
+    </a>
+    WeaveStruct Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Accueil
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Fonctionnalités
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Fonctionnalités
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../features/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Présentation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    API
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            API
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Documentation Swagger
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Endpoints
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    ML Flow
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    ML Flow
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#methodes-de-gestion-des-experiences" class="md-nav__link">
+    <span class="md-ellipsis">
+      Méthodes de gestion des expériences :
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#methodes-de-gestion-des-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Méthodes de gestion des runs :
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#methodes-de-gestion-des-artefacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Méthodes de gestion des artefacts :
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#methodes-du-registre-de-modeles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Méthodes du registre de modèles :
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#methodes-de-gestion-des-datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Méthodes de gestion des datasets :
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#methodes-pour-les-entrees-de-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      Méthodes pour les entrées de run :
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#methodes-diverses" class="md-nav__link">
+    <span class="md-ellipsis">
+      Méthodes diverses :
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../about/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    À propos
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../license/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    License
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#methodes-de-gestion-des-experiences" class="md-nav__link">
+    <span class="md-ellipsis">
+      Méthodes de gestion des expériences :
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#methodes-de-gestion-des-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Méthodes de gestion des runs :
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#methodes-de-gestion-des-artefacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Méthodes de gestion des artefacts :
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#methodes-du-registre-de-modeles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Méthodes du registre de modèles :
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#methodes-de-gestion-des-datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Méthodes de gestion des datasets :
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#methodes-pour-les-entrees-de-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      Méthodes pour les entrées de run :
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#methodes-diverses" class="md-nav__link">
+    <span class="md-ellipsis">
+      Méthodes diverses :
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  <h1>ML Flow</h1>
+
+<p>Voici la liste complète des méthodes de la classe <code>MLflowClient</code> dans la version 2.17.2 :</p>
+<h3 id="methodes-de-gestion-des-experiences"><strong>Méthodes de gestion des expériences :</strong><a class="headerlink" href="#methodes-de-gestion-des-experiences" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong><code>create_experiment(name, artifact_location=None, tags=None)</code></strong></li>
+<li><strong><code>get_experiment(experiment_id)</code></strong></li>
+<li><strong><code>get_experiment_by_name(name)</code></strong></li>
+<li><strong><code>list_experiments(view_type=ViewType.ACTIVE_ONLY, max_results=None, page_token=None)</code></strong></li>
+<li><strong><code>delete_experiment(experiment_id)</code></strong></li>
+<li><strong><code>restore_experiment(experiment_id)</code></strong></li>
+<li><strong><code>rename_experiment(experiment_id, new_name)</code></strong></li>
+<li><strong><code>set_experiment_tag(experiment_id, key, value)</code></strong></li>
+<li><strong><code>delete_experiment_tag(experiment_id, key)</code></strong></li>
+</ol>
+<h3 id="methodes-de-gestion-des-runs"><strong>Méthodes de gestion des runs :</strong><a class="headerlink" href="#methodes-de-gestion-des-runs" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong><code>create_run(experiment_id, start_time=None, tags=None, run_name=None)</code></strong></li>
+<li><strong><code>get_run(run_id)</code></strong></li>
+<li><strong><code>delete_run(run_id)</code></strong></li>
+<li><strong><code>restore_run(run_id)</code></strong></li>
+<li><strong><code>list_run_infos(experiment_id, run_view_type=ViewType.ACTIVE_ONLY, max_results=None, page_token=None)</code></strong></li>
+<li><strong><code>search_runs(experiment_ids=None, filter_string='', run_view_type=ViewType.ACTIVE_ONLY, max_results=100, order_by=None, page_token=None)</code></strong></li>
+<li><strong><code>set_terminated(run_id, status=None, end_time=None)</code></strong></li>
+<li><strong><code>log_param(run_id, key, value)</code></strong></li>
+<li><strong><code>log_params(run_id, params)</code></strong></li>
+<li><strong><code>log_metric(run_id, key, value, timestamp=None, step=None)</code></strong></li>
+<li><strong><code>log_metrics(run_id, metrics, timestamp=None, step=None)</code></strong></li>
+<li><strong><code>set_tag(run_id, key, value)</code></strong></li>
+<li><strong><code>set_tags(run_id, tags)</code></strong></li>
+<li><strong><code>delete_tag(run_id, key)</code></strong></li>
+<li><strong><code>log_batch(run_id, metrics=None, params=None, tags=None, dataset_inputs=None)</code></strong></li>
+<li><strong><code>get_metric_history(run_id, key)</code></strong></li>
+<li><strong><code>get_metric_history_bulk(run_id, metric_keys)</code></strong></li>
+</ol>
+<h3 id="methodes-de-gestion-des-artefacts"><strong>Méthodes de gestion des artefacts :</strong><a class="headerlink" href="#methodes-de-gestion-des-artefacts" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong><code>log_artifact(run_id, local_path, artifact_path=None)</code></strong></li>
+<li><strong><code>log_artifacts(run_id, local_dir, artifact_path=None)</code></strong></li>
+<li><strong><code>list_artifacts(run_id, path=None)</code></strong></li>
+<li><strong><code>download_artifacts(run_id, path, dst_path=None)</code></strong></li>
+<li><strong><code>upload_artifact(run_id, artifact_file, artifact_path=None)</code></strong></li>
+<li><strong><code>upload_artifacts(run_id, artifact_dir, artifact_path=None)</code></strong></li>
+<li><strong><code>get_artifact_uri(run_id, artifact_path=None)</code></strong></li>
+<li><strong><code>download_artifact_from_uri(artifact_uri, output_path=None)</code></strong></li>
+</ol>
+<h3 id="methodes-du-registre-de-modeles"><strong>Méthodes du registre de modèles :</strong><a class="headerlink" href="#methodes-du-registre-de-modeles" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong><code>create_registered_model(name, tags=None, description=None)</code></strong></li>
+<li><strong><code>get_registered_model(name)</code></strong></li>
+<li><strong><code>search_registered_models(filter_string='', max_results=None, order_by=None, page_token=None)</code></strong></li>
+<li><strong><code>delete_registered_model(name)</code></strong></li>
+<li><strong><code>rename_registered_model(name, new_name)</code></strong></li>
+<li><strong><code>update_registered_model(name, description=None)</code></strong></li>
+<li><strong><code>set_registered_model_tag(name, key, value)</code></strong></li>
+<li><strong><code>delete_registered_model_tag(name, key)</code></strong></li>
+<li><strong><code>get_latest_versions(name, stages=None)</code></strong></li>
+<li><strong><code>create_model_version(name, source, run_id=None, tags=None, run_link=None, description=None)</code></strong></li>
+<li><strong><code>get_model_version(name, version)</code></strong></li>
+<li><strong><code>delete_model_version(name, version)</code></strong></li>
+<li><strong><code>update_model_version(name, version, description=None)</code></strong></li>
+<li><strong><code>transition_model_version_stage(name, version, stage, archive_existing_versions=False)</code></strong></li>
+<li><strong><code>set_model_version_tag(name, version, key, value)</code></strong></li>
+<li><strong><code>delete_model_version_tag(name, version, key)</code></strong></li>
+<li><strong><code>get_model_version_download_uri(name, version)</code></strong></li>
+<li><strong><code>search_model_versions(filter_string='', max_results=None, order_by=None, page_token=None)</code></strong></li>
+</ol>
+<h3 id="methodes-de-gestion-des-datasets"><strong>Méthodes de gestion des datasets :</strong><a class="headerlink" href="#methodes-de-gestion-des-datasets" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong><code>create_dataset(name, source=None, schema=None, profile=None, tags=None, description=None)</code></strong></li>
+<li><strong><code>get_dataset(name)</code></strong></li>
+<li><strong><code>delete_dataset(name)</code></strong></li>
+<li><strong><code>search_datasets(filter_string='', max_results=None, order_by=None, page_token=None)</code></strong></li>
+<li><strong><code>set_dataset_tag(name, key, value)</code></strong></li>
+<li><strong><code>delete_dataset_tag(name, key)</code></strong></li>
+<li><strong><code>create_dataset_version(dataset_name, source, schema=None, profile=None, description=None, tags=None)</code></strong></li>
+<li><strong><code>get_dataset_version(dataset_name, version)</code></strong></li>
+<li><strong><code>delete_dataset_version(dataset_name, version)</code></strong></li>
+<li><strong><code>search_dataset_versions(filter_string='', max_results=None, order_by=None, page_token=None)</code></strong></li>
+<li><strong><code>set_dataset_version_tag(dataset_name, version, key, value)</code></strong></li>
+<li><strong><code>delete_dataset_version_tag(dataset_name, version, key)</code></strong></li>
+</ol>
+<h3 id="methodes-pour-les-entrees-de-run"><strong>Méthodes pour les entrées de run :</strong><a class="headerlink" href="#methodes-pour-les-entrees-de-run" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong><code>log_inputs(run_id, datasets=None, tags=None)</code></strong></li>
+</ol>
+<h3 id="methodes-diverses"><strong>Méthodes diverses :</strong><a class="headerlink" href="#methodes-diverses" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong><code>set_tracking_uri(uri)</code></strong></li>
+<li><strong><code>get_tracking_uri()</code></strong></li>
+<li><strong><code>set_registry_uri(uri)</code></strong></li>
+<li><strong><code>get_registry_uri()</code></strong></li>
+</ol>
+<p>Cette liste couvre toutes les méthodes publiques disponibles dans la classe <code>MLflowClient</code> pour la version 2.17.2, conformément au code source disponible sur le dépôt GitHub de MLflow.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.top", "instant"], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.83f73b43.min.js"></script>
+      
+    
+  </body>
+</html>
