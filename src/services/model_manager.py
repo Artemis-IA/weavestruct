@@ -31,6 +31,8 @@ class ModelManager:
         self.mlflow_service = mlflow_service
         self.device = settings.DEVICE
         self.hfapi = HfApi(token=settings.HF_API_TOKEN)
+        self.models_bucket = settings.MLFLOW_ARTIFACT_ROOT
+        self.model_cache = {}
         logger.info(f"Using device: {self.device}")
 
     def fetch_available_models(self) -> List[str]:

@@ -5,9 +5,9 @@ from datetime import datetime
 
 class TrainInput(BaseModel):
     artifact_name: str = Field(..., example="knowledgator/gliner-multitask-large-v0.5")
-    custom_model_name: str = Field(..., example="")
+    custom_model_name: Optional[str] = Field(None, example="my_custom_model")
     s3_bucket: Optional[str] = Field(None, example="model-artifacts")
-    train_data: str  # Path to the training data
+    train_data: Optional[str] = Field(None, example="../datasets/GLINER-multi-task-synthetic-data/unie_synthetic.json")
     split_ratio: float = Field(0.9, example=0.9)
     learning_rate: float = Field(5e-6, example=5e-6)
     weight_decay: float = Field(0.01, example=0.01)

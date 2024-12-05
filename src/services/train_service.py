@@ -79,7 +79,7 @@ class TrainService:
     def train_model(self, train_input: TrainInput) -> TrainResponse:
         try:
             # Load dataset from the given dataset_path
-            dataset_path = train_input.dataset_path
+            dataset_path = train_input.train_data
             if not dataset_path or not os.path.exists(dataset_path):
                 raise FileNotFoundError(f"The dataset file {dataset_path} was not found.")
 
