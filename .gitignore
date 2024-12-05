@@ -15,4 +15,11 @@ all.py
 services/all.py
 routers/all.py
 
-/datasets/*
+datasets/*
+!datasets/.gitkeep
+mlruns/*
+!mlruns/.gitkeep
+models/*
+!models/.gitkeep
+logs/*
+tests/*
