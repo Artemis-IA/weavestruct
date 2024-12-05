@@ -1,4 +1,4 @@
-# services/pgector_services.py
+# services/pgvector_service.py
 import psycopg2
 from psycopg2.extras import Json
 from typing import Dict, Any, List, Optional
@@ -7,7 +7,7 @@ from langchain.docstore.document import Document
 
 
 class PGVectorService:
-    def __init__(self, db_url: str, table_name: str = "document_vectors"):
+    def __init__(self, db_url: str, table_name: str = "document_embeddings"):
         """
         Initialize PGVectorService with a PostgreSQL connection and table name.
 
@@ -32,46 +32,66 @@ class PGVectorService:
             raise
 
     def _ensure_table_exists(self):
-        """Ensure the required table exists in the database."""
+        """
+        Ensure the required tables exist in the database.
+        First ensure the 'documents' table, then the 'document_embeddings' table
+        that references it.
+        """
         try:
+            # Ensure the documents table exists
+            # The documents table should have at least an 'id' column to reference
             self.cursor.execute(f"""
                 CREATE TABLE IF NOT EXISTS {self.table_name} (
-                    id SERIAL PRIMARY KEY,
-                    embedding VECTOR,
+                    id UUID PRIMARY KEY,
+                    title TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+
+            # Ensure the document_embeddings table exists
+            self.cursor.execute(f"""
+                CREATE TABLE IF NOT EXISTS {self.table_name} (
+                    document_id UUID PRIMARY KEY REFERENCES {self.table_name}(id) ON DELETE CASCADE,
+                    embedding vector(768),
                     metadata JSONB,
                     content TEXT
                 );
             """)
+
             self.connection.commit()
-            logger.info(f"Table '{self.table_name}' ensured in database.")
+            logger.info(f"Tables '{self.table_name}' and '{self.table_name}' ensured in database.")
         except Exception as e:
-            logger.error(f"Failed to ensure table exists: {e}")
+            logger.error(f"Failed to ensure tables exist: {e}")
             raise
 
-    def store_vector(self, embedding: List[float], metadata: Dict[str, Any], content: str) -> Optional[int]:
+    def store_vector(self, document_id: str, embedding: List[float], metadata: Dict[str, Any], content: str) -> Optional[str]:
         """
         Store a vector in the database.
 
         Args:
+            document_id (str): UUID of the document.
             embedding (List[float]): Vector embedding.
             metadata (Dict[str, Any]): Metadata for the document.
             content (str): Document content.
 
         Returns:
-            Optional[int]: Row ID of the stored vector.
+            Optional[str]: Document ID of the stored vector.
         """
         try:
             self.cursor.execute(
                 f"""
-                INSERT INTO {self.table_name} (embedding, metadata, content)
-                VALUES (%s, %s, %s) RETURNING id;
+                INSERT INTO {self.table_name} (document_id, embedding, metadata, content)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (document_id) DO UPDATE
+                SET embedding = EXCLUDED.embedding, metadata = EXCLUDED.metadata, content = EXCLUDED.content
+                RETURNING document_id;
                 """,
-                (embedding, Json(metadata), content)
+                (document_id, embedding, Json(metadata), content)
             )
-            row_id = self.cursor.fetchone()[0]
+            stored_id = self.cursor.fetchone()[0]
             self.connection.commit()
-            logger.info(f"Vector stored with ID {row_id}.")
-            return row_id
+            logger.info(f"Vector stored for document ID {stored_id}.")
+            return stored_id
         except Exception as e:
             logger.error(f"Error storing vector: {e}")
             self.connection.rollback()
@@ -86,18 +106,20 @@ class PGVectorService:
         """
         try:
             for document in documents:
-                # Extract embedding, metadata, and content
+                document_id = document.metadata.get("document_id")
                 embedding = document.metadata.get("embedding", [])
-                metadata = {key: value for key, value in document.metadata.items() if key != "embedding"}
+                metadata = {key: value for key, value in document.metadata.items() if key not in ["embedding", "document_id"]}
                 content = document.page_content
 
-                # Validate embedding
+                if not document_id:
+                    logger.warning("No document ID found for document chunk; skipping.")
+                    continue
+
                 if not embedding:
                     logger.warning("No embedding found for document chunk; skipping.")
                     continue
 
-                # Store the vector in the database
-                self.store_vector(embedding, metadata, content)
+                self.store_vector(document_id, embedding, metadata, content)
             logger.info(f"Indexed {len(documents)} document chunks into PGVector.")
         except Exception as e:
             logger.error(f"Error indexing documents: {e}")
@@ -117,7 +139,7 @@ class PGVectorService:
         try:
             self.cursor.execute(
                 f"""
-                SELECT id, content, metadata, embedding <=> %s AS distance
+                SELECT document_id, content, metadata, embedding <=> %s AS distance
                 FROM {self.table_name}
                 ORDER BY distance ASC
                 LIMIT %s;
@@ -127,7 +149,7 @@ class PGVectorService:
             results = self.cursor.fetchall()
             logger.info(f"Found {len(results)} nearest vectors.")
             return [
-                {"id": row[0], "content": row[1], "metadata": row[2], "distance": row[3]}
+                {"document_id": row[0], "content": row[1], "metadata": row[2], "distance": row[3]}
                 for row in results
             ]
         except Exception as e:
@@ -144,7 +166,6 @@ class PGVectorService:
             logger.info("Database connection closed.")
         except Exception as e:
             logger.error(f"Error closing database connection: {e}")
-
 
     def validate_connection(self):
         """Validate the connection to the PostgreSQL database."""

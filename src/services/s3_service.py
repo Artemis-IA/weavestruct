@@ -94,6 +94,18 @@ class S3Service:
             else:
                 logger.error(f"Error checking existence of file {object_name} in bucket {bucket_name}: {e}")
         return False
+    
+    def create_bucket(self, bucket_name: str) -> bool:
+        """
+        Creates a bucket in S3.
+        """
+        try:
+            self.s3_client.create_bucket(Bucket=bucket_name)
+            logger.info(f"Bucket '{bucket_name}' created successfully.")
+            return True
+        except ClientError as e:
+            logger.error(f"Failed to create bucket '{bucket_name}': {e}")
+            return False
 
     def list_buckets(self) -> Optional[list]:
         try:

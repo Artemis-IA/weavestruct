@@ -4,6 +4,8 @@ from pathlib import Path
 from typing import ClassVar, Dict
 from pydantic_settings import BaseSettings
 import torch
+from dotenv import load_dotenv
+
 
 class Settings(BaseSettings):
     # Application settings
@@ -22,24 +24,25 @@ class Settings(BaseSettings):
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = int(os.getenv("PORT", 8008))
 
-    # Neo4j settings
-    NEO4J_URI: str = os.getenv("NEO4J_URI", "bolt://localhost:7687")
+    # Neo4j
+    NEO4J_URI: str = os.getenv("NEO4J_URI", "bolt://neo4j:7687")
+    NEO4J_AUTH: str = os.getenv("NEO4J_AUTH", "neo4j/your_password")
     NEO4J_USER: str = os.getenv("NEO4J_USER", "neo4j")
     NEO4J_PASSWORD: str = os.getenv("NEO4J_PASSWORD", "your_password")
 
     # PostgreSQL settings
     PG_MAJOR: int = int(os.getenv("PG_MAJOR", 16))
-    POSTGRE_PORT: int = int(os.getenv("POSTGRE_PORT", 5432))
-    POSTGRE_USER: str = os.getenv("POSTGRE_USER", "postgre_user")
-    POSTGRE_PASSWORD: str = os.getenv("POSTGRE_PASSWORD", "postgre_password")
-    POSTGRE_DB: str = os.getenv("POSTGRE_DB", "postgre_db")
-    POSTGRE_HOST: str = os.getenv("POSTGRE_HOST", "localhost")
+    POSTGRES_PORT: int = int(os.getenv("POSTGRES_PORT", 5432))
+    POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgres_user")
+    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "postgres_password")
+    POSTGRES_DB: str = os.getenv("POSTGRES_DB", "postgres_db")
+    POSTGRES_HOST: str = os.getenv("POSTGRES_HOST", "localhost")
     DJANGO_DB: str = "default"
     PGVECTOR_TABLE_NAME: str = "documents_embeddings"
     EMBEDDING_MODEL_NAME: str = "nomic-embed-text"
 
     # Derived PostgreSQL settings
-    DATABASE_URL: str = os.getenv("DATABASE_URL", f"postgresql://{POSTGRE_USER}:{POSTGRE_PASSWORD}@{POSTGRE_HOST}:{POSTGRE_PORT}/{POSTGRE_DB}")
+    DATABASE_URL: str = os.getenv("DATABASE_URL", f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}")
 
     # MLflow settings
     MLFLOW_USER: str = os.getenv("MLFLOW_USER", "mlflow_user")
@@ -54,7 +57,7 @@ class Settings(BaseSettings):
     # Derived MLflow settings
     MLFLOW_BACKEND_STORE_URI: str = os.getenv(
         "MLFLOW_BACKEND_STORE_URI", 
-        f"postgresql+psycopg2://{POSTGRE_USER}:{POSTGRE_PASSWORD}@{POSTGRE_HOST}:{POSTGRE_PORT}/{MLFLOW_DB}"
+        f"postgresql+psycopg2://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{MLFLOW_DB}"
     )
     MLFLOW_ARTIFACT_ROOT: str = os.getenv("MLFLOW_ARTIFACT_ROOT", "s3://mlflow/")
 
@@ -99,7 +102,7 @@ class Settings(BaseSettings):
     LABEL_STUDIO_PROJECT_NAME: str = os.getenv("LABEL_STUDIO_PROJECT_NAME", "proj-1")
     LABEL_STUDIO_PROJECT_TITLE: str = os.getenv("LABEL_STUDIO_PROJECT_TITLE", "Machine Learning Annotations Project")
     LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED: bool = os.getenv("LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED", "true").lower() == "true"
-    LS_DATABASE_URL: str = os.getenv("LS_DATABASE_URL", f"postgresql://{LABEL_STUDIO_USER}:{LABEL_STUDIO_PASSWORD}@{POSTGRE_HOST}:{POSTGRE_PORT}/{LABEL_STUDIO_DB}")
+    LS_DATABASE_URL: str = os.getenv("LS_DATABASE_URL", f"postgresql://{LABEL_STUDIO_USER}:{LABEL_STUDIO_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{LABEL_STUDIO_DB}")
 
     # Prometheus settings
     PROMETHEUS_PORT: int = int(os.getenv("PROMETHEUS_PORT", 9090))

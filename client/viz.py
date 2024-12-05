@@ -7,7 +7,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 # Configuration
-DATABASE_URL = "postgresql://postgre_user:postgre_password@localhost/postgre_db"
+DATABASE_URL = "postgresql://postgres_user:postgres_password@localhost/postgre_db"
 FASTAPI_URL = "http://localhost:8000"  # Adresse de votre serveur FastAPI
 NEO4J_URI = "bolt://localhost:7687"
 NEO4J_USER = "neo4j"

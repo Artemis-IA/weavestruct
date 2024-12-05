@@ -38,4 +38,7 @@ nav:
       - Documentation Swagger: api.md
       - Endpoints: usage.md
   - Configuration: configuration.md
+  # - Authentification: auth.md
+  - ML Flow: mlflow.md
   - À propos: about.md
+  - License: license.md

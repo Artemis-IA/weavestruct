@@ -111,9 +111,6 @@ async def get_gliner_models(
     sort_by: ModelInfoFilter = Query(ModelInfoFilter.size, description="Sort models by 'size', 'recent', 'name', 'downloads', or 'likes'"),
     model_manager: ModelManager = Depends(get_model_manager)
 ):
-    """
-    Fetch all GLiNER models from Hugging Face and optionally sort them.
-    """
     try:
         models = model_manager.fetch_hf_models(sort_by=sort_by)
         return models
@@ -123,40 +120,26 @@ async def get_gliner_models(
         logger.error(f"Failed to fetch GLiNER models: {e}")
         raise HTTPException(status_code=500, detail="Internal server error.")
 
-ALLOWED_MODELS =  ["gretelai/gretel-gliner-bi-small-v1.0"]
-
 @router.post("/upload_model_huggingface")
 async def upload_model_huggingface(
-    model_name: str = Form("gretelai/gretel-gliner-bi-small-v1.0", description="Name of the model from Hugging Face to be registered"),
-    task: Optional[str] = Form("text-classification", description="Task type for the model (e.g., 'ner', 'text-classification')"),
-    model_manager: ModelManager = Depends(get_model_manager),
+    model_name: str = Form(..., description="Name of the Hugging Face model"),
+    register_name: str = Form(..., description="Name to register the model in MLflow"),
+    artifact_path: str = Form("model_artifacts", description="Path to save artifacts in MLflow"),
+    model_manager: ModelManager = Depends(get_model_manager)
 ):
     """
-    Upload a model artifact from Hugging Face to MLflow.
+    Upload a Hugging Face model and register it in MLflow.
     """
     try:
-        # Validate that model_name is in the list of allowed models
-        if model_name not in ALLOWED_MODELS:
-            raise HTTPException(status_code=400, detail=f"Model '{model_name}' is not allowed. Allowed models: {ALLOWED_MODELS}")
-
-        # Check if model_name already exists in MLflow
-        existing_models = model_manager.fetch_available_models()
-        if model_name in existing_models:
-            raise HTTPException(status_code=400, detail=f"Model '{model_name}' already exists in MLflow.")
-
-        # Upload model from Hugging Face
-        version = model_manager.upload_model_from_huggingface(
+        model_manager.fetch_and_register_hf_model(
             model_name=model_name,
-            task=task
+            artifact_path=artifact_path,
+            register_name=register_name,
         )
-        return {
-            "message": f"Model '{model_name}' uploaded from Hugging Face and registered successfully.",
-            "version": version
-        }
+        return {"message": f"Model '{model_name}' registered successfully as '{register_name}'."}
     except Exception as e:
-        logger.exception("Failed to upload model from Hugging Face.")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
-
+        logger.error(f"Error during model upload: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to upload model: {e}")
 
 @router.post("/upload_model_artifact")
 async def upload_model_artifact(

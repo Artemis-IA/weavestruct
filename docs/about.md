@@ -1,7 +1,3 @@
-Voici le README mis à jour avec une section sur les briques utilisées et une description concise de chaque service de l'API :
-
----
-
 # 🌀 **WeaveStruct**  
 > **De la donnée brute à l'information exploitable : traitement de documents, extraction d'entités et relations, et construction de graphes de connaissances.**  
 
@@ -90,7 +86,7 @@ Les contributions sont les bienvenues !
 ---
 
 ## 📜 **Licence**
-Ce projet est sous licence MIT. Consultez le fichier [LICENSE](LICENSE) pour plus d'informations.
+Ce projet est sous licence MIT. Consultez le fichier [LICENSE](license.md) pour plus d'informations.
 
 ---
 

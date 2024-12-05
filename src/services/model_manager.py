@@ -4,10 +4,7 @@ from enum import Enum
 from typing import Dict, Any, Optional, List, Literal, Dict, Any, List, Tuple, Union
 from gliner import GLiNER
 from transformers import AutoTokenizer, pipeline, AutoModelForTokenClassification
-from transformers import AutoModelForTokenClassification as BaseORTModel
-from transformers import AutoModelForTokenClassification as SpanORTModel
-from transformers import AutoModelForTokenClassification as TokenORTModel
-from huggingface_hub import HfApi
+from huggingface_hub import hf_hub_download, list_repo_files
 from config import settings
 from services.s3_service import S3Service
 from services.mlflow_service import MLFlowService
@@ -33,14 +30,9 @@ class ModelInfoFilter(str, Enum):
 
 
 class ModelManager:
-    def __init__(self, s3_service: S3Service, mlflow_service: MLFlowService):
-        self.s3_service = s3_service
+    def __init__(self, mlflow_service: MLFlowService):
         self.mlflow_service = mlflow_service
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.mlflow_client = mlflow_service.client
-        self.model_cache = {}
-        self.models_bucket = 'mlflow-artifacts'
-
+        self.device = settings.DEVICE
         logger.info(f"Using device: {self.device}")
 
     def fetch_available_models(self) -> List[str]:
@@ -51,59 +43,35 @@ class ModelManager:
         available_models = [model.name for model in models]
         logger.info(f"Available models fetched from MLflow: {available_models}")
         return available_models
-
-    def fetch_hf_models(self, sort_by: ModelInfoFilter = ModelInfoFilter.size) -> List[Dict[str, Any]]:
-        """
-        Fetch all GLiNER models from Hugging Face and sort them.
-
-        Args:
-            sort_by (ModelInfoFilter): Criteria for sorting the models.
-
-        Returns:
-            List[Dict[str, Any]]: List of models with metadata.
-        """
+    
+    def fetch_and_register_hf_model(self, model_name: str, artifact_path: str, register_name: str):
+        """Download a model from Hugging Face and register it in MLflow."""
         try:
-            api = HfApi(token=settings.HF_API_TOKEN)
-            models = api.list_models(filter="gliner", cardData=True, full=True)
+            logger.info(f"Fetching model '{model_name}' from Hugging Face...")
+            model_dir = Path(f"/tmp/{model_name.replace('/', '_')}")
+            model_dir.mkdir(parents=True, exist_ok=True)
 
-            model_data = []
-            for model in models:
-                size = None
-                model_info = api.model_info(repo_id=model.modelId, files_metadata=True)
-                if model_info.siblings:
-                    for sibling in model_info.siblings:
-                        if sibling.rfilename == "pytorch_model.bin":
-                            size = sibling.size / (1024 * 1024)  # Convert size to MB
-                            break
-                # Extract description from cardData
-                description = ""
-                if model_info.card_data and "description" in model_info.card_data:
-                    description = model_info.card_data["description"]
+            # List and download required files
+            files = list_repo_files(repo_id=model_name)
+            logger.info(f"Files available: {files}")
 
-                model_data.append({
-                    "modelId": model.modelId,
-                    "size": size,
-                    "lastModified": model.lastModified,
-                    "downloads": model.downloads or 0,
-                    "likes": model.likes or 0,
-                    "description": description,
-                })
-        # Sorting
-            sort_key = {
-                ModelInfoFilter.size: lambda x: x["size"] or float("inf"),
-                ModelInfoFilter.recent: lambda x: x["lastModified"],
-                ModelInfoFilter.name: lambda x: x["modelId"],
-                ModelInfoFilter.downloads: lambda x: x["downloads"],
-                ModelInfoFilter.likes: lambda x: x["likes"],
-            }.get(sort_by, None)
+            required_files = ["pytorch_model.bin", "config.json"]
+            for file in required_files:
+                if file in files:
+                    logger.info(f"Downloading {file}...")
+                    hf_hub_download(repo_id=model_name, filename=file, local_dir=str(model_dir))
+                else:
+                    logger.warning(f"{file} not found. Skipping.")
 
-            if sort_key:
-                model_data = sorted(model_data, key=sort_key, reverse=(sort_by != ModelInfoFilter.name))
-
-            return model_data
+            logger.info("Files downloaded successfully. Logging to MLflow...")
+            self.mlflow_service.log_artifacts_and_register_model(
+                model_dir=str(model_dir),
+                artifact_path=artifact_path,
+                register_name=register_name,
+            )
         except Exception as e:
-            logger.error(f"Failed to fetch GLiNER models: {e}")
-            raise ValueError(f"Error fetching GLiNER models: {e}")
+            logger.error(f"Failed to fetch or register model '{model_name}': {e}")
+            raise ValueError(f"Error during model processing: {e}")
         
     def load_model(self, model_name: str) -> GLiNER:
         """
@@ -140,41 +108,13 @@ class ModelManager:
         logger.info(f"Model {model_name} loaded and cached.")
         return model
 
-    def upload_model_from_huggingface(self, model_name: str, task: Optional[str] = None, **kwargs):
-        """Upload a model from Hugging Face to MLflow."""
-        try:
-            model = BaseORTModel.from_pretrained(model_name).to(self.device)
-            tokenizer = AutoTokenizer.from_pretrained(model_name)
-
-            self.mlflow_service.start_run(run_name=f"Uploading {model_name} from Hugging Face")
-            artifact_path = f"{model_name}_artifact"
-            version = self.mlflow_service.log_transformers_model(
-                transformers_model=model,
-                artifact_path=artifact_path,
-                model_name=model_name,
-                tokenizer=tokenizer,
-                **kwargs
-            )
-
-            model_uri = f"runs:/{mlflow.active_run().info.run_id}/{artifact_path}"
-            mlflow.transformers.persist_pretrained_model(model_uri)
-            logger.info(f"Persisted pretrained weights for {model_name}.")
-
-            self.mlflow_service.end_run()
-            logger.info(f"Model {model_name} uploaded from Hugging Face and registered in MLflow.")
-            return version
-        except Exception as e:
-            logger.error(f"Failed to upload model {model_name} from Hugging Face: {e}")
-            self.mlflow_service.end_run(status="FAILED")
-            raise
-
     def upload_model_from_local(self, model_name: str, local_model_path: Path, task: Optional[str] = None, **kwargs):
         """Upload a model from local cache to MLflow."""
         try:
             model = pipeline(task=task, model=str(local_model_path), device=self.device, **kwargs)
             self.mlflow_service.start_run(run_name=f"Uploading {model_name} from local cache")
             artifact_path = f"{model_name}_artifact"
-            version = self.mlflow_service.log_transformers_model(
+            version = self.mlflow_service.log_model(
                 transformers_model=model,
                 artifact_path=artifact_path,
                 model_name=model_name,

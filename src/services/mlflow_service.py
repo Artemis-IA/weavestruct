@@ -7,7 +7,12 @@ from typing import Dict, Any, List, Optional
 import os
 
 class MLFlowService:
-    def __init__(self, tracking_uri: str):
+    def __init__(self, tracking_uri: str, s3_endpoint: str, access_key: str, secret_key: str):
+        os.environ["MLFLOW_TRACKING_URI"] = tracking_uri
+        os.environ["MLFLOW_S3_ENDPOINT_URL"] = s3_endpoint
+        os.environ["AWS_ACCESS_KEY_ID"] = access_key
+        os.environ["AWS_SECRET_ACCESS_KEY"] = secret_key
+
         mlflow.set_tracking_uri(tracking_uri)
         self.client = MlflowClient()
         self.tracking_uri = tracking_uri
@@ -44,51 +49,44 @@ class MLFlowService:
         except Exception as e:
             logger.error(f"Failed to log artifact to MLflow: {e}")
 
-    def log_transformers_model(
-        self,
-        transformers_model,
-        artifact_path: str,
-        model_name: str,
-        processor=None,
-        task: Optional[str] = None,
-        **kwargs
-    ):
-        """
-        Log a transformers model to MLflow. Supports wrapping GLiNER in a Pipeline if necessary.
-        """
+    def log_model_artifact(self, model: Any, model_name: str, artifact_path: str, **kwargs) -> str:
+
         try:
-            # Check if the model is a GLiNER instance
             from gliner.model import GLiNER
+            artifact_dir = Path(artifact_path)
+            artifact_dir.mkdir(parents=True, exist_ok=True)
 
-            if isinstance(transformers_model, GLiNER):
-                logger.info("Detected GLiNER model. Wrapping it in a transformers Pipeline.")
-                from transformers import pipeline
-                
-                # Wrap GLiNER in a transformers-compatible Pipeline
-                transformers_model = pipeline(
-                    task="ner",  # Adjust the task as per your GLiNER use case
-                    model=transformers_model,
-                )
+            # Handle different model types
+            if isinstance(model, GLiNER):
+                logger.info("Detected GLiNER model. Saving using `save_pretrained`.")
+                model.save_pretrained(str(artifact_dir))
+            elif hasattr(model, "save_pretrained"):
+                logger.info("Detected Hugging Face model. Saving using `save_pretrained`.")
+                model.save_pretrained(str(artifact_dir))
+            else:
+                logger.info("Generic model detected. Saving as binary artifact.")
+                model_path = artifact_dir / f"{model_name}.bin"
+                with open(model_path, "wb") as f:
+                    f.write(model)
 
-            # Log the model using mlflow.transformers
-            mlflow.transformers.log_model(
-                transformers_model=transformers_model,
-                artifact_path=artifact_path,
-                processor=processor,
-                task=task,
-                **kwargs
-            )
-            logger.info(f"Transformers model logged to MLflow at {artifact_path}.")
+            # Log the model artifacts to MLflow
+            mlflow.log_artifacts(str(artifact_dir), artifact_path="model")
 
             # Register the model
-            model_uri = f"runs:/{mlflow.active_run().info.run_id}/{artifact_path}"
-            version = self.register_model(model_name, model_uri)
-            return version
+            model_uri = f"runs:/{mlflow.active_run().info.run_id}/model"
+            registered_model = self.client.create_registered_model(name=model_name)
+            self.client.create_model_version(
+                name=model_name, 
+                source=model_uri, 
+                run_id=mlflow.active_run().info.run_id
+            )
+            logger.info(f"Model {model_name} logged and registered successfully.")
+            return model_uri
 
         except Exception as e:
-            logger.error(f"Failed to log and register transformers model {model_name}: {e}")
-            raise
-
+            logger.error(f"Failed to log and register model {model_name}: {e}")
+            raise ValueError(f"Error logging model artifact for {model_name}: {e}")
+        
     def register_model(self, model_name: str, model_dir: Path):
         try:
             model_uri = str(model_dir.resolve())
@@ -108,7 +106,19 @@ class MLFlowService:
         except Exception as e:
             logger.error(f"Failed to get registered model {model_name}: {e}")
             return None
-
+        
+    def log_artifacts_and_register_model(self, model_dir: str, artifact_path: str, register_name: str):
+        """Logs artifacts and registers the model in MLflow."""
+        try:
+            with mlflow.start_run(run_name=f"Upload {register_name}"):
+                mlflow.log_artifacts(model_dir, artifact_path=artifact_path)
+                model_uri = f"runs:/{mlflow.active_run().info.run_id}/{artifact_path}"
+                mlflow.register_model(model_uri=model_uri, name=register_name)
+                logger.info(f"Model '{register_name}' registered successfully.")
+        except Exception as e:
+            logger.error(f"Failed to log artifacts or register model: {e}")
+            raise ValueError(f"Error logging and registering model: {e}")
+        
     def get_latest_versions(self, model_name: str, stages: Optional[List[str]] = None):
         try:
             versions = self.client.get_latest_versions(name=model_name, stages=stages)

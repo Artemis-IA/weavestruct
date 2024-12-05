@@ -1,28 +1,44 @@
+# FastAPI and related libraries
 fastapi
-uvicorn
+uvicorn[standard]
 python-multipart
 aiofiles
-mlflow
+python-multipart
+pydantic
+
+# Logging
+loguru
+
+# Monitoring and metrics
+prometheus-client
+prometheus-fastapi-instrumentator
 codecarbon
 gputil
 psutil
-loguru
-prometheus_client
-docling
+
+# Models Monitroing and Explainability
+mlflow
+
+# PyTorch with CUDA 12.5
 torch --extra-index-url https://download.pytorch.org/whl/cu125
 torchvision --extra-index-url https://download.pytorch.org/whl/cu125
 torchaudio --extra-index-url https://download.pytorch.org/whl/cu125
 
-
+# LangChain and integrations
 langchain-ollama
-langchain-community 
+langchain-community
 langchain-core
 langchain-experimental
 langchain-text-splitters
+
+# Database and cloud integrations
 neo4j
 sqlalchemy
-boto3
 psycopg2
+py2neo
+boto3
+
+# Custom modules
 gliner
 glirel
-py2neo
+docling

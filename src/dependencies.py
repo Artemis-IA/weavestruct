@@ -4,6 +4,7 @@ from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Generator
 from functools import lru_cache
+from loguru import logger
 
 from config import settings
 from utils.database import SessionLocal
@@ -56,46 +57,49 @@ def get_s3_service() -> S3Service:
         layouts_bucket=settings.LAYOUTS_BUCKET
     )
 
-    # Validate bucket existence by listing buckets
-    if settings.INPUT_BUCKET not in s3_service.list_buckets():
-        raise HTTPException(
-            status_code=500,
-            detail=f"S3 input bucket '{settings.INPUT_BUCKET}' does not exist."
-        )
-    if settings.OUTPUT_BUCKET not in s3_service.list_buckets():
-        raise HTTPException(
-            status_code=500,
-            detail=f"S3 output bucket '{settings.OUTPUT_BUCKET}' does not exist."
-        )
-    if settings.LAYOUTS_BUCKET not in s3_service.list_buckets():
-        raise HTTPException(
-            status_code=500,
-            detail=f"S3 layouts bucket '{settings.LAYOUTS_BUCKET}' does not exist."
-        )
+    # Vérification et création des buckets si nécessaire
+    required_buckets = [settings.INPUT_BUCKET, settings.OUTPUT_BUCKET, settings.LAYOUTS_BUCKET]
+    existing_buckets = s3_service.list_buckets() or []
+
+    for bucket in required_buckets:
+        if bucket not in existing_buckets:
+            try:
+                s3_service.s3_client.create_bucket(Bucket=bucket)
+                logger.info(f"Bucket '{bucket}' created successfully.")
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to create S3 bucket '{bucket}': {str(e)}"
+                )
 
     return s3_service
+
 
 # Dependency to get the MLflow service
 @lru_cache
 def get_mlflow_service() -> MLFlowService:
-    """Returns an instance of the MLflow service."""
     try:
-        mlflow_service = MLFlowService(tracking_uri=settings.MLFLOW_TRACKING_URI)
-        mlflow_service.validate_connection()  # Assumes a `validate_connection` method
+        mlflow_service = MLFlowService(
+            tracking_uri=settings.MLFLOW_TRACKING_URI,
+            s3_endpoint=settings.MINIO_API_URL,
+            access_key=settings.AWS_ACCESS_KEY_ID,
+            secret_key=settings.AWS_SECRET_ACCESS_KEY
+        )
+        mlflow_service.validate_connection()
         return mlflow_service
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"MLflow service is not accessible: {str(e)}"
+            detail=f"MLflow service is not accessible: {e}"
         )
+    
 # Dependency to get the ModelManager
 @lru_cache
 def get_model_manager(
-    s3_service: S3Service = Depends(get_s3_service),
     mlflow_service: MLFlowService = Depends(get_mlflow_service),
 ) -> ModelManager:
     """Returns an instance of the ModelManager."""
-    return ModelManager(s3_service=s3_service, mlflow_service=mlflow_service)
+    return ModelManager(mlflow_service=mlflow_service)
 
 
 # Dependency for embedding service
