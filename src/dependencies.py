@@ -106,7 +106,7 @@ def get_model_manager(
 @lru_cache
 def get_embedding_service() -> EmbeddingService:
     """Returns an instance of the Embedding service."""
-    return EmbeddingService(model_name=settings.EMBEDDING_MODEL_NAME)
+    return EmbeddingService(artifact_name=settings.EMBEDDING_MODEL_NAME)
 
 
 # Dependency for PGVector vector store

@@ -4,9 +4,9 @@ from loguru import logger
 from typing import List
 
 class EmbeddingService:
-    def __init__(self, model_name: str):
-        self.embedding_model = OllamaEmbeddings(model=model_name)
-        logger.info(f"Embedding model '{model_name}' initialized.")
+    def __init__(self, artifact_name: str):
+        self.embedding_model = OllamaEmbeddings(model=artifact_name)
+        logger.info(f"Embedding model '{artifact_name}' initialized.")
 
     def generate_embeddings(self, texts: List[str]) -> List[List[float]]:
         try:

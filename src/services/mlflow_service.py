@@ -49,7 +49,7 @@ class MLFlowService:
         except Exception as e:
             logger.error(f"Failed to log artifact to MLflow: {e}")
 
-    def log_model_artifact(self, model: Any, model_name: str, artifact_path: str, **kwargs) -> str:
+    def log_model_artifact(self, model: Any, artifact_name: str, artifact_path: str, **kwargs) -> str:
 
         try:
             from gliner.model import GLiNER
@@ -65,7 +65,7 @@ class MLFlowService:
                 model.save_pretrained(str(artifact_dir))
             else:
                 logger.info("Generic model detected. Saving as binary artifact.")
-                model_path = artifact_dir / f"{model_name}.bin"
+                model_path = artifact_dir / f"{artifact_name}.bin"
                 with open(model_path, "wb") as f:
                     f.write(model)
 
@@ -74,37 +74,37 @@ class MLFlowService:
 
             # Register the model
             model_uri = f"runs:/{mlflow.active_run().info.run_id}/model"
-            registered_model = self.client.create_registered_model(name=model_name)
+            registered_model = self.client.create_registered_model(name=artifact_name)
             self.client.create_model_version(
-                name=model_name, 
+                name=artifact_name, 
                 source=model_uri, 
                 run_id=mlflow.active_run().info.run_id
             )
-            logger.info(f"Model {model_name} logged and registered successfully.")
+            logger.info(f"Model {artifact_name} logged and registered successfully.")
             return model_uri
 
         except Exception as e:
-            logger.error(f"Failed to log and register model {model_name}: {e}")
-            raise ValueError(f"Error logging model artifact for {model_name}: {e}")
+            logger.error(f"Failed to log and register model {artifact_name}: {e}")
+            raise ValueError(f"Error logging model artifact for {artifact_name}: {e}")
         
-    def register_model(self, model_name: str, model_dir: Path):
+    def register_model(self, artifact_name: str, model_dir: Path):
         try:
             model_uri = str(model_dir.resolve())
             result = mlflow.register_model(
                 model_uri=model_uri,
-                name=model_name
+                name=artifact_name
             )
-            logger.info(f"Model {model_name} registered successfully with version {result.version}.")
+            logger.info(f"Model {artifact_name} registered successfully with version {result.version}.")
         except Exception as e:
-            logger.error(f"Failed to register model {model_name}: {e}")
+            logger.error(f"Failed to register model {artifact_name}: {e}")
 
-    def get_registered_model(self, model_name: str):
+    def get_registered_model(self, artifact_name: str):
         try:
-            model = self.client.get_registered_model(model_name)
+            model = self.client.get_registered_model(artifact_name)
             logger.info(f"Retrieved registered model: {model.name}")
             return model
         except Exception as e:
-            logger.error(f"Failed to get registered model {model_name}: {e}")
+            logger.error(f"Failed to get registered model {artifact_name}: {e}")
             return None
         
     def log_artifacts_and_register_model(self, model_dir: str, artifact_path: str, register_name: str):
@@ -119,23 +119,23 @@ class MLFlowService:
             logger.error(f"Failed to log artifacts or register model: {e}")
             raise ValueError(f"Error logging and registering model: {e}")
         
-    def get_latest_versions(self, model_name: str, stages: Optional[List[str]] = None):
+    def get_latest_versions(self, artifact_name: str, stages: Optional[List[str]] = None):
         try:
-            versions = self.client.get_latest_versions(name=model_name, stages=stages)
-            logger.info(f"Retrieved latest versions for model {model_name}: {[v.version for v in versions]}")
+            versions = self.client.get_latest_versions(name=artifact_name, stages=stages)
+            logger.info(f"Retrieved latest versions for model {artifact_name}: {[v.version for v in versions]}")
             return versions
         except Exception as e:
-            logger.error(f"Failed to get latest versions for model {model_name}: {e}")
+            logger.error(f"Failed to get latest versions for model {artifact_name}: {e}")
             return None
 
-    def download_model(self, model_name: str, version: str, download_dir: str):
+    def download_model(self, artifact_name: str, version: str, download_dir: str):
         try:
-            model_uri = f"models:/{model_name}/{version}"
+            model_uri = f"models:/{artifact_name}/{version}"
             local_path = mlflow.artifacts.download_artifacts(artifact_uri=model_uri, dst_path=download_dir)
-            logger.info(f"Model {model_name} version {version} downloaded successfully to {local_path}")
+            logger.info(f"Model {artifact_name} version {version} downloaded successfully to {local_path}")
             return local_path
         except Exception as e:
-            logger.error(f"Failed to download model {model_name} version {version}: {e}")
+            logger.error(f"Failed to download model {artifact_name} version {version}: {e}")
             return None
 
     def search_registered_models(self) -> List[Dict[str, Any]]:

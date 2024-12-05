@@ -51,7 +51,7 @@ class ModelManager:
         inference: Optional[Literal["cold", "frozen", "warm"]] = None,
         library: Optional[Union[str, List[str]]] = None,
         language: Optional[Union[str, List[str]]] = None,
-        model_name: Optional[str] = None,
+        artifact_name: Optional[str] = None,
         task: Optional[Union[str, List[str]]] = None,
         trained_dataset: Optional[Union[str, List[str]]] = None,
         tags: Optional[Union[str, List[str]]] = None,
@@ -62,13 +62,13 @@ class ModelManager:
     ) -> List[Dict[str, Any]]:
         try:
             valid_sort_keys = {
+                "name": "modelId", 
                 "size": "modelSize",
                 "recent": "lastModified",
-                "name": "modelId",
                 "downloads": "downloads",
                 "likes": "likes",
             }
-            sort_key = valid_sort_keys.get(sort_by, "modelId")  # Default to "name" if invalid
+            sort_key = valid_sort_keys.get(sort_by, "modelId")
 
             models = self.hfapi.list_models(
                 filter=filter,
@@ -77,7 +77,7 @@ class ModelManager:
                 inference=inference,
                 library=library,
                 language=language,
-                model_name=model_name,
+                model_name=artifact_name,
                 task=task,
                 trained_dataset=trained_dataset,
                 tags=tags,
@@ -124,50 +124,50 @@ class ModelManager:
             raise ValueError(f"Error fetching models: {e}")
 
             
-    def load_model(self, model_name: str) -> GLiNER:
+    def load_model(self, artifact_name: str) -> GLiNER:
         """
         Load a model from MLflow artifacts.
         """
-        if model_name in self.model_cache:
-            logger.info(f"Model {model_name} loaded from cache.")
-            return self.model_cache[model_name]
+        if artifact_name in self.model_cache:
+            logger.info(f"Model {artifact_name} loaded from cache.")
+            return self.model_cache[artifact_name]
 
         # Get the latest version of the model
-        versions = self.mlflow_service.get_latest_versions(model_name)
+        versions = self.mlflow_service.get_latest_versions(artifact_name)
         if not versions:
-            raise ValueError(f"No versions found for model {model_name}")
+            raise ValueError(f"No versions found for model {artifact_name}")
 
         version = versions[0]  # Get the latest version
-        model_uri = f"models:/{model_name}/{version.version}"
+        model_uri = f"models:/{artifact_name}/{version.version}"
 
         # Download the model from MLflow
-        local_model_path = Path(f"/tmp/{model_name}")
+        local_model_path = Path(f"/tmp/{artifact_name}")
         local_model_path.mkdir(parents=True, exist_ok=True)
         try:
             mlflow.artifacts.download_artifacts(
                 artifact_uri=model_uri,
                 dst_path=str(local_model_path)
             )
-            logger.info(f"Model {model_name} downloaded successfully from MLflow.")
+            logger.info(f"Model {artifact_name} downloaded successfully from MLflow.")
         except Exception as e:
-            logger.error(f"Failed to download model {model_name} from MLflow: {e}")
+            logger.error(f"Failed to download model {artifact_name} from MLflow: {e}")
             raise
 
         # Load the model
         model = GLiNER.from_pretrained(str(local_model_path)).to(self.device)
-        self.model_cache[model_name] = model
-        logger.info(f"Model {model_name} loaded and cached.")
+        self.model_cache[artifact_name] = model
+        logger.info(f"Model {artifact_name} loaded and cached.")
         return model
 
-    def fetch_and_register_hf_model(self, model_name: str, artifact_path: str, register_name: str):
+    def fetch_and_register_hf_model(self, artifact_name: str, artifact_path: str, register_name: str):
         """Download a model from Hugging Face and register it in MLflow."""
         try:
-            logger.info(f"Fetching model '{model_name}' from Hugging Face...")
-            model_dir = Path(f"/tmp/{model_name.replace('/', '_')}")
+            logger.info(f"Fetching model '{artifact_name}' from Hugging Face...")
+            model_dir = Path(f"/tmp/{artifact_name.replace('/', '_')}")
             model_dir.mkdir(parents=True, exist_ok=True)
 
             # List and download relevant files
-            files = list_repo_files(repo_id=model_name)
+            files = list_repo_files(repo_id=artifact_name)
             logger.info(f"Files available: {files}")
 
             # Define required file patterns
@@ -177,13 +177,13 @@ class ModelManager:
             for file in files:
                 if any(pattern in file for pattern in file_patterns):
                     logger.info(f"Downloading {file}...")
-                    downloaded_path = hf_hub_download(repo_id=model_name, filename=file, local_dir=str(model_dir))
+                    downloaded_path = hf_hub_download(repo_id=artifact_name, filename=file, local_dir=str(model_dir))
                     downloaded_files.append(downloaded_path)
                 else:
                     logger.debug(f"Skipping irrelevant file: {file}")
 
             if not downloaded_files:
-                raise ValueError(f"No required model files found for '{model_name}'.")
+                raise ValueError(f"No required model files found for '{artifact_name}'.")
 
             logger.info("Files downloaded successfully. Logging to MLflow...")
             self.mlflow_service.log_artifacts_and_register_model(
@@ -192,32 +192,32 @@ class ModelManager:
                 register_name=register_name,
             )
         except Exception as e:
-            logger.error(f"Failed to fetch or register model '{model_name}': {e}")
+            logger.error(f"Failed to fetch or register model '{artifact_name}': {e}")
             raise ValueError(f"Error during model processing: {e}")
 
-    def upload_model_from_local(self, model_name: str, local_model_path: Path, task: Optional[str] = None, **kwargs):
+    def upload_model_from_local(self, artifact_name: str, local_model_path: Path, task: Optional[str] = None, **kwargs):
         """Upload a model from local cache to MLflow."""
         try:
             model = pipeline(task=task, model=str(local_model_path), device=self.device, **kwargs)
-            self.mlflow_service.start_run(run_name=f"Uploading {model_name} from local cache")
-            artifact_path = f"{model_name}_artifact"
+            self.mlflow_service.start_run(run_name=f"Uploading {artifact_name} from local cache")
+            artifact_path = f"{artifact_name}_artifact"
             version = self.mlflow_service.log_model(
                 transformers_model=model,
                 artifact_path=artifact_path,
-                model_name=model_name,
+                artifact_name=artifact_name,
                 task=task,
                 **kwargs
             )
 
             model_uri = f"runs:/{mlflow.active_run().info.run_id}/{artifact_path}"
             mlflow.transformers.persist_pretrained_model(model_uri)
-            logger.info(f"Persisted pretrained weights for local model {model_name}.")
+            logger.info(f"Persisted pretrained weights for local model {artifact_name}.")
 
             self.mlflow_service.end_run()
-            logger.info(f"Model {model_name} uploaded from local cache and registered in MLflow.")
+            logger.info(f"Model {artifact_name} uploaded from local cache and registered in MLflow.")
             return version
         except Exception as e:
-            logger.error(f"Failed to upload model {model_name} from local cache: {e}")
+            logger.error(f"Failed to upload model {artifact_name} from local cache: {e}")
             self.mlflow_service.end_run(status="FAILED")
             raise
 
@@ -225,16 +225,16 @@ class ModelManager:
         """
         Register and log models at startup if they are not already registered.
         """
-        for model_name in model_names:
-            existing_models = self.mlflow_client.search_registered_models(filter_string=f"name='{model_name}'")
+        for artifact_name in model_names:
+            existing_models = self.mlflow_client.search_registered_models(filter_string=f"name='{artifact_name}'")
             if not existing_models:
                 # Load the model from HuggingFace or another source
-                model = GLiNER.from_pretrained(model_name).to(self.device)
-                model_save_path = Path(f"models/{model_name}")
+                model = GLiNER.from_pretrained(artifact_name).to(self.device)
+                model_save_path = Path(f"models/{artifact_name}")
                 model.save_pretrained(model_save_path)
 
                 # Start MLflow run
-                self.mlflow_service.start_run(run_name=f"Registering {model_name}")
+                self.mlflow_service.start_run(run_name=f"Registering {artifact_name}")
 
                 # Log the model as an artifact
                 mlflow.log_artifacts(str(model_save_path), artifact_path="model_artifacts")
@@ -243,16 +243,16 @@ class ModelManager:
                 model_uri = f"{mlflow.get_artifact_uri()}/model_artifacts"
                 result = mlflow.register_model(
                     model_uri=model_uri,
-                    name=model_name
+                    name=artifact_name
                 )
-                logger.info(f"Model {model_name} registered with version {result.version}.")
+                logger.info(f"Model {artifact_name} registered with version {result.version}.")
 
                 # End MLflow run
                 self.mlflow_service.end_run()
 
-                logger.info(f"Model {model_name} registered and logged to MLflow.")
+                logger.info(f"Model {artifact_name} registered and logged to MLflow.")
             else:
-                logger.info(f"Model {model_name} is already registered in MLflow.")
+                logger.info(f"Model {artifact_name} is already registered in MLflow.")
 
     def log_model_metrics(self, metrics: Dict[str, Any], step: Optional[int] = None):
         try:
@@ -260,7 +260,7 @@ class ModelManager:
         except Exception as e:
             logger.error(f"Failed to log metrics to MLflow: {e}")
 
-    def upload_model(self, model_name: str, model_dir: Path):
+    def upload_model(self, artifact_name: str, model_dir: Path):
         """
         Upload a model directory to MLFLow as an artifact.
         """
@@ -268,31 +268,31 @@ class ModelManager:
             model_uri = str(model_dir.resolve())
             result = mlflow.register_model(
                 model_uri=model_uri,
-                name=model_name
+                name=artifact_name
             )
-            logger.info(f"Model {model_name} registered successfully with version {result.version}.")
+            logger.info(f"Model {artifact_name} registered successfully with version {result.version}.")
         except Exception as e:
-            logger.error(f"Failed to register model {model_name}: {e}")
+            logger.error(f"Failed to register model {artifact_name}: {e}")
         
-    def zip_and_upload_model(self, model_name: str):
-        model_path = Path("models") / model_name
+    def zip_and_upload_model(self, artifact_name: str):
+        model_path = Path("models") / artifact_name
         zip_path = model_path.with_suffix(".zip")
 
         if not model_path.exists():
-            raise ValueError(f"Model directory {model_name} does not exist.")
+            raise ValueError(f"Model directory {artifact_name} does not exist.")
 
         # Create zip file of the model directory
         try:
             shutil.make_archive(str(model_path), 'zip', str(model_path))
         except Exception as e:
-            logger.error(f"Failed to create zip archive for {model_name}: {e}")
+            logger.error(f"Failed to create zip archive for {artifact_name}: {e}")
             return None
 
         # Upload to S3 bucket
         s3_url = self.s3_service.upload_file(zip_path, bucket_name=self.models_bucket)
         if s3_url:
-            logger.info(f"Model {model_name} uploaded successfully to {s3_url}")
+            logger.info(f"Model {artifact_name} uploaded successfully to {s3_url}")
             return s3_url
         else:
-            logger.error(f"Failed to upload model {model_name} to S3")
+            logger.error(f"Failed to upload model {artifact_name} to S3")
             return None

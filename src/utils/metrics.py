@@ -81,7 +81,7 @@ class MetricsManager:
                 self.CARBON_EMISSIONS.set(emissions)
                 logger.info(f"CO2 emissions logged: {emissions:.6f} kgCO₂eq")
             else:
-                logger.warning("No emissions data available.")
+                logger.info("No emissions data available.")
         except Exception as e:
             logger.warning(f"Error logging system metrics: {e}")
 

@@ -53,9 +53,9 @@ class ModelLoggerService:
             with mlflow.start_run(run_name="Model Logging") as run:
                 run_id = run.info.run_id
 
-                for model_name, (model_id, model_file_path) in self.static_models.items():
-                    logger.info(f"Processing model: {model_name}")
-                    self._log_model_metadata(model_name, model_id, model_file_path, run_id)
+                for artifact_name, (model_id, model_file_path) in self.static_models.items():
+                    logger.info(f"Processing model: {artifact_name}")
+                    self._log_model_metadata(artifact_name, model_id, model_file_path, run_id)
 
             logger.info("Model logging process completed.")
             return {"message": "Model logging completed successfully"}
@@ -63,12 +63,12 @@ class ModelLoggerService:
             logger.error(f"Error in logging model details: {e}")
             return {"error": str(e)}
 
-    def _log_model_metadata(self, model_name, model_id, model_file_path, run_id):
+    def _log_model_metadata(self, artifact_name, model_id, model_file_path, run_id):
         try:
             # Check if the model is registered in MLflow
             registered_models = [rm.name for rm in self.client.search_registered_models()]
-            if model_name not in registered_models:
-                self.client.create_registered_model(model_name)
+            if artifact_name not in registered_models:
+                self.client.create_registered_model(artifact_name)
 
             # Fetch model metadata from Hugging Face
             model_info = self.hf_api.model_info(model_id)
@@ -77,24 +77,24 @@ class ModelLoggerService:
             model_tags = model_info.tags
 
             # Log metadata to MLflow
-            mlflow.set_tag(f"{model_name}_description", model_description)
+            mlflow.set_tag(f"{artifact_name}_description", model_description)
             for tag in model_tags:
-                mlflow.set_tag(f"{model_name}_tag_{tag}", True)
-            mlflow.log_param(f"{model_name}_version", model_version)
+                mlflow.set_tag(f"{artifact_name}_tag_{tag}", True)
+            mlflow.log_param(f"{artifact_name}_version", model_version)
 
             # Log model file as artifact if it exists
             if os.path.exists(model_file_path):
-                artifact_path = f"artifacts/{model_name}"
+                artifact_path = f"artifacts/{artifact_name}"
                 mlflow.log_artifact(model_file_path, artifact_path=artifact_path)
                 self.client.create_model_version(
-                    name=model_name,
+                    name=artifact_name,
                     source=f"{mlflow.get_artifact_uri()}/{artifact_path}",
                     run_id=run_id
                 )
             else:
                 logger.warning(f"Model path not found: {model_file_path}")
         except Exception as e:
-            logger.error(f"Error logging metadata for model {model_name}: {e}")
+            logger.error(f"Error logging metadata for model {artifact_name}: {e}")
 
     def _fetch_readme(self, model_id: str) -> Optional[str]:
         """

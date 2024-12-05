@@ -52,7 +52,7 @@ async def get_gliner_models(
 
 @router.post("/upload_model_from_huggingface")
 async def upload_model_huggingface(
-    model_name: str = Form(..., description="Name of the Hugging Face model"),
+    artifact_name: str = Form(..., description="Name of the Hugging Face model"),
     register_name: str = Form(..., description="Name to register the model in MLflow"),
     artifact_path: str = Form("model_artifacts", description="Path to save artifacts in MLflow"),
     model_manager: ModelManager = Depends(get_model_manager)
@@ -62,18 +62,18 @@ async def upload_model_huggingface(
     """
     try:
         model_manager.fetch_and_register_hf_model(
-            model_name=model_name,
+            artifact_name=artifact_name,
             artifact_path=artifact_path,
             register_name=register_name,
         )
-        return {"message": f"Model '{model_name}' registered successfully as '{register_name}'."}
+        return {"message": f"Model '{artifact_name}' registered successfully as '{register_name}'."}
     except Exception as e:
         logger.error(f"Error during model upload: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to upload model: {e}")
 
 @router.post("/", response_model=TrainResponse)
 async def train_model(
-    model_name: str = Form(..., description="Name of the base model"),
+    artifact_name: str = Form(..., description="Name of the base model"),
     custom_model_name: Optional[str] = Form(None, description="Custom name for the fine-tuned model"),
     dataset_file: Optional[UploadFile] = File(None, description="Upload dataset file"),
     s3_url: Optional[str] = Form(None, description="S3 URL of the dataset"),
@@ -84,10 +84,10 @@ async def train_model(
     model_manager: ModelManager = Depends(get_model_manager)
 ):
     try:
-        # Validate model_name
+        # Validate artifact_name
         available_models = model_manager.fetch_available_models()
-        if model_name not in available_models:
-            raise HTTPException(status_code=400, detail=f"Model '{model_name}' is not available. Available models: {available_models}")
+        if artifact_name not in available_models:
+            raise HTTPException(status_code=400, detail=f"Model '{artifact_name}' is not available. Available models: {available_models}")
 
         # Read training parameters from file if provided
         training_params = {}
@@ -126,7 +126,7 @@ async def train_model(
 
         # Prepare the train input
         train_input = TrainInput(
-            model_name=model_name,
+            artifact_name=artifact_name,
             custom_model_name=custom_model_name,
             dataset_path=dataset_path,
             **training_params
@@ -147,8 +147,8 @@ async def train_model(
 
 @router.post("/upload_model_artifact")
 async def upload_model_artifact(
-    model_source: ModelSource = Form(..., description="Source of the model: 'huggingface' or 'local'"),
-    model_name: str = Form("knowledgator/gliner-multitask-large-v0.5", description="Name of the model to be registered"),
+    source_type: ModelSource = Form(..., description="Source of the model: 'huggingface' or 'local'"),
+    artifact_name: str = Form("knowledgator/gliner-multitask-large-v0.5", description="Name of the model to be registered"),
     task: Optional[str] = Form(None, description="Task type for the model (e.g., 'ner', 'text-classification')"),
     local_model_file: Optional[UploadFile] = File(None, description="Local model file (zip) if source is 'local'"),
     model_manager: ModelManager = Depends(get_model_manager)
@@ -158,29 +158,29 @@ async def upload_model_artifact(
     """
     ALLOWED_MODELS = settings.MODELS
     try:
-        # Validate that model_name is in the list of allowed models
-        if model_name not in ALLOWED_MODELS:
-            raise HTTPException(status_code=400, detail=f"Model '{model_name}' is not allowed. Allowed models: {ALLOWED_MODELS}")
+        # Validate that artifact_name is in the list of allowed models
+        if artifact_name not in ALLOWED_MODELS:
+            raise HTTPException(status_code=400, detail=f"Model '{artifact_name}' is not allowed. Allowed models: {ALLOWED_MODELS}")
 
-        # Check if model_name already exists in MLflow
+        # Check if artifact_name already exists in MLflow
         existing_models = model_manager.fetch_available_models()
-        if model_name in existing_models:
-            raise HTTPException(status_code=400, detail=f"Model '{model_name}' already exists in MLflow.")
+        if artifact_name in existing_models:
+            raise HTTPException(status_code=400, detail=f"Model '{artifact_name}' already exists in MLflow.")
 
-        if model_source == ModelSource.huggingface:
+        if source_type == ModelSource.huggingface:
             # Upload model from Hugging Face
             version = model_manager.upload_model_from_huggingface(
-                model_name=model_name,
+                artifact_name=artifact_name,
                 task=task
             )
-            return {"message": f"Model '{model_name}' uploaded from Hugging Face and registered successfully.", "version": version}
+            return {"message": f"Model '{artifact_name}' uploaded from Hugging Face and registered successfully.", "version": version}
 
-        elif model_source == ModelSource.local:
+        elif source_type == ModelSource.local:
             if not local_model_file:
                 raise HTTPException(status_code=400, detail="Local model file must be provided when source is 'local'.")
 
             # Save the uploaded local model to a temporary directory
-            temp_dir = Path(f"/tmp/{model_name}")
+            temp_dir = Path(f"/tmp/{artifact_name}")
             temp_dir.mkdir(parents=True, exist_ok=True)
             local_model_file_path = temp_dir / local_model_file.filename
             async with aiofiles.open(local_model_file_path, 'wb') as out_file:
@@ -192,11 +192,11 @@ async def upload_model_artifact(
 
             # Upload model from local cache
             version = model_manager.upload_model_from_local(
-                model_name=model_name,
+                artifact_name=artifact_name,
                 local_model_path=temp_dir,
                 task=task
             )
-            return {"message": f"Model '{model_name}' uploaded from local cache and registered successfully.", "version": version}
+            return {"message": f"Model '{artifact_name}' uploaded from local cache and registered successfully.", "version": version}
         else:
             raise HTTPException(status_code=400, detail="Invalid model source. Must be 'huggingface' or 'local'.")
     except Exception as e:

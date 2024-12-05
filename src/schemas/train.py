@@ -4,8 +4,7 @@ from typing import Optional
 from datetime import datetime
 
 class TrainInput(BaseModel):
-    model_config = ConfigDict(protected_namespaces=())  # Resolved Pydantic warning
-    model_name: str = Field(..., example="knowledgator/gliner-multitask-large-v0.5")
+    artifact_name: str = Field(..., example="knowledgator/gliner-multitask-large-v0.5")
     custom_model_name: str = Field(..., example="")
     s3_bucket: Optional[str] = Field(None, example="model-artifacts")
     train_data: str  # Path to the training data

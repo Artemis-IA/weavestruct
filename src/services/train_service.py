@@ -89,13 +89,13 @@ class TrainService:
             train_data, test_data = self.split_dataset(data, train_input.split_ratio)
 
             # Load model using ModelManager
-            model = self.model_manager.load_model(train_input.model_name)
+            model = self.model_manager.load_model(train_input.artifact_name)
 
             # Start MLFlow run
-            run_name = f"Training: {train_input.custom_model_name or train_input.model_name}"
+            run_name = f"Training: {train_input.custom_model_name or train_input.artifact_name}"
             self.mlflow_service.start_run(run_name=run_name)
             self.mlflow_service.log_params({
-                "model_name": train_input.model_name,
+                "artifact_name": train_input.artifact_name,
                 "custom_model_name": train_input.custom_model_name,
                 "split_ratio": train_input.split_ratio,
                 "learning_rate": train_input.learning_rate,
@@ -117,7 +117,7 @@ class TrainService:
             )
 
             # Save the fine-tuned model
-            model_save_name = train_input.custom_model_name or train_input.model_name
+            model_save_name = train_input.custom_model_name or train_input.artifact_name
             model_save_path = Path(f"models/{model_save_name}")
             model.save_pretrained(model_save_path)
 
