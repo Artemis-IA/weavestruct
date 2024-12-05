@@ -26,8 +26,6 @@ class ModelInfoFilter(str, Enum):
     likes = 'likes'
     emissions_thresholds = 'emissions_thresholds'
 
-
-
 class ModelManager:
     def __init__(self, mlflow_service: MLFlowService):
         self.mlflow_service = mlflow_service
@@ -39,11 +37,128 @@ class ModelManager:
         """
         Fetch the list of available models from MLflow registered models.
         """
-        models = self.mlflow_client.search_registered_models()
+        models = self.mlflow_service.search_registered_models()
         available_models = [model.name for model in models]
         logger.info(f"Available models fetched from MLflow: {available_models}")
         return available_models
     
+    def fetch_hf_models(
+        self,
+        sort_by: Optional[str] = "name",
+        filter: Optional[Union[str, List[str]]] = None,
+        author: Optional[str] = None,
+        gated: Optional[bool] = None,
+        inference: Optional[Literal["cold", "frozen", "warm"]] = None,
+        library: Optional[Union[str, List[str]]] = None,
+        language: Optional[Union[str, List[str]]] = None,
+        model_name: Optional[str] = None,
+        task: Optional[Union[str, List[str]]] = None,
+        trained_dataset: Optional[Union[str, List[str]]] = None,
+        tags: Optional[Union[str, List[str]]] = None,
+        search: Optional[str] = None,
+        pipeline_tag: Optional[str] = None,
+        emissions_thresholds: Optional[Tuple[float, float]] = None,
+        limit: Optional[int] = 100,
+    ) -> List[Dict[str, Any]]:
+        try:
+            valid_sort_keys = {
+                "size": "modelSize",
+                "recent": "lastModified",
+                "name": "modelId",
+                "downloads": "downloads",
+                "likes": "likes",
+            }
+            sort_key = valid_sort_keys.get(sort_by, "modelId")  # Default to "name" if invalid
+
+            models = self.hfapi.list_models(
+                filter=filter,
+                author=author,
+                gated=gated,
+                inference=inference,
+                library=library,
+                language=language,
+                model_name=model_name,
+                task=task,
+                trained_dataset=trained_dataset,
+                tags=tags,
+                search=search,
+                pipeline_tag=pipeline_tag,
+                emissions_thresholds=emissions_thresholds,
+                sort=sort_key,
+                limit=limit,
+                cardData=True,
+                full=True,
+            )
+
+            model_data = []
+            for model in models:
+                size = None
+                description = ""
+                model_info = self.hfapi.model_info(repo_id=model.modelId, files_metadata=True)
+                if model_info.siblings:
+                    for sibling in model_info.siblings:
+                        if sibling.rfilename == "pytorch_model.bin":
+                            size = sibling.size / (1024 * 1024)
+                            break
+
+                if isinstance(model_info.card_data, dict):
+                    description = model_info.card_data.get("description", "")
+
+                model_data.append({
+                    "modelId": model.modelId,
+                    "size": size,
+                    "lastModified": model.lastModified,
+                    "downloads": model.downloads or 0,
+                    "likes": model.likes or 0,
+                    "description": description.strip(),
+                })
+
+            # Return sorted results
+            return sorted(
+                model_data,
+                key=lambda x: x.get(valid_sort_keys.get(sort_by, "modelId")),
+                reverse=(sort_by != "name"),
+            )
+        except Exception as e:
+            logger.error(f"Failed to fetch models from Hugging Face: {e}")
+            raise ValueError(f"Error fetching models: {e}")
+
+            
+    def load_model(self, model_name: str) -> GLiNER:
+        """
+        Load a model from MLflow artifacts.
+        """
+        if model_name in self.model_cache:
+            logger.info(f"Model {model_name} loaded from cache.")
+            return self.model_cache[model_name]
+
+        # Get the latest version of the model
+        versions = self.mlflow_service.get_latest_versions(model_name)
+        if not versions:
+            raise ValueError(f"No versions found for model {model_name}")
+
+        version = versions[0]  # Get the latest version
+        model_uri = f"models:/{model_name}/{version.version}"
+
+        # Download the model from MLflow
+        local_model_path = Path(f"/tmp/{model_name}")
+        local_model_path.mkdir(parents=True, exist_ok=True)
+        try:
+            mlflow.artifacts.download_artifacts(
+                artifact_uri=model_uri,
+                dst_path=str(local_model_path)
+            )
+            logger.info(f"Model {model_name} downloaded successfully from MLflow.")
+        except Exception as e:
+            logger.error(f"Failed to download model {model_name} from MLflow: {e}")
+            raise
+
+        # Load the model
+        model = GLiNER.from_pretrained(str(local_model_path)).to(self.device)
+        self.model_cache[model_name] = model
+        logger.info(f"Model {model_name} loaded and cached.")
+        return model
+
     def fetch_and_register_hf_model(self, model_name: str, artifact_path: str, register_name: str):
         """Download a model from Hugging Face and register it in MLflow."""
         try:
@@ -79,136 +194,6 @@ class ModelManager:
         except Exception as e:
             logger.error(f"Failed to fetch or register model '{model_name}': {e}")
             raise ValueError(f"Error during model processing: {e}")
-
-    def fetch_hf_models(
-        self,
-        sort_by: ModelInfoFilter = ModelInfoFilter.size,
-        filter: Optional[Union[str, List[str]]] = None,
-        author: Optional[str] = None,
-        gated: Optional[bool] = None,
-        inference: Optional[Literal["cold", "frozen", "warm"]] = None,
-        library: Optional[Union[str, List[str]]] = None,
-        language: Optional[Union[str, List[str]]] = None,
-        model_name: Optional[str] = None,
-        task: Optional[Union[str, List[str]]] = None,
-        trained_dataset: Optional[Union[str, List[str]]] = None,
-        tags: Optional[Union[str, List[str]]] = None,
-        search: Optional[str] = None,
-        pipeline_tag: Optional[str] = None,
-        emissions_thresholds: Optional[Tuple[float, float]] = None,
-        limit: Optional[int] = 100,
-    ) -> List[Dict[str, Any]]:
-        """
-        Fetch and return models from Hugging Face Hub with optional filtering and sorting.
-
-        Args:
-            sort_by (ModelInfoFilter): Sorting criteria for the models.
-            All other args: Filters for fetching models.
-
-        Returns:
-            List[Dict[str, Any]]: Sorted list of models with metadata.
-        """
-        try:
-            models = self.hfapi.list_models(
-                filter=filter,
-                author=author,
-                gated=gated,
-                inference=inference,
-                library=library,
-                language=language,
-                model_name=model_name,
-                task=task,
-                trained_dataset=trained_dataset,
-                tags=tags,
-                search=search,
-                pipeline_tag=pipeline_tag,
-                emissions_thresholds=emissions_thresholds,
-                sort=sort_by.name if sort_by else None,
-                limit=limit,
-                cardData=True,
-                full=True,
-            )
-
-            model_data = []
-            for model in models:
-                size = None
-                description = ""
-                # Fetch detailed model metadata
-                model_info = self.hfapi.model_info(repo_id=model.modelId, files_metadata=True)
-
-                # Extract size of primary file (e.g., "pytorch_model.bin")
-                if model_info.siblings:
-                    for sibling in model_info.siblings:
-                        if sibling.rfilename == "pytorch_model.bin":
-                            size = sibling.size / (1024 * 1024)  # Convert bytes to MB
-                            break
-
-                # Extract description from card data
-                if isinstance(model_info.card_data, dict):
-                    description = model_info.card_data.get("description", "")
-
-                # Append model details
-                model_data.append({
-                    "modelId": model.modelId,
-                    "size": size,
-                    "lastModified": model.lastModified,
-                    "downloads": model.downloads or 0,
-                    "likes": model.likes or 0,
-                    "description": description.strip(),
-                })
-
-            # Sorting
-            sort_key = {
-                ModelInfoFilter.size: lambda x: x["size"] or float("inf"),
-                ModelInfoFilter.recent: lambda x: x["lastModified"],
-                ModelInfoFilter.name: lambda x: x["modelId"],
-                ModelInfoFilter.downloads: lambda x: x["downloads"],
-                ModelInfoFilter.likes: lambda x: x["likes"],
-            }.get(sort_by, None)
-
-            if sort_key:
-                model_data = sorted(model_data, key=sort_key, reverse=(sort_by != ModelInfoFilter.name))
-
-            return model_data
-
-        except Exception as e:
-            logger.error(f"Failed to fetch models from Hugging Face: {e}")
-            raise ValueError(f"Error fetching models: {e}")
-        
-    def load_model(self, model_name: str) -> GLiNER:
-        """
-        Load a model from MLflow artifacts.
-        """
-        if model_name in self.model_cache:
-            logger.info(f"Model {model_name} loaded from cache.")
-            return self.model_cache[model_name]
-
-        # Get the latest version of the model
-        versions = self.mlflow_service.get_latest_versions(model_name)
-        if not versions:
-            raise ValueError(f"No versions found for model {model_name}")
-
-        version = versions[0]  # Get the latest version
-        model_uri = f"models:/{model_name}/{version.version}"
-
-        # Download the model from MLflow
-        local_model_path = Path(f"/tmp/{model_name}")
-        local_model_path.mkdir(parents=True, exist_ok=True)
-        try:
-            mlflow.artifacts.download_artifacts(
-                artifact_uri=model_uri,
-                dst_path=str(local_model_path)
-            )
-            logger.info(f"Model {model_name} downloaded successfully from MLflow.")
-        except Exception as e:
-            logger.error(f"Failed to download model {model_name} from MLflow: {e}")
-            raise
-
-        # Load the model
-        model = GLiNER.from_pretrained(str(local_model_path)).to(self.device)
-        self.model_cache[model_name] = model
-        logger.info(f"Model {model_name} loaded and cached.")
-        return model
 
     def upload_model_from_local(self, model_name: str, local_model_path: Path, task: Optional[str] = None, **kwargs):
         """Upload a model from local cache to MLflow."""

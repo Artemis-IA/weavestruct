@@ -138,19 +138,27 @@ class MLFlowService:
             logger.error(f"Failed to download model {model_name} version {version}: {e}")
             return None
 
-    def search_registered_models(self, filter_string: str = '', max_results: int = None, order_by: List[str] = None, page_token: str = None):
+    def search_registered_models(self) -> List[Dict[str, Any]]:
         try:
-            models = self.client.search_registered_models(
-                filter_string=filter_string,
-                max_results=max_results,
-                order_by=order_by,
-                page_token=page_token
-            )
-            logger.info(f"Retrieved registered models: {[model.name for model in models]}")
-            return models
+            models = self.client.search_registered_models()
+            result = []
+            for model in models:
+                model_info = {
+                    "name": model.name,
+                    "latest_versions": [
+                        {
+                            "version": version.version,
+                            "stage": version.current_stage,
+                            "run_id": version.run_id,
+                        }
+                        for version in model.latest_versions
+                    ] if model.latest_versions else None,
+                }
+                result.append(model_info)
+            return result
         except Exception as e:
-            logger.error(f"Failed to search registered models: {e}")
-            return []
+            logger.error(f"Failed to fetch registered models: {e}")
+            raise ValueError(f"Error fetching registered models: {e}")
 
     def set_tracking_uri(self, uri: str):
         mlflow.set_tracking_uri(uri)

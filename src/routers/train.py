@@ -1,9 +1,9 @@
 # routers/train.py
 
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, Query
+from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, Query, Body
 from enum import Enum
 from sqlalchemy.orm import Session
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from pathlib import Path
 from dependencies import get_db, get_s3_service, get_mlflow_service, get_model_manager
 from config import settings
@@ -20,15 +20,56 @@ import aiofiles
 
 router = APIRouter()
 
-@router.get("/models", response_model=List[str])
-async def get_available_models(
+
+@router.get("/available_models", response_model=List[Dict[str, Any]])
+async def available_models(
+    mlflow_service: MLFlowService = Depends(get_mlflow_service),
+):
+    try:
+        models = mlflow_service.search_registered_models()
+        return models
+    except Exception as e:
+        logger.error(f"Error fetching models: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch available models")
+
+@router.get("/get_huggingface_models")
+async def get_gliner_models(
+    sort_by: Optional[ModelInfoFilter] = Query(ModelInfoFilter.size, description="Sort models by 'size', 'recent', 'name', 'downloads', or 'likes'"),
+
+    model_manager: ModelManager = Depends(get_model_manager),
+):
+    """
+    Fetch Hugging Face models with optional sorting.
+    """
+    try:
+        models = model_manager.fetch_hf_models(sort_by=sort_by)
+        return models
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        logger.error(f"Failed to fetch Hugging Face models: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error.")
+
+@router.post("/upload_model_from_huggingface")
+async def upload_model_huggingface(
+    model_name: str = Form(..., description="Name of the Hugging Face model"),
+    register_name: str = Form(..., description="Name to register the model in MLflow"),
+    artifact_path: str = Form("model_artifacts", description="Path to save artifacts in MLflow"),
     model_manager: ModelManager = Depends(get_model_manager)
 ):
     """
-    Get the list of available models saved in MLflow artifacts.
+    Upload a Hugging Face model and register it in MLflow.
     """
-    models = model_manager.fetch_available_models()
-    return models
+    try:
+        model_manager.fetch_and_register_hf_model(
+            model_name=model_name,
+            artifact_path=artifact_path,
+            register_name=register_name,
+        )
+        return {"message": f"Model '{model_name}' registered successfully as '{register_name}'."}
+    except Exception as e:
+        logger.error(f"Error during model upload: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to upload model: {e}")
 
 @router.post("/", response_model=TrainResponse)
 async def train_model(
@@ -42,9 +83,6 @@ async def train_model(
     mlflow_service: MLFlowService = Depends(get_mlflow_service),
     model_manager: ModelManager = Depends(get_model_manager)
 ):
-    """
-    Train a NER model with the specified configuration and data.
-    """
     try:
         # Validate model_name
         available_models = model_manager.fetch_available_models()
@@ -106,40 +144,6 @@ async def train_model(
         logger.error(f"Training failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/get_gliner_on_hf")
-async def get_gliner_models(
-    sort_by: ModelInfoFilter = Query(ModelInfoFilter.size, description="Sort models by 'size', 'recent', 'name', 'downloads', or 'likes'"),
-    model_manager: ModelManager = Depends(get_model_manager)
-):
-    try:
-        models = model_manager.fetch_hf_models(sort_by=sort_by)
-        return models
-    except ValueError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
-    except Exception as e:
-        logger.error(f"Failed to fetch GLiNER models: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error.")
-
-@router.post("/upload_model_huggingface")
-async def upload_model_huggingface(
-    model_name: str = Form(..., description="Name of the Hugging Face model"),
-    register_name: str = Form(..., description="Name to register the model in MLflow"),
-    artifact_path: str = Form("model_artifacts", description="Path to save artifacts in MLflow"),
-    model_manager: ModelManager = Depends(get_model_manager)
-):
-    """
-    Upload a Hugging Face model and register it in MLflow.
-    """
-    try:
-        model_manager.fetch_and_register_hf_model(
-            model_name=model_name,
-            artifact_path=artifact_path,
-            register_name=register_name,
-        )
-        return {"message": f"Model '{model_name}' registered successfully as '{register_name}'."}
-    except Exception as e:
-        logger.error(f"Error during model upload: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to upload model: {e}")
 
 @router.post("/upload_model_artifact")
 async def upload_model_artifact(
