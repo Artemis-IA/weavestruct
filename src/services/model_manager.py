@@ -51,17 +51,24 @@ class ModelManager:
             model_dir = Path(f"/tmp/{model_name.replace('/', '_')}")
             model_dir.mkdir(parents=True, exist_ok=True)
 
-            # List and download required files
+            # List and download relevant files
             files = list_repo_files(repo_id=model_name)
             logger.info(f"Files available: {files}")
 
-            required_files = ["pytorch_model.bin", "config.json"]
-            for file in required_files:
-                if file in files:
+            # Define required file patterns
+            file_patterns = [".bin", ".safetensors", "config.json", "tokenizer.json"]
+
+            downloaded_files = []
+            for file in files:
+                if any(pattern in file for pattern in file_patterns):
                     logger.info(f"Downloading {file}...")
-                    hf_hub_download(repo_id=model_name, filename=file, local_dir=str(model_dir))
+                    downloaded_path = hf_hub_download(repo_id=model_name, filename=file, local_dir=str(model_dir))
+                    downloaded_files.append(downloaded_path)
                 else:
-                    logger.warning(f"{file} not found. Skipping.")
+                    logger.debug(f"Skipping irrelevant file: {file}")
+
+            if not downloaded_files:
+                raise ValueError(f"No required model files found for '{model_name}'.")
 
             logger.info("Files downloaded successfully. Logging to MLflow...")
             self.mlflow_service.log_artifacts_and_register_model(
@@ -72,7 +79,7 @@ class ModelManager:
         except Exception as e:
             logger.error(f"Failed to fetch or register model '{model_name}': {e}")
             raise ValueError(f"Error during model processing: {e}")
-        
+
     def load_model(self, model_name: str) -> GLiNER:
         """
         Load a model from MLflow artifacts.
