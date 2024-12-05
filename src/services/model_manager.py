@@ -3,10 +3,9 @@ import torch
 from enum import Enum
 from typing import Dict, Any, Optional, List, Literal, Dict, Any, List, Tuple, Union
 from gliner import GLiNER
-from transformers import AutoTokenizer, pipeline, AutoModelForTokenClassification
-from huggingface_hub import hf_hub_download, list_repo_files
+from transformers import AutoTokenizer, pipeline
+from huggingface_hub import HfApi, hf_hub_download, list_repo_files
 from config import settings
-from services.s3_service import S3Service
 from services.mlflow_service import MLFlowService
 from loguru import logger
 from pathlib import Path
@@ -26,13 +25,14 @@ class ModelInfoFilter(str, Enum):
     downloads = 'downloads'
     likes = 'likes'
     emissions_thresholds = 'emissions_thresholds'
-    library = 'library'
+
 
 
 class ModelManager:
     def __init__(self, mlflow_service: MLFlowService):
         self.mlflow_service = mlflow_service
         self.device = settings.DEVICE
+        self.hfapi = HfApi(token=settings.HF_API_TOKEN)
         logger.info(f"Using device: {self.device}")
 
     def fetch_available_models(self) -> List[str]:
@@ -80,6 +80,101 @@ class ModelManager:
             logger.error(f"Failed to fetch or register model '{model_name}': {e}")
             raise ValueError(f"Error during model processing: {e}")
 
+    def fetch_hf_models(
+        self,
+        sort_by: ModelInfoFilter = ModelInfoFilter.size,
+        filter: Optional[Union[str, List[str]]] = None,
+        author: Optional[str] = None,
+        gated: Optional[bool] = None,
+        inference: Optional[Literal["cold", "frozen", "warm"]] = None,
+        library: Optional[Union[str, List[str]]] = None,
+        language: Optional[Union[str, List[str]]] = None,
+        model_name: Optional[str] = None,
+        task: Optional[Union[str, List[str]]] = None,
+        trained_dataset: Optional[Union[str, List[str]]] = None,
+        tags: Optional[Union[str, List[str]]] = None,
+        search: Optional[str] = None,
+        pipeline_tag: Optional[str] = None,
+        emissions_thresholds: Optional[Tuple[float, float]] = None,
+        limit: Optional[int] = 100,
+    ) -> List[Dict[str, Any]]:
+        """
+        Fetch and return models from Hugging Face Hub with optional filtering and sorting.
+
+        Args:
+            sort_by (ModelInfoFilter): Sorting criteria for the models.
+            All other args: Filters for fetching models.
+
+        Returns:
+            List[Dict[str, Any]]: Sorted list of models with metadata.
+        """
+        try:
+            models = self.hfapi.list_models(
+                filter=filter,
+                author=author,
+                gated=gated,
+                inference=inference,
+                library=library,
+                language=language,
+                model_name=model_name,
+                task=task,
+                trained_dataset=trained_dataset,
+                tags=tags,
+                search=search,
+                pipeline_tag=pipeline_tag,
+                emissions_thresholds=emissions_thresholds,
+                sort=sort_by.name if sort_by else None,
+                limit=limit,
+                cardData=True,
+                full=True,
+            )
+
+            model_data = []
+            for model in models:
+                size = None
+                description = ""
+                # Fetch detailed model metadata
+                model_info = self.hfapi.model_info(repo_id=model.modelId, files_metadata=True)
+
+                # Extract size of primary file (e.g., "pytorch_model.bin")
+                if model_info.siblings:
+                    for sibling in model_info.siblings:
+                        if sibling.rfilename == "pytorch_model.bin":
+                            size = sibling.size / (1024 * 1024)  # Convert bytes to MB
+                            break
+
+                # Extract description from card data
+                if isinstance(model_info.card_data, dict):
+                    description = model_info.card_data.get("description", "")
+
+                # Append model details
+                model_data.append({
+                    "modelId": model.modelId,
+                    "size": size,
+                    "lastModified": model.lastModified,
+                    "downloads": model.downloads or 0,
+                    "likes": model.likes or 0,
+                    "description": description.strip(),
+                })
+
+            # Sorting
+            sort_key = {
+                ModelInfoFilter.size: lambda x: x["size"] or float("inf"),
+                ModelInfoFilter.recent: lambda x: x["lastModified"],
+                ModelInfoFilter.name: lambda x: x["modelId"],
+                ModelInfoFilter.downloads: lambda x: x["downloads"],
+                ModelInfoFilter.likes: lambda x: x["likes"],
+            }.get(sort_by, None)
+
+            if sort_key:
+                model_data = sorted(model_data, key=sort_key, reverse=(sort_by != ModelInfoFilter.name))
+
+            return model_data
+
+        except Exception as e:
+            logger.error(f"Failed to fetch models from Hugging Face: {e}")
+            raise ValueError(f"Error fetching models: {e}")
+        
     def load_model(self, model_name: str) -> GLiNER:
         """
         Load a model from MLflow artifacts.
