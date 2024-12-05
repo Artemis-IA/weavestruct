@@ -11,6 +11,8 @@ from services.train_service import TrainService
 from services.model_manager import ModelManager, ModelSource, ModelInfoFilter
 from services.s3_service import S3Service
 from services.mlflow_service import MLFlowService
+from datasets import load_dataset, Features, Sequence, Value
+from huggingface_hub import hf_hub_download, HfApi
 from schemas.train import TrainInput, TrainResponse
 from loguru import logger
 import json
@@ -18,18 +20,26 @@ import shutil
 import aiofiles
 from mlflow.tracking import MlflowClient
 
+
+class DatasetSource(str, Enum):
+    file = "file"
+    s3 = "s3"
+    huggingface = "huggingface"
+
+
 router = APIRouter()
 
 @router.post("/", response_model=TrainResponse)
 async def train_model(
-    artifact_name: str = Form(..., description="Name of the base model"),
-    custom_model_name: Optional[str] = Form(None, description="Custom name for the fine-tuned model"),
-
-    # Un seul des trois doit être fourni
+    # Dataset parameters
+    # source: DatasetSource = Form(..., description="Select dataset source: 'file', 's3', or 'huggingface'"),
     dataset_file: Optional[UploadFile] = File(None, description="Upload dataset file (JSON list)"),
-    s3_url: Optional[str] = Form(None, description="S3 URL of the dataset (e.g. s3://bucket/path/file.json)"),
-    huggingface_dataset: Optional[str] = Form(None, description="HuggingFace dataset name (e.g. 'knowledgator/GLINER-multi-task-synthetic-data')"),
+    s3_url: Optional[str] = Form(None, description="S3 URL of the dataset (e.g., s3://bucket/path/file.json)"),
+    huggingface_dataset: Optional[str] = Form(None, description="HuggingFace dataset name (e.g., 'knowledgator/GLINER-multi-task-synthetic-data')"),
 
+
+    artifact_name: str = Form("knowledgator/gliner-multitask-large-v0.5", description="Name of the base model"),
+    custom_model_name: Optional[str] = Form(None, description="Custom name for the fine-tuned model"),
     split_ratio: float = Form(0.9, description="Train/Eval split ratio"),
     learning_rate: float = Form(1e-5, description="Learning rate"),
     weight_decay: float = Form(0.01, description="Weight decay"),
@@ -44,28 +54,13 @@ async def train_model(
     mlflow_service: MLFlowService = Depends(get_mlflow_service),
     model_manager: ModelManager = Depends(get_model_manager)
 ):
-    # Vérifier exclusivité des sources de dataset
-    sources = [dataset_file is not None, s3_url is not None, huggingface_dataset is not None]
-    if sum(sources) != 1:
+    sources = [dataset_file, s3_url, huggingface_dataset]
+    if sum(map(bool, sources)) != 1:
         raise HTTPException(
             status_code=400,
             detail="Please provide exactly one dataset source: either 'dataset_file', 's3_url', or 'huggingface_dataset'."
         )
-
-    # Lecture des paramètres d'entraînement depuis le fichier s'il est fourni
-    training_params = {}
-    if training_params_file:
-        content = await training_params_file.read()
-        training_params = json.loads(content)
-
-    # Valeurs par défaut pour les training params
-    training_params.setdefault("learning_rate", learning_rate)
-    training_params.setdefault("weight_decay", weight_decay)
-    training_params.setdefault("batch_size", batch_size)
-    training_params.setdefault("epochs", epochs)
-    training_params.setdefault("compile_model", compile_model)
-
-    # Récupération du dataset
+    # Dataset handling
     dataset_path = None
     if dataset_file:
         dataset_path = f"/tmp/{dataset_file.filename}"
@@ -82,17 +77,62 @@ async def train_model(
         if not success:
             raise HTTPException(status_code=500, detail="Failed to download dataset from S3.")
     elif huggingface_dataset:
-        # On utilise datasets pour télécharger le dataset, 
-        # on suppose qu'il s'agit d'un dataset splitté (train, validation, etc.)
-        from datasets import load_dataset
-        hf_data = load_dataset(huggingface_dataset)
-        # On prend le split 'train' comme base
-        # Convertir en liste de dict si ce n'est pas déjà le cas
-        train_split = hf_data['train']
-        data_list = [dict(row) for row in train_split]
+        # Use HuggingFace API with token
+        api = HfApi(token=settings.HF_API_TOKEN)
+        try:
+            files = api.list_repo_files(repo_id=huggingface_dataset)
+        except Exception as e:
+            logger.error(f"HuggingFace API error: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to list files in HuggingFace repo '{huggingface_dataset}'. Ensure the dataset exists and the token is valid."
+            )
+
+        # Ensure at least one JSON file exists
+        json_files = [f for f in files if f.endswith(".json")]
+        if not json_files:
+            raise HTTPException(status_code=400, detail=f"No JSON file found in the HuggingFace dataset repository '{huggingface_dataset}'.")
+
+        target_file = json_files[0]
+        try:
+            local_json_path = hf_hub_download(repo_id=huggingface_dataset, filename=target_file, token=settings.HF_API_TOKEN)
+        except Exception as e:
+            logger.error(f"Failed to download '{target_file}' from HuggingFace: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Failed to download dataset file '{target_file}' from HuggingFace.")
+
+        try:
+            hf_loaded = load_dataset("json", data_files=local_json_path)
+        except Exception as e:
+            logger.warning(f"Failed to load dataset with schema: {str(e)}. Retrying without features.")
+            hf_loaded = load_dataset("json", data_files=local_json_path)
+
+        split_name = "train" if "train" in hf_loaded else list(hf_loaded.keys())[0]
         dataset_path = f"/tmp/{huggingface_dataset.replace('/', '_')}.json"
         with open(dataset_path, "w") as f:
-            json.dump(data_list, f)
+            json.dump([dict(x) for x in hf_loaded[split_name]], f)
+
+    # Validate model availability
+    available_models = model_manager.fetch_available_models()
+    if artifact_name not in available_models:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Model '{artifact_name}' is not available. Available models: {available_models}"
+        )
+
+
+    # Lecture des paramètres d'entraînement depuis le fichier s'il est fourni
+    training_params = {}
+    if training_params_file and training_params_file.filename:
+        content = await training_params_file.read()
+        training_params = json.loads(content)
+
+    # Valeurs par défaut pour les training params
+    training_params.setdefault("learning_rate", learning_rate)
+    training_params.setdefault("weight_decay", weight_decay)
+    training_params.setdefault("batch_size", batch_size)
+    training_params.setdefault("epochs", epochs)
+    training_params.setdefault("compile_model", compile_model)
+
 
     # Validation que le modèle existe
     available_models = model_manager.fetch_available_models()
@@ -128,4 +168,3 @@ async def train_model(
     except Exception as e:
         logger.error(f"Training failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
