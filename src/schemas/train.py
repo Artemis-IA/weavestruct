@@ -1,5 +1,5 @@
 # src/schemas/train.py
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, root_validator
 from typing import Optional
 from datetime import datetime
 
@@ -30,3 +30,17 @@ class TrainResponse(BaseModel):
     created_at: datetime
     class Config:
         from_attributes = True
+
+class DeleteModelInput(BaseModel):
+    artifact_name: str
+    version: Optional[str] = None
+    run_id: Optional[str] = None
+
+    @root_validator(pre=True)
+    def validate_exclusive_fields(cls, values):
+        version, run_id = values.get("version"), values.get("run_id")
+        if version and run_id:
+            raise ValueError("Veuillez spécifier soit 'version', soit 'run_id', mais pas les deux.")
+        if not version and not run_id:
+            raise ValueError("Veuillez spécifier 'version' ou 'run_id'.")
+        return values

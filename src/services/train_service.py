@@ -1,7 +1,7 @@
 # services/train_service.py
 from sqlalchemy.orm import Session
 from schemas.train import TrainInput, TrainResponse
-from models.training_run import TrainingRun
+from models.training import TrainingRun
 from models.dataset import Dataset
 from loguru import logger
 from services.s3_service import S3Service
@@ -78,15 +78,15 @@ class TrainService:
 
     def train_model(self, train_input: TrainInput) -> TrainResponse:
         try:
-            # Load dataset
-            dataset_path = self.load_dataset(train_input)
-
-            if not os.path.exists(dataset_path):
+            # Load dataset from the given dataset_path
+            dataset_path = train_input.dataset_path
+            if not dataset_path or not os.path.exists(dataset_path):
                 raise FileNotFoundError(f"The dataset file {dataset_path} was not found.")
+
             with open(dataset_path, "r") as f:
                 data = json.load(f)
 
-            train_data, test_data = self.split_dataset(data, train_input.split_ratio)
+            train_data, eval_data = self.split_dataset(data, train_input.split_ratio)
 
             # Load model using ModelManager
             model = self.model_manager.load_model(train_input.artifact_name)
@@ -108,25 +108,31 @@ class TrainService:
             # Train model
             model.train(
                 train_data=train_data,
-                eval_data={"samples": test_data},
+                eval_data={"samples": eval_data},
                 learning_rate=train_input.learning_rate,
                 weight_decay=train_input.weight_decay,
                 batch_size=train_input.batch_size,
                 epochs=train_input.epochs,
                 compile=train_input.compile_model,
             )
-
-            # Save the fine-tuned model
             model_save_name = train_input.custom_model_name or train_input.artifact_name
             model_save_path = Path(f"models/{model_save_name}")
+            model_save_path.mkdir(parents=True, exist_ok=True)
+
+            # Save the fine-tuned model before logging artifacts
             model.save_pretrained(model_save_path)
+
+            # Log artifacts and register model in MLflow
+            mlflow.log_artifacts(str(model_save_path), artifact_path="trained_model")
+            self.mlflow_service.register_model(model_save_name, model_save_path)
 
             # Zip and upload the trained model to S3
             s3_url = self.model_manager.zip_and_upload_model(model_save_name)
 
-            # Log artifacts and register model
-            self.mlflow_service.log_artifact(str(model_save_path), artifact_path="trained_model")
-            self.mlflow_service.register_model(model_save_name, model_save_path)
+            # Fin de run MLflow
+            run_id = mlflow.active_run().info.run_id
+            self.mlflow_service.end_run()
+            logger.info(f"Training {run_id} completed and model saved at {model_save_path}")
 
             # Log training run to the database
             training_run = TrainingRun(
@@ -140,12 +146,9 @@ class TrainService:
             self.db.commit()
             self.db.refresh(training_run)
 
-            logger.info(f"Training completed and model saved at {model_save_path}")
-            self.mlflow_service.end_run()
-
             return TrainResponse(
                 id=training_run.id,
-                run_id=mlflow.active_run().info.run_id,
+                run_id=run_id,
                 dataset_id=training_run.dataset_id,
                 epochs=training_run.epochs,
                 batch_size=training_run.batch_size,

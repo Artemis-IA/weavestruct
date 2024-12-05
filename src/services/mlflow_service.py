@@ -174,3 +174,25 @@ class MLFlowService:
             )
         except Exception as e:
             raise Exception(f"Failed to connect to MLflow: {e}")
+
+def delete_model_version(self, name: str, version: str):
+    """
+    Delete a specific version of a registered model.
+    """
+    try:
+        self.client.delete_model_version(name=name, version=version)
+        logger.info(f"Version '{version}' of model '{name}' deleted successfully.")
+    except Exception as e:
+        logger.error(f"Failed to delete version '{version}' of model '{name}': {e}")
+        raise ValueError(f"Error deleting model version: {e}")
+
+def delete_registered_model(self, name: str):
+    """
+    Delete an entire registered model along with all its versions.
+    """
+    try:
+        self.client.delete_registered_model(name=name)
+        logger.info(f"Model '{name}' deleted successfully from MLflow.")
+    except Exception as e:
+        logger.error(f"Failed to delete model '{name}': {e}")
+        raise ValueError(f"Error deleting registered model: {e}")

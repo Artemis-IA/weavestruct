@@ -4,9 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from prometheus_fastapi_instrumentator import Instrumentator
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
-from routers import documents, entities, relationships, search, graph, datasets, train
+from routers import documents, entities, relationships, search, graph, datasets, train, loopml
 from utils.metrics import MetricsManager
-
 from config import settings
 
 # Initialize metrics manager
@@ -53,6 +52,7 @@ def create_app() -> FastAPI:
     app.include_router(graph.router, prefix="/graph", tags=["Graph"])
     app.include_router(datasets.router, prefix="/datasets", tags=["Datasets"])
     app.include_router(train.router, prefix="/train", tags=["Training"])
+    app.include_router(loopml.router, prefix="/loopml", tags=["LoopML link MLflow and Hugging Face"])
 
     # Metrics Router
     metrics_router = APIRouter(prefix="/metrics", tags=["Metrics"])
