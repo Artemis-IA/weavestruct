@@ -99,14 +99,19 @@ class MLFlowService:
             logger.error(f"Failed to register model {artifact_name}: {e}")
 
     def get_registered_model(self, artifact_name: str):
+        """
+        Recherche un modèle enregistré par son nom.
+        """
         try:
-            model = self.client.get_registered_model(artifact_name)
-            logger.info(f"Retrieved registered model: {model.name}")
-            return model
+            models = self.client.search_registered_models(filter_string=f"name='{artifact_name}'")
+            if not models:
+                logger.warning(f"No registered models found with name '{artifact_name}'.")
+                return None
+            return models[0]
         except Exception as e:
-            logger.error(f"Failed to get registered model {artifact_name}: {e}")
+            logger.error(f"Failed to search for registered model '{artifact_name}': {e}")
             return None
-        
+            
     def log_artifacts_and_register_model(self, model_dir: str, artifact_path: str, register_name: str):
         """Logs artifacts and registers the model in MLflow."""
         try:

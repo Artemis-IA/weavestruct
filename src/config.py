@@ -33,8 +33,8 @@ class Settings(BaseSettings):
     # PostgreSQL settings
     PG_MAJOR: int = int(os.getenv("PG_MAJOR", 16))
     POSTGRES_PORT: int = int(os.getenv("POSTGRES_PORT", 5432))
-    POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgres_user")
-    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "postgres_password")
+    POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgre_user")
+    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "postgre_password")
     POSTGRES_DB: str = os.getenv("POSTGRES_DB", "postgres_db")
     POSTGRES_HOST: str = os.getenv("POSTGRES_HOST", "localhost")
     DJANGO_DB: str = "default"

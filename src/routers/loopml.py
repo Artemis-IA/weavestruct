@@ -3,10 +3,10 @@
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, Query
 from typing import Optional, List, Dict, Any
 from pathlib import Path
-from dependencies import get_mlflow_service, get_model_manager
-from config import settings
-from services.model_manager import ModelManager, ModelSource, ModelInfoFilter
-from services.mlflow_service import MLFlowService
+from src.dependencies import get_mlflow_service, get_model_manager
+from src.config import settings
+from src.services.model_manager import ModelManager, ModelSource, ModelInfoFilter
+from src.services.mlflow_service import MLFlowService
 from loguru import logger
 import shutil
 import aiofiles
@@ -124,6 +124,61 @@ async def upload_model_artifact(
         logger.error(f"Failed to upload model artifact: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/download_model_artifact")
+async def download_model_artifact(
+    artifact_name: str = Query(..., description="Name of the registered model to download"),
+    version: Optional[str] = Query(None, description="Version of the model to download"),
+    alias: Optional[str] = Query(None, description="Alias of the model version to download"),
+    mlflow_service: MLFlowService = Depends(get_mlflow_service),
+):
+    """
+    Download a registered model artifact from MLflow.
+    """
+    try:
+        if not version and not alias:
+            raise HTTPException(
+                status_code=400,
+                detail="You must provide either a model version or an alias to download the artifact."
+            )
+
+        client = mlflow_service.client
+
+        # Fetch the model version details
+        if alias:
+            model_version = client.get_model_version_by_alias(name=artifact_name, alias=alias)
+            version = model_version.version
+        else:
+            # Validate the version exists
+            model_version = client.get_model_version(name=artifact_name, version=version)
+            if not model_version:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Model '{artifact_name}' with version '{version}' not found."
+                )
+
+        # Download the artifact
+        artifact_path = f"/tmp/{artifact_name}_v{version}"
+        client.download_artifacts(run_id=model_version.run_id, path="", dst_path=artifact_path)
+
+        # Compress the artifact directory for download
+        zip_path = f"{artifact_path}.zip"
+        shutil.make_archive(base_name=artifact_path, format="zip", root_dir=artifact_path)
+
+        # Clean up the original directory after zipping
+        shutil.rmtree(artifact_path)
+
+        # Return the file for download
+        return {
+            "message": f"Model '{artifact_name}' version '{version}' downloaded successfully.",
+            "download_path": zip_path
+        }
+
+    except HTTPException as http_err:
+        logger.error(f"HTTP error: {http_err.detail}")
+        raise http_err
+    except Exception as e:
+        logger.error(f"Failed to download model '{artifact_name}': {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to download model '{artifact_name}': {str(e)}")
 
 @router.delete("/delete_model")
 async def delete_model(

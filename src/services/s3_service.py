@@ -5,7 +5,7 @@ from loguru import logger
 from typing import Optional, Union, IO, Tuple
 from pathlib import Path
 from urllib.parse import urlparse
-from config import settings
+from src.config import settings
 
 class S3Service:
     def __init__(self, s3_client, endpoint_url: str, access_key: str, secret_key: str, region_name: Optional[str] = None, input_bucket: str = "input", output_bucket: str = "output", layouts_bucket: str = "layouts"):

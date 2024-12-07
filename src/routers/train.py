@@ -95,15 +95,6 @@ async def train_model(
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Failed to process HuggingFace dataset: {e}")
 
-        # # Validate model availability
-        # registered_models = mlflow_service.search_registered_models()
-        # available_models = [model["name"] for model in registered_models]
-        # if artifact_name not in available_models:
-        #     raise HTTPException(
-        #         status_code=400,
-        #         detail=f"Model '{artifact_name}' is not available. Available models: {available_models}"
-        #     )
-
         # Lecture des paramètres d'entraînement depuis le fichier s'il est fourni
         training_params = {}
         if training_params_file and training_params_file.filename:

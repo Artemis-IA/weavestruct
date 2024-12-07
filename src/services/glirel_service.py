@@ -3,7 +3,7 @@
 import torch
 from glirel import GLiREL
 from loguru import logger
-from config import settings
+from src.config import settings
 from py2neo import Graph, NodeMatcher, Relationship
 from typing import List
 

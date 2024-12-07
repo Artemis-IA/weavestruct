@@ -4,8 +4,7 @@ import re
 import json
 import yaml
 from pathlib import Path
-from typing import List, Iterator, Optional, Dict, Any
-from enum import Enum
+from typing import List, Iterator
 
 import aiofiles
 from sqlalchemy.orm import Session
@@ -19,24 +18,23 @@ from langchain_core.documents import Document as LCDocument
 from py2neo import Relationship, Node, Graph
 
 from docling.document_converter import DocumentConverter, PdfFormatOption
-from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import ConversionResult, ConversionStatus
+from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling_core.types.doc import PictureItem
-from docling.datamodel.base_models import InputFormat
 
-from services.s3_service import S3Service
-from services.mlflow_service import MLFlowService
-from services.pgvector_service import PGVectorService
-from services.neo4j_service import Neo4jService
-from services.embedding_service import EmbeddingService
-from services.gliner_service import GLiNERService
-from services.glirel_service import GLiRELService
+from src.enums.documents import ImportFormat, ExportFormat, ConversionStatus
+from src.services.s3_service import S3Service
+from src.services.mlflow_service import MLFlowService
+from src.services.pgvector_service import PGVectorService
+from src.services.neo4j_service import Neo4jService
+from src.services.embedding_service import EmbeddingService
+from src.services.gliner_service import GLiNERService
+from src.services.glirel_service import GLiRELService
 
-from models.document_log import DocumentLog, DocumentLogService
-from models.document import Document
-from utils.database import SessionLocal
+from src.models.document_log import DocumentLog, DocumentLogService
+from src.models.document import Document
+from src.utils.database import SessionLocal
 
 class CustomPdfPipelineOptions(PdfPipelineOptions):
     """Custom pipeline options for PDF processing."""
@@ -48,9 +46,9 @@ class DoclingPDFLoader(BaseLoader):
     def __init__(self, file_path: str) -> None:
         self.file_path = file_path
         self._converter = DocumentConverter(
-            allowed_formats=[InputFormat.PDF, InputFormat.DOCX],
+            allowed_formats=[ImportFormat.PDF, ImportFormat.DOCX],
             format_options={
-                InputFormat.PDF: PdfFormatOption(
+                ImportFormat.PDF: PdfFormatOption(
                     pipeline_options=CustomPdfPipelineOptions(),
                     backend=PyPdfiumDocumentBackend
                 )
@@ -68,23 +66,6 @@ class DoclingPDFLoader(BaseLoader):
                 logger.warning(f"Conversion failed for {self.file_path} with status {conversion_result.status}")
         except Exception as e:
             logger.error(f"Error loading document {self.file_path}: {e}")
-
-# Enumération des formats d'import et d'export
-class ImportFormat(str, Enum):
-    DOCX = "docx"
-    PPTX = "pptx"
-    HTML = "html"
-    IMAGE = "image"
-    PDF = "pdf"
-    ASCIIDOC = "asciidoc"
-    MD = "md"
-
-class ExportFormat(str, Enum):
-    JSON = "json"
-    YAML = "yaml"
-    TEXT = "text"
-    MARKDOWN = "md"
-    DOCTAGS = "doctags"
 
 class DocumentProcessor:
     """Orchestrates the document processing pipeline: loading, splitting, embedding, extracting, and indexing."""
@@ -131,8 +112,8 @@ class DocumentProcessor:
         options.do_picture_classifier = enrich_figures
 
         return DocumentConverter(
-            allowed_formats=[InputFormat.PDF, InputFormat.DOCX, InputFormat.PPTX, InputFormat.IMAGE, InputFormat.HTML],
-            format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=options, backend=PyPdfiumDocumentBackend)},
+            allowed_formats=[ImportFormat.PDF, ImportFormat.DOCX, ImportFormat.PPTX, ImportFormat.IMAGE, ImportFormat.HTML],
+            format_options={ImportFormat.PDF: PdfFormatOption(pipeline_options=options, backend=PyPdfiumDocumentBackend)},
         )
 
     def clean_text(self, text: str) -> str:

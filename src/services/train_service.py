@@ -1,18 +1,20 @@
 # services/train_service.py
 from sqlalchemy.orm import Session
-from schemas.train import TrainInput, TrainResponse
-from models.training import TrainingRun
-from models.dataset import Dataset
-from loguru import logger
-from services.s3_service import S3Service
-from services.mlflow_service import MLFlowService
-from services.model_manager import ModelManager
 from pathlib import Path
-from config import settings
 import mlflow
 import os
 import json
 from typing import Optional
+from loguru import logger
+
+from src.schemas.train import TrainInput, TrainResponse
+from src.models.training import TrainingRun
+from src.models.dataset import Dataset
+from src.services.s3_service import S3Service
+from src.services.mlflow_service import MLFlowService
+from src.services.model_manager import ModelManager
+from src.config import settings
+
 
 class TrainService:
     def __init__(

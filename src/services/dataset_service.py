@@ -3,12 +3,12 @@
 from typing import List, Optional
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
-from models.dataset import Dataset
-from schemas.dataset import DatasetResponse
+from src.models.dataset import Dataset
+from src.schemas.dataset import DatasetResponse
 from loguru import logger
 import aiofiles
 from pathlib import Path
-from dependencies import (
+from src.dependencies import (
     get_s3_service,
     get_mlflow_service,
     get_pgvector_vector_store,
@@ -17,9 +17,9 @@ from dependencies import (
     get_text_splitter,
     get_graph_transformer,
 )
-from config import settings
-from services.document_processor import DocumentProcessor
-from services.gliner_service import GLiNERService
+from src.config import settings
+from src.services.document_processor import DocumentProcessor
+from src.services.gliner_service import GLiNERService
 import json
 from datetime import datetime
 

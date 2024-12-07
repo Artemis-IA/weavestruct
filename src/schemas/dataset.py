@@ -2,6 +2,28 @@
 from pydantic import BaseModel, Field
 from typing import List, Dict
 from datetime import datetime
+from enum import Enum
+
+
+
+from docling.datamodel.base_models import InputFormat
+
+class ImportFormat(str, Enum):
+    DOCX = "docx"
+    PPTX = "pptx"
+    HTML = "html"
+    IMAGE = "image"
+    PDF = "pdf"
+    ASCIIDOC = "asciidoc"
+    MD = "md"
+
+class ExportFormat(str, Enum):
+    JSON = "json"
+    YAML = "yaml"
+    TEXT = "text"
+    MARKDOWN = "md"
+    DOCTAGS = "doctags"
+
 
 class DatasetCreate(BaseModel):
     name: str = Field(..., example="Sample Dataset")

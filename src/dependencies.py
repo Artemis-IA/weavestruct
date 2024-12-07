@@ -6,19 +6,19 @@ from typing import Generator
 from functools import lru_cache
 from loguru import logger
 
-from config import settings
-from utils.database import SessionLocal
-from utils.metrics import MetricsManager
-from services.s3_service import S3Service
-from services.mlflow_service import MLFlowService
-from services.model_manager import ModelManager
-from services.document_processor import DocumentProcessor
-from services.pgvector_service import PGVectorService
-from services.neo4j_service import Neo4jService
-from services.rag_service import RAGChainService
-from services.embedding_service import EmbeddingService
-from services.gliner_service import GLiNERService
-from services.glirel_service import GLiRELService
+from src.config import settings
+from src.utils.database import SessionLocal
+from src.utils.metrics import MetricsManager
+from src.services.s3_service import S3Service
+from src.services.mlflow_service import MLFlowService
+from src.services.model_manager import ModelManager
+from src.services.document_processor import DocumentProcessor
+from src.services.pgvector_service import PGVectorService
+from src.services.neo4j_service import Neo4jService
+from src.services.rag_service import RAGChainService
+from src.services.embedding_service import EmbeddingService
+from src.services.gliner_service import GLiNERService
+from src.services.glirel_service import GLiRELService
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_experimental.graph_transformers.gliner import GlinerGraphTransformer
@@ -99,7 +99,7 @@ def get_model_manager(
     mlflow_service: MLFlowService = Depends(get_mlflow_service),
 ) -> ModelManager:
     """Returns an instance of the ModelManager."""
-    return ModelManager(mlflow_service=mlflow_service)
+    return ModelManager(mlflow_service=mlflow_service, tracking_uri=settings.MLFLOW_TRACKING_URI)
 
 
 # Dependency for embedding service

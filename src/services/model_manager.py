@@ -1,12 +1,18 @@
 # services/model_manager.py
 import torch
+from fastapi import HTTPException
 from enum import Enum
 from typing import Dict, Any, Optional, List, Literal, Dict, Any, List, Tuple, Union
 from gliner import GLiNER
 from transformers import AutoTokenizer, pipeline
 from huggingface_hub import HfApi, hf_hub_download, list_repo_files
-from config import settings
-from services.mlflow_service import MLFlowService
+from src.config import settings
+from src.services.mlflow_service import MLFlowService
+from mlflow.pyfunc import load_model as mlflow_load_model
+from mlflow.tracking import MlflowClient
+from mlflow.exceptions import MlflowException
+
+
 from loguru import logger
 from pathlib import Path
 from datetime import datetime
@@ -27,14 +33,57 @@ class ModelInfoFilter(str, Enum):
     emissions_thresholds = 'emissions_thresholds'
 
 class ModelManager:
-    def __init__(self, mlflow_service: MLFlowService):
+    def __init__(self, mlflow_service: MLFlowService, tracking_uri: str):
+        self.mlflow_client = MlflowClient(tracking_uri=tracking_uri)
         self.mlflow_service = mlflow_service
         self.device = settings.DEVICE
         self.hfapi = HfApi(token=settings.HF_API_TOKEN)
         self.models_bucket = settings.MLFLOW_ARTIFACT_ROOT
         self.model_cache = {}
         logger.info(f"Using device: {self.device}")
+    
+    def load_model(self, artifact_name: str, alias: Optional[str] = None):
+        """
+        Loads a registered model from MLflow using an alias.
 
+        Args:
+            artifact_name (str): Name of the registered model.
+            alias (Optional[str]): Alias pointing to a specific version (e.g., "champion").
+
+        Returns:
+            The loaded model.
+        """
+        try:
+            if alias:
+                model_uri = f"models:/{artifact_name}@{alias}"
+            else:
+                raise ValueError("An alias must be specified to load the model.")
+            
+            model = mlflow_load_model(model_uri)
+            return model
+        except MlflowException as e:
+            raise RuntimeError(
+                f"Failed to load model '{artifact_name}' with alias '{alias}': {e}"
+            )
+
+    def promote_model(self, artifact_name: str, version: int, alias: str):
+        """
+        Promotes a specific version of a model by assigning an alias.
+
+        Args:
+            artifact_name (str): Name of the registered model.
+            version (int): Version number of the model.
+            alias (str): Alias to assign (e.g., "champion").
+        """
+        try:
+            self.mlflow_client.set_registered_model_alias(
+                name=artifact_name, alias=alias, version=version
+            )
+        except MlflowException as e:
+            raise RuntimeError(
+                f"Failed to promote model '{artifact_name}' version '{version}' with alias '{alias}': {e}"
+            )
+        
     def fetch_available_models(self) -> List[str]:
         """
         Fetch the list of available models from MLflow registered models.
@@ -43,7 +92,7 @@ class ModelManager:
         available_models = [model.name for model in models]
         logger.info(f"Available models fetched from MLflow: {available_models}")
         return available_models
-    
+
     def fetch_hf_models(
         self,
         sort_by: Optional[str] = "name",
@@ -125,41 +174,6 @@ class ModelManager:
             logger.error(f"Failed to fetch models from Hugging Face: {e}")
             raise ValueError(f"Error fetching models: {e}")
 
-            
-    def load_model(self, artifact_name: str) -> GLiNER:
-        """
-        Load a model from MLflow artifacts.
-        """
-        if artifact_name in self.model_cache:
-            logger.info(f"Model {artifact_name} loaded from cache.")
-            return self.model_cache[artifact_name]
-
-        # Get the latest version of the model
-        versions = self.mlflow_service.get_latest_versions(artifact_name)
-        if not versions:
-            raise ValueError(f"No versions found for model {artifact_name}")
-
-        version = versions[0]  # Get the latest version
-        model_uri = f"models:/{artifact_name}/{version.version}"
-
-        # Download the model from MLflow
-        local_model_path = Path(f"/tmp/{artifact_name}")
-        local_model_path.mkdir(parents=True, exist_ok=True)
-        try:
-            mlflow.artifacts.download_artifacts(
-                artifact_uri=model_uri,
-                dst_path=str(local_model_path)
-            )
-            logger.info(f"Model {artifact_name} downloaded successfully from MLflow.")
-        except Exception as e:
-            logger.error(f"Failed to download model {artifact_name} from MLflow: {e}")
-            raise
-
-        # Load the model
-        model = GLiNER.from_pretrained(str(local_model_path)).to(self.device)
-        self.model_cache[artifact_name] = model
-        logger.info(f"Model {artifact_name} loaded and cached.")
-        return model
 
     def fetch_and_register_hf_model(self, artifact_name: str, artifact_path: str, register_name: str):
         """Download a model from Hugging Face and register it in MLflow."""

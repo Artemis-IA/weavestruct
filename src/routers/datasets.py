@@ -5,10 +5,10 @@ from typing import List, Optional
 from loguru import logger
 from sqlalchemy.orm import Session
 
-from dependencies import get_db
-from models.dataset import Dataset
-from schemas.dataset import DatasetResponse
-from services.dataset_service import DatasetService
+from src.dependencies import get_db
+from src.models.dataset import Dataset
+from src.schemas.dataset import DatasetResponse
+from src.services.dataset_service import DatasetService
 
 router = APIRouter(prefix="/datasets", tags=["Datasets"])
 

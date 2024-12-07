@@ -3,10 +3,10 @@ from fastapi import APIRouter, HTTPException
 from loguru import logger
 from typing import List, Dict, Any
 
-from services.neo4j_service import Neo4jService
-from dependencies import get_neo4j_service
-from models.entity import Entity
-from models.relationship import Relationship
+from src.services.neo4j_service import Neo4jService
+from src.dependencies import get_neo4j_service
+from src.models.entity import Entity
+from src.models.relationship import Relationship
 
 router = APIRouter()
 

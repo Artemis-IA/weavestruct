@@ -7,7 +7,7 @@ import torch
 from loguru import logger
 from prometheus_client import Counter, Histogram, Gauge, start_http_server
 from codecarbon import EmissionsTracker
-from config import settings
+from src.config import settings
 
 class MetricsManager:
     """
@@ -155,7 +155,7 @@ class MetricsManager:
         """
         Validate the availability of critical services at startup.
         """
-        from dependencies import get_s3_service, get_mlflow_service, get_pgvector_vector_store, get_neo4j_service
+        from src.dependencies import get_s3_service, get_mlflow_service, get_pgvector_vector_store, get_neo4j_service
 
         try:
             # Check S3 service and required buckets

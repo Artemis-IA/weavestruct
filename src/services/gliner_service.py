@@ -6,7 +6,7 @@ import torch
 from gliner import GLiNER
 from langchain_experimental.graph_transformers.gliner import GlinerGraphTransformer
 from loguru import logger
-from config import settings
+from src.config import settings
 
 class GLiNERService:
     """
