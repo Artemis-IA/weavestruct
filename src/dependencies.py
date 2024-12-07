@@ -26,9 +26,6 @@ from langchain_community.graph_vectorstores.extractors import GLiNERLinkExtracto
 from langchain_ollama.embeddings import OllamaEmbeddings
 from neo4j import GraphDatabase
 
-from enum import Enum
-
-
 # Dependency to get the SQLAlchemy session
 def get_db() -> Generator[Session, None, None]:
     """Yields a database session."""

@@ -3,9 +3,6 @@ from pydantic import BaseModel, Field
 from typing import List, Dict
 from datetime import datetime
 from enum import Enum
-
-
-
 from docling.datamodel.base_models import InputFormat
 
 class ImportFormat(str, Enum):
@@ -23,6 +20,17 @@ class ExportFormat(str, Enum):
     TEXT = "text"
     MARKDOWN = "md"
     DOCTAGS = "doctags"
+    CSV = "csv"
+    JSONL = "jsonl"
+    JSON_NER = "json_ner"
+    JSON_REL = "json_rel"
+    XML = "xml"
+    RDF = "rdf"
+    ULMA = "ulma"
+    CONLL = "conll"
+    CONLLU = "conllu"
+
+
 
 
 class DatasetCreate(BaseModel):
@@ -41,4 +49,11 @@ class DatasetResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class UploadResponse(BaseModel):
+    message: str
+    uploaded_to: str
+    success_count: int
+    partial_success_count: int
+    failure_count: int
 

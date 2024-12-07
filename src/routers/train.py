@@ -21,12 +21,6 @@ import aiofiles
 from mlflow.tracking import MlflowClient
 
 
-class DatasetSource(str, Enum):
-    file = "file"
-    s3 = "s3"
-    huggingface = "huggingface"
-
-
 router = APIRouter()
 
 @router.post("/", response_model=TrainResponse)

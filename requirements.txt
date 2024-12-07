@@ -39,6 +39,7 @@ py2neo
 boto3
 
 # Custom modules
+nltk
 gliner
 glirel
 docling

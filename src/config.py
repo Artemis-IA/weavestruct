@@ -8,9 +8,6 @@ from dotenv import load_dotenv
 
 
 class Settings(BaseSettings):
-    # Application settings
-    # Constants for Models and Device
-    # Constants for Models and Device
     MODELS: ClassVar[Dict[str, str]] = {
         "GLiNER-S": os.getenv("GLINER_S_MODEL", "urchade/gliner_smallv2.1"),
         "GLiNER-M": os.getenv("GLINER_M_MODEL", "urchade/gliner_mediumv2.1"),
@@ -150,10 +147,18 @@ class Settings(BaseSettings):
     # Text splitting settings
     TEXT_CHUNK_SIZE: int = int(os.getenv("TEXT_CHUNK_SIZE", 1000))
     TEXT_CHUNK_OVERLAP: int = int(os.getenv("TEXT_CHUNK_OVERLAP", 200))
-    CONF_FILE: str = os.getenv("CONF_FILE", "../conf/gli_config.yml")
+    CONF_FILE: str = os.getenv("CONF_FILE", str(Path(__file__).resolve().parents[1] / "conf/gli_config.yml"))
 
     # Ollama
     OLLAMA_MODEL: str ="nomic-embed-text"
+
+    
+    def get_spacy_config(self) -> Dict[str, str]:
+        return {
+            "gliner_model": self.GLINER_MODEL_NAME,
+            "glirel_model": self.GLIREL_MODEL_NAME,
+            "device": str(self.DEVICE),
+        }
 
     class Config:
         env_file = Path(__file__).resolve().parents[2] / ".env"

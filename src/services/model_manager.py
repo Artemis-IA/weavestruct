@@ -1,12 +1,12 @@
 # services/model_manager.py
 import torch
 from fastapi import HTTPException
-from enum import Enum
 from typing import Dict, Any, Optional, List, Literal, Dict, Any, List, Tuple, Union
 from gliner import GLiNER
 from transformers import AutoTokenizer, pipeline
 from huggingface_hub import HfApi, hf_hub_download, list_repo_files
 from src.config import settings
+from src.enums.loopml import ModelSource, ModelInfoFilter
 from src.services.mlflow_service import MLFlowService
 from mlflow.pyfunc import load_model as mlflow_load_model
 from mlflow.tracking import MlflowClient
@@ -19,18 +19,6 @@ from datetime import datetime
 import os
 import shutil
 import mlflow
-
-class ModelSource(str, Enum):
-    huggingface = 'huggingface'
-    local = 'local'
-class ModelInfoFilter(str, Enum):
-    size = 'size'
-    recent = 'recent'
-    name = 'name'
-    task = 'task'
-    downloads = 'downloads'
-    likes = 'likes'
-    emissions_thresholds = 'emissions_thresholds'
 
 class ModelManager:
     def __init__(self, mlflow_service: MLFlowService, tracking_uri: str):

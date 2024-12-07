@@ -1,8 +1,10 @@
+# src/models/document_log.py
 from sqlalchemy import Column, String, Integer
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from typing import Callable
 from sqlalchemy.ext.declarative import declarative_base
+from loguru import logger
 
 Base = declarative_base()
 
