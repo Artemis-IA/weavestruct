@@ -1,4 +1,4 @@
-Voici le README mis à jour avec une section sur les briques utilisées et une description concise de chaque service de l'API :
+Voici le README mis à jour avec une section sur les briques utilisées et une description concise de chaque service de l'API. Pour plus de détails, consultez la documentation complète sur le [GitHub Page du projet](https://github.com/Artemis-IA/weavestruct).
 
 ---
 
@@ -96,4 +96,8 @@ Ce projet est sous licence MIT. Consultez le fichier [LICENSE](LICENSE) pour plu
 
 ## 📞 **Support**
 - **Issues** : N'hésitez pas à signaler des problèmes via la section [Issues](https://github.com/Artemis-IA/weavestruct/issues).  
+---
+
+Pour plus de détails, consultez la documentation complète sur notre [GitHub Page](https://github.com/Artemis-IA/weavestruct).
+
 ---
