@@ -5,12 +5,14 @@ from fastapi import UploadFile
 from sqlalchemy.orm import Session, sessionmaker
 import xml.etree.ElementTree as ET
 from collections import defaultdict
+import re
 import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
 nltk.download('punkt')
 from loguru import logger
 import aiofiles
 from pathlib import Path
+import unicodedata
 from src.models.dataset import Dataset
 from src.schemas.dataset import DatasetResponse
 from src.dependencies import (
@@ -43,16 +45,17 @@ from src.services.annotations_pipeline import AnnotationPipelines
 
 class DatasetService:
 
-    def __init__(self, db: Session, session_factory: Callable[[], Session]):
+    def __init__(self, db: Session, session_factory: Callable[[], Session], annotation_pipeline: AnnotationPipelines):
         self.db = db
         self.s3_service = get_s3_service()
         self.mlflow_service = get_mlflow_service()
         self.embedding_service = get_embedding_service()
-        self.session = db  # Use the passed-in database session
+        self.session = db
+        self.annotation_pipeline = annotation_pipeline
         self.dataset_processor = DatasetProcessor(
             s3_service=self.s3_service,
             document_log_service=DocumentLogService(session_factory=session_factory),
-            annotation_pipeline=AnnotationPipelines(),
+            annotation_pipeline=annotation_pipeline
         )
         logger.info("DatasetService initialized.")
 
@@ -72,12 +75,16 @@ class DatasetService:
                     content = await file.read()
                     await out_file.write(content)
                 temp_files.append(temp_file)
+                logger.info(f"Uploaded and saved temporary file: {temp_file}")
+
 
             all_annotations = []
             for temp_file in temp_files:
-                # Process document with DocumentProcessor to extract texts
                 texts = self.dataset_processor.extract_texts(temp_file)
-                cleaned_texts = [self.clean_text(text) for text in texts]
+                logger.info(f"Raw texts extracted from file '{temp_file.name}': {texts}")
+
+                cleaned_texts = [self.dataset_processor.clean_text(text) for text in texts]
+                logger.info(f"Cleaned texts from file '{temp_file.name}': {cleaned_texts}")
 
                 if not cleaned_texts:
                     logger.warning(f"No text extracted from document: {temp_file}")
@@ -86,7 +93,8 @@ class DatasetService:
                 # Extract entities using GLiNERService
                 logger.info(f"Extracting entities from {len(cleaned_texts)} texts...")
                 try:
-                    entities_list = self.gliner_extractor.extract_entities(cleaned_texts)
+                    entities_list = self.annotation_pipeline.extract_entities(cleaned_texts)
+                    logger.info(f"Extracted entities from cleaned texts: {entities_list}")
                 except Exception as e:
                     logger.error(f"Error extracting entities: {e}")
                     raise ValueError(f"Failed to extract entities: {e}")
@@ -103,6 +111,7 @@ class DatasetService:
                         }
                         for entity in entities
                     ]
+                    logger.info(f"Formatted entities for text: {formatted_entities}")
                     all_annotations.append(
                         {
                             "text": text,
@@ -117,6 +126,7 @@ class DatasetService:
                 dataset_content = self.format_to_conllu(all_annotations)
             else:
                 raise ValueError(f"Unsupported output format: {output_format}")
+            logger.info(f"Dataset content generated for output format '{output_format}': {dataset_content[:500]}")
 
             # Save to S3
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -124,10 +134,12 @@ class DatasetService:
             dataset_file_path = Path(f"/tmp/{dataset_file_name}")
             async with aiofiles.open(dataset_file_path, "w", encoding="utf-8") as dataset_file:
                 await dataset_file.write(dataset_content)
+            logger.info(f"Dataset saved locally at: {dataset_file_path}")
 
             s3_url = self.s3_service.upload_file(
                 dataset_file_path, bucket_name=settings.OUTPUT_BUCKET
             )
+            logger.info(f"Dataset uploaded to S3 at: {s3_url}")
 
             # Save to database
             dataset = Dataset(
@@ -251,15 +263,31 @@ class DatasetProcessor:
 
     def create_converter(self):
         options = PdfPipelineOptions()
-        options.do_ocr = True
-        options.generate_page_images = True
-        options.generate_table_images = True
-        options.generate_picture_images = True
+        options.do_ocr = False
+        options.generate_page_images = False
+        options.generate_table_images = False
+        options.generate_picture_images = False
         return DocumentConverter(
             allowed_formats=[InputFormat.PDF, InputFormat.DOCX, InputFormat.PPTX, InputFormat.IMAGE, InputFormat.HTML],
             format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=options, backend=PyPdfiumDocumentBackend)},
         )
 
+    def clean_text(self, text: str) -> str:
+        # Normalisation Unicode
+        text = unicodedata.normalize("NFKC", text)
+        # Supprimer les caractères invisibles
+        text = re.sub(r"[\u200b\u200c\u200d\u2060\uFEFF]", "", text)
+        # Supprimer les balises ou placeholders comme <missing-text>
+        text = re.sub(r"<.*?>", "", text)
+        # Supprimer les caractères non supportés par SpaCy
+        text = re.sub(r"[^a-zA-ZÀ-ÿ0-9\s.,;!?'\-():/]", "", text)
+        # Conserver les symboles utiles collés au texte
+        text = re.sub(r"\s*([-/])\s*", r"\1", text)
+        # Consolidation des espaces multiples
+        text = re.sub(r"\s+", " ", text)
+        return text.strip()
+
+    
     def extract_texts(self, doc_path: Path) -> List[str]:
         results = list(self.converter.convert_all([doc_path]))
         if not results:

@@ -8,6 +8,7 @@ import os
 from src.schemas.dataset import ExportFormat, ImportFormat, DatasetResponse
 from src.models.dataset import Dataset
 from src.services.dataset_service import DatasetService
+from src.services.annotations_pipeline import AnnotationPipelines
 from src.services.s3_service import S3Service
 from src.dependencies import get_db
 
@@ -38,7 +39,9 @@ async def create_dataset_endpoint(
     - **labels**: Labels supplémentaires (optionnel)
     - **output_format**: Format de sortie (voir enum ExportFormat)
     """
-    service = DatasetService(db, session_factory=session_factory)
+    annotation_pipeline = AnnotationPipelines()
+    service = DatasetService(db, session_factory=session_factory, annotation_pipeline=annotation_pipeline)
+
     try:
         dataset = await service.create_dataset(name, files, labels, output_format.value)
         return dataset
