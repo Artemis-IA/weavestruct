@@ -1,7 +1,7 @@
 site_name: "WeaveStruct Documentation"
 site_description: "Documentation officielle de l'API WeaveStruct"
 site_author: "Artemis-IA"
-site_url: "https://artemis-ia.github.io/weavestruct/"
+site_url: "https://weavestruct.readthedocs.io"
 theme:
   name: material
   logo: assets/logo.png
