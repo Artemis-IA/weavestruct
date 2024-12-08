@@ -1,4 +1,4 @@
-Voici le README mis à jour avec une section sur les briques utilisées et une description concise de chaque service de l'API. Pour plus de détails, consultez la documentation complète sur le [GitHub Page du projet](https://github.com/Artemis-IA/weavestruct).
+### Pour plus de détails, consultez la documentation complète sur le [GitHub Page du projet](https://github.com/Artemis-IA/weavestruct).
 
 ---
 
