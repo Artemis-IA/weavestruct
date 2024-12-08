@@ -1,4 +1,4 @@
-### Pour plus de détails, consultez la documentation complète sur le [GitHub Page du projet](https://github.com/Artemis-IA/weavestruct).
+#### 📜 Pour plus de détails, consultez la documentation complète sur la [Documentation & Guide du Projet](https://artemis-ia.github.io/weavestruct/).
 
 ---
 
