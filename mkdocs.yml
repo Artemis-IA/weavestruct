@@ -1,7 +1,7 @@
 site_name: "WeaveStruct Documentation"
 site_description: "Documentation officielle de l'API WeaveStruct"
 site_author: "Artemis-IA"
-site_url: "https://weavestruct.readthedocs.io"
+site_url: "https://artemis-ia.github.io/weavestruct/"
 theme:
   name: material
   logo: assets/logo.png
@@ -40,5 +40,6 @@ nav:
   - Configuration: configuration.md
   # - Authentification: auth.md
   - ML Flow: mlflow.md
+  - Les modèles: models.md
   - À propos: about.md
   - License: license.md

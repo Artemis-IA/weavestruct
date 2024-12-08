@@ -87,17 +87,12 @@ class AnnotationPipelines:
         return entities
 
     def extract_entities(self, texts: List[str]) -> List[List[Dict]]:
-        """Batch extraction of Named Entities."""
         results = []
         for text in texts:
             entities = self.annotate_ner(text)
-            # Validation stricte des entités extraites
-            for entity in entities:
-                if not isinstance(entity["start"], int) or not isinstance(entity["end"], int):
-                    logger.error(f"Entity has invalid types: {entity}")
-                    raise ValueError(f"Invalid entity detected: {entity}")
-            results.append(entities)
-        logger.info(f"Batch entity extraction results: {results}")
+            validated_entities = [e for e in entities if isinstance(e["start"], int) and isinstance(e["end"], int)]
+            results.append(validated_entities)
+        logger.info(f"Validated extraction results: {results}")
         return results
 
     def annotate_relations(self, text: str, labels: Dict) -> List[Dict]:
