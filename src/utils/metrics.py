@@ -14,7 +14,7 @@ class MetricsManager:
     Manage application metrics, system stats logging, and Prometheus metrics server.
     """
 
-    def __init__(self, prometheus_port: int = 8002):
+    def __init__(self, prometheus_port: int = settings.PROMETHEUS_PORT):
         # Define Prometheus metrics
         self.REQUEST_COUNT = Counter("app_request_count", "Total number of requests")
         self.PROCESS_TIME = Histogram("app_process_time_seconds", "Request processing time")

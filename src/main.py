@@ -7,15 +7,13 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from src.routers import documents, entities, relationships, search, graph, datasets, trainb, loopml
 from src.utils.metrics import MetricsManager
 from src.config import settings
+from src.utils.swagger_ui import setup_swagger_ui
 
-# Initialize metrics manager
-metrics_manager = MetricsManager(prometheus_port=8002)
+metrics_manager = MetricsManager(prometheus_port=settings.PROMETHEUS_PORT_CARBON)
 
 
 def create_app() -> FastAPI:
-    """
-    Create and configure the FastAPI application.
-    """
+
     app = FastAPI(
         title="Document Processing and Graph API",
         version="2.0.0",
@@ -24,6 +22,7 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
         openapi_url="/openapi.json",
     )
+    setup_swagger_ui(app)
 
     # Middleware for CORS
     app.add_middleware(

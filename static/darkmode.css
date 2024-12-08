@@ -1,0 +1,33 @@
+body.dark-mode {
+    background-color: #121212 !important;
+    color: #ffffff !important;
+}
+
+body.dark-mode .swagger-ui .topbar {
+    background-color: #1e1e1e !important;
+    border-bottom: 1px solid #333333;
+}
+
+body.dark-mode .swagger-ui .btn {
+    background-color: #333333 !important;
+    color: #ffffff !important;
+    border-color: #444444;
+}
+
+body.dark-mode .swagger-ui .info {
+    color: #ffffff !important;
+}
+
+body.dark-mode .swagger-ui table tr {
+    background-color: #1e1e1e !important;
+}
+
+body.dark-mode .swagger-ui .model-title {
+    background-color: #333333 !important;
+    color: #ffffff !important;
+}
+
+body.dark-mode .swagger-ui input {
+    background-color: #222222 !important;
+    color: #ffffff !important;
+}

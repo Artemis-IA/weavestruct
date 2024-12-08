@@ -8,6 +8,7 @@ from mlflow.tracking import MlflowClient
 from codecarbon import EmissionsTracker
 from typing import Optional
 import time
+from src.config import settings
 
 class ModelLoggerService:
     def __init__(self):
@@ -42,7 +43,7 @@ class ModelLoggerService:
             except Exception as e:
                 logger.warning(f"Unable to remove CodeCarbon lock file: {e}")
 
-        self.emissions_tracker = EmissionsTracker(project_name="model_logging", save_to_file=False, save_to_prometheus=True, prometheus_url="localhost:8002")
+        self.emissions_tracker = EmissionsTracker(project_name="model_logging", save_to_file=False, save_to_prometheus=True, prometheus_url=f"localhost:${settings.PROMETHEUS_PORT_CARBON}")
         logger.info("CodeCarbon tracker initialized.")
 
     def log_model_details(self):

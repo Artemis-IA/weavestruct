@@ -103,7 +103,7 @@ class Settings(BaseSettings):
 
     # Prometheus settings
     PROMETHEUS_PORT: int = int(os.getenv("PROMETHEUS_PORT", 9090))
-
+    PROMETHEUS_PORT_CARBON: int = int(os.getenv("PROMETHEUS_PORT_CUSTOM", 8002)) 
     # GLiNER settings
     GLINER_BASIC_AUTH_USER: str = os.getenv("GLINER_BASIC_AUTH_USER", "my_user")
     GLINER_BASIC_AUTH_PASS: str = os.getenv("GLINER_BASIC_AUTH_PASS", "my_password")

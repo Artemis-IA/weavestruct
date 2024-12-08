@@ -14,7 +14,7 @@ all.py
 */**/all.py
 services/all.py
 routers/all.py
-
+utils/config.py
 datasets/*
 !datasets/.gitkeep
 mlruns/*
@@ -23,4 +23,3 @@ models/*
 !models/.gitkeep
 logs/*
 tests/*
-site/
