@@ -5,15 +5,15 @@ from enum import Enum
 from sqlalchemy.orm import Session
 from typing import Optional, List, Dict, Any
 from pathlib import Path
-from dependencies import get_db, get_s3_service, get_mlflow_service, get_model_manager
-from config import settings
-from services.train_service import TrainService
-from services.model_manager import ModelManager, ModelSource, ModelInfoFilter
-from services.s3_service import S3Service
-from services.mlflow_service import MLFlowService
+from src.dependencies import get_db, get_s3_service, get_mlflow_service, get_model_manager
+from src.config import settings
+from src.services.train_service import TrainService
+from src.services.model_manager import ModelManager, ModelSource, ModelInfoFilter
+from src.services.s3_service import S3Service
+from src.services.mlflow_service import MLFlowService
 from datasets import load_dataset, Features, Sequence, Value
 from huggingface_hub import hf_hub_download, HfApi
-from schemas.train import TrainInput, TrainResponse
+from src.schemas.train import TrainInput, TrainResponse
 from loguru import logger
 import json
 import shutil

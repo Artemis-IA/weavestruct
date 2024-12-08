@@ -44,15 +44,7 @@ class GLiNERService:
         logger.info("GlinerGraphTransformer initialized.")
 
     def extract_entities(self, texts):
-        """
-        Extract entities from a list of texts using GlinerGraphTransformer.
 
-        Args:
-            texts (List[str]): List of texts to process.
-
-        Returns:
-            List[List[Dict]]: A list where each element corresponds to the entities extracted from a text.
-        """
         try:
             # Convert texts to the format expected by GlinerGraphTransformer
             documents = [{"text": text} for text in texts]
@@ -80,18 +72,7 @@ class GLiNERService:
             raise
 
     def predict_entities(self, text, labels=None, threshold=0.5, nested_ner=False):
-        """
-        Predict entities in a single text using GLiNER.
 
-        Args:
-            text (str): The text to analyze.
-            labels (List[str], optional): List of labels to consider.
-            threshold (float, optional): Confidence threshold.
-            nested_ner (bool, optional): Whether to perform nested NER.
-
-        Returns:
-            Dict: A dictionary containing the text and the list of entities.
-        """
         try:
             entities = self.gliner_model.predict_entities(
                 text,

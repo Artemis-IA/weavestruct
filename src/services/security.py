@@ -6,7 +6,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 
-from schemas.auth import User, UserInDB, TokenData
+from src.schemas.auth import User, UserInDB, TokenData  # Correction de l'import absolu
 
 # Configuration simplifiée pour l'exemple
 SECRET_KEY = "your_secret_key" 

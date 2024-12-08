@@ -1,6 +1,6 @@
-# routers/logging.py
+# src/routers/logging.py
 from fastapi import APIRouter
-from utils.logging_utils import ModelLoggerService
+from src.utils.logging_utils import ModelLoggerService
 
 router = APIRouter()
 

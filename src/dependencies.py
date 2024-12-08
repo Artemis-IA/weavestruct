@@ -7,7 +7,7 @@ from functools import lru_cache
 from loguru import logger
 
 from src.config import settings
-from src.utils.database import SessionLocal
+from src.utils.database import DatabaseUtils
 from src.utils.metrics import MetricsManager
 from src.services.s3_service import S3Service
 from src.services.mlflow_service import MLFlowService
@@ -29,12 +29,8 @@ from neo4j import GraphDatabase
 # Dependency to get the SQLAlchemy session
 def get_db() -> Generator[Session, None, None]:
     """Yields a database session."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-        
+    yield from DatabaseUtils.get_db()
+
 @lru_cache
 def get_metrics_manager() -> MetricsManager:
     """Returns a singleton instance of MetricsManager."""

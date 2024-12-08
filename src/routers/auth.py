@@ -4,10 +4,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
 
-from services.security import authenticate_user, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, fake_users_db
-from schemas.auth import Token
+from src.services.security import authenticate_user, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, fake_users_db
+from src.schemas.auth import Token
 
-router = APIRouter(tags=["Authentication"])
+router = APIRouter(
+    prefix="/auth",
+    tags=["Authentication"],
+    responses={404: {"description": "Not found"}},
+)
 
 @router.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):

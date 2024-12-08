@@ -4,102 +4,93 @@ from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from prometheus_fastapi_instrumentator import Instrumentator
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
-from src.routers import documents, entities, relationships, search, graph, datasets, trainb, loopml
+from src.routers import ROUTERS
+from src.utils.database import DatabaseUtils
 from src.utils.metrics import MetricsManager
 from src.config import settings
-from src.utils.swagger_ui import setup_swagger_ui
+from src.utils.swagger_ui import SwaggerUISetup
 
-metrics_manager = MetricsManager(prometheus_port=settings.PROMETHEUS_PORT_CARBON)
+class AppLauncher:
+    def __init__(self):
+        self.metrics_manager = MetricsManager(prometheus_port=settings.PROMETHEUS_PORT_CARBON)
+        self.app = FastAPI(
+            title="Document Processing and Graph API",
+            version="2.0.0",
+            description="API for Document processing, NER/Relation Extraction & Embeddings/Graph Indexing",
+            docs_url="/",
+            redoc_url=None,
+            openapi_url="/openapi.json",
+        )
 
+    def setup(self):
+        DatabaseUtils.init_db()
+        self._setup_swagger_ui()
+        self._setup_middleware()
+        self._setup_routers()
+        self._setup_metrics()
+        self._setup_events()
+        return self.app
 
-def create_app() -> FastAPI:
+    def _setup_swagger_ui(self):
+        SwaggerUISetup(self.app).setup()
 
-    app = FastAPI(
-        title="Document Processing and Graph API",
-        version="2.0.0",
-        description="API for Document processing, NER/Relation Extraction & Embeddings/Graph Indexing",
-        docs_url="/",
-        redoc_url="/redoc",
-        openapi_url="/openapi.json",
-    )
-    setup_swagger_ui(app)
+    def _setup_middleware(self):
+        self.app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
-    # Middleware for CORS
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],  # Adjust for production
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+        Instrumentator(
+            excluded_handlers=["^/metrics", "^/redoc", "^/openapi.json"],
+            should_group_status_codes=True,
+            should_ignore_untemplated=True,
+        ).instrument(self.app, metric_namespace="metrics").expose(self.app)
 
-    # Prometheus metrics middleware
-    Instrumentator(
-        excluded_handlers=["^/metrics", "^/redoc", "^/openapi.json"],
-        should_group_status_codes=True,
-        should_ignore_untemplated=True,
-    ).instrument(
-        app,
-        metric_namespace="metrics"
-    ).expose(app)
+        @self.app.middleware("http")
+        async def custom_metrics_middleware(request: Request, call_next):
+            start_time = time.time()
+            self.metrics_manager.REQUEST_COUNT.inc()
+            response = await call_next(request)
+            latency = time.time() - start_time
+            self.metrics_manager.PROCESS_TIME.observe(latency)
+            self.metrics_manager.log_system_metrics()
+            return response
 
-    # Include Routers
-    app.include_router(documents.router, prefix="/documents", tags=["Documents"])
-    app.include_router(entities.router, prefix="/entities", tags=["Entities"])
-    app.include_router(relationships.router, prefix="/relationships", tags=["Relationships"])
-    app.include_router(search.router, prefix="/search", tags=["Search"])
-    app.include_router(graph.router, prefix="/graph", tags=["Graph"])
-    app.include_router(datasets.router, prefix="/datasets", tags=["Datasets"])
-    app.include_router(trainb.router, prefix="/train", tags=["Training"])
-    app.include_router(loopml.router, prefix="/loopml", tags=["LoopML link MLflow and Hugging Face"])
+    def _setup_routers(self):
+        for route_config in ROUTERS:
+            self.app.include_router(
+                route_config["router"], prefix=route_config["prefix"], tags=route_config["tags"]
+            )
 
-    # Metrics Router
-    metrics_router = APIRouter(prefix="/metrics", tags=["Metrics"])
+    def _setup_metrics(self):
+        metrics_router = APIRouter(prefix="/metrics", tags=["Metrics"])
 
-    @metrics_router.get("/")
-    async def metrics():
-        """Expose Prometheus metrics."""
-        return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+        @metrics_router.get("/")
+        async def metrics():
+            return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
-    app.include_router(metrics_router)
+        self.app.include_router(metrics_router)
 
-    # Middleware to track custom metrics
-    @app.middleware("http")
-    async def custom_metrics_middleware(request: Request, call_next):
-        """Track request metrics and system stats."""
-        start_time = time.time()
-        metrics_manager.REQUEST_COUNT.inc()
-        response = await call_next(request)
-        latency = time.time() - start_time
-        metrics_manager.PROCESS_TIME.observe(latency)
-        metrics_manager.log_system_metrics()
-        return response
+    def _setup_events(self):
+        @self.app.on_event("startup")
+        async def startup_event():
+            logger.info("Application starting...")
+            self.metrics_manager.start_emissions_tracker()
+            self.metrics_manager.start_metrics_server()
+            system_metrics = self.metrics_manager.get_system_metrics()
+            device_type = settings.DEVICE
+            logger.info(f"Device Type: {device_type}")
+            self.metrics_manager.validate_services()
 
-    return app
+        @self.app.on_event("shutdown")
+        async def shutdown_event():
+            self.metrics_manager.emissions_tracker.stop()
+            logger.info("Application shutting down...")
 
-
-app = create_app()
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Application startup event."""
-    logger.info("Application starting...")
-    metrics_manager.start_emissions_tracker()
-    metrics_manager.start_metrics_server()
-    system_metrics = metrics_manager.get_system_metrics()
-    device_type = "cuda" if system_metrics.get("cuda") else "CPU"
-    logger.info(f"Device Type: {device_type}")
-    metrics_manager.validate_services()
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Application shutdown event."""
-    metrics_manager.emissions_tracker.stop()
-    logger.info("Application shutting down...")
-
-
+app = AppLauncher().setup()
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host=settings.HOST, port=settings.PORT)

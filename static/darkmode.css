@@ -5,13 +5,13 @@ body.dark-mode {
 
 body.dark-mode .swagger-ui .topbar {
     background-color: #1e1e1e !important;
-    border-bottom: 1px solid #333333;
+    border-bottom: 1px solid #333333 !important;
 }
 
 body.dark-mode .swagger-ui .btn {
     background-color: #333333 !important;
     color: #ffffff !important;
-    border-color: #444444;
+    border-color: #444444 !important;
 }
 
 body.dark-mode .swagger-ui .info {

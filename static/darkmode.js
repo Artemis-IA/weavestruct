@@ -1,18 +1,24 @@
-// Toggle dark mode for Swagger UI
+// Log pour vérifier si le script est chargé
+console.log("Dark mode script loaded");
+
+// Fonction pour basculer entre le mode sombre et le mode clair
 function toggleDarkMode() {
     const body = document.querySelector("body");
     const darkMode = body.classList.toggle("dark-mode");
 
-    // Save preference in localStorage
+    // Enregistrer la préférence dans le localStorage
     localStorage.setItem("swaggerDarkMode", darkMode);
 }
 
-// Add slider for Dark Mode
+// Fonction pour ajouter le toggle pour le mode sombre
 function addDarkModeToggle() {
     const header = document.querySelector(".swagger-ui .topbar");
-    if (!header) return;
+    if (!header) {
+        console.warn("Swagger topbar not found, retrying...");
+        return;
+    }
 
-    // Create container for the slider
+    // Créer un conteneur pour le slider
     const container = document.createElement("div");
     container.style.display = "flex";
     container.style.alignItems = "center";
@@ -20,7 +26,7 @@ function addDarkModeToggle() {
     container.style.marginRight = "20px";
     container.style.padding = "10px";
 
-    // Create the slider toggle
+    // Créer le slider toggle
     const sliderContainer = document.createElement("label");
     sliderContainer.style.cursor = "pointer";
     sliderContainer.style.display = "inline-flex";
@@ -62,7 +68,7 @@ function addDarkModeToggle() {
         }
     };
 
-    // Set initial state from localStorage
+    // Définir l'état initial à partir du localStorage
     if (localStorage.getItem("swaggerDarkMode") === "true") {
         document.querySelector("body").classList.add("dark-mode");
         slider.checked = true;
@@ -70,7 +76,7 @@ function addDarkModeToggle() {
         knob.style.transform = "translateX(20px)";
     }
 
-    // Append slider components
+    // Ajouter les éléments du slider au conteneur
     sliderContainer.appendChild(slider);
     sliderContainer.appendChild(sliderSpan);
 
@@ -81,9 +87,15 @@ function addDarkModeToggle() {
     container.appendChild(label);
     container.appendChild(sliderContainer);
 
-    // Add slider to the header
+    // Ajouter le slider à l'entête de Swagger
     header.appendChild(container);
+
+    console.log("Dark mode toggle added successfully");
 }
 
-// Add dark mode toggle after DOM loads
-document.addEventListener("DOMContentLoaded", addDarkModeToggle);
+// Ajout du slider après le chargement complet du DOM
+document.addEventListener("DOMContentLoaded", () => {
+    setTimeout(() => {
+        addDarkModeToggle();
+    }, 1000); // Ajout d'un délai pour s'assurer que le DOM est complètement chargé
+});

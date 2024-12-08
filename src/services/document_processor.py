@@ -34,7 +34,7 @@ from src.services.glirel_service import GLiRELService
 
 from src.models.document_log import DocumentLog, DocumentLogService
 from src.models.document import Document
-from src.utils.database import SessionLocal
+from src.utils.database import DatabaseUtils
 
 class CustomPdfPipelineOptions(PdfPipelineOptions):
     """Custom pipeline options for PDF processing."""

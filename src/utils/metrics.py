@@ -90,7 +90,7 @@ class MetricsManager:
         Ensure the emissions tracker is running.
         """
         try:
-            if self.emissions_tracker and not getattr(self.emissions_tracker._scheduler, '_stopped', True):
+            if self.emissions_tracker and not getattr(self.emissions_tracker, '_started', False):
                 self.emissions_tracker.start()
                 logger.info("Emissions tracker started.")
         except Exception as e:
@@ -102,7 +102,7 @@ class MetricsManager:
         Gracefully stop the emissions tracker.
         """
         try:
-            if self.emissions_tracker and not getattr(self.emissions_tracker._scheduler, '_stopped', True):
+            if self.emissions_tracker and hasattr(self.emissions_tracker, '_started') and self.emissions_tracker._started:
                 self.emissions_tracker.stop()
                 logger.info("Emissions tracker stopped.")
         except Exception as e:
