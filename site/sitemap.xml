@@ -1,43 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://artemis-ia.github.io/weavestruct/</loc>
+         <loc>https://weavestruct.readthedocs.io/</loc>
          <lastmod>2024-12-08</lastmod>
     </url>
     <url>
-         <loc>https://artemis-ia.github.io/weavestruct/about/</loc>
+         <loc>https://weavestruct.readthedocs.io/about/</loc>
          <lastmod>2024-12-08</lastmod>
     </url>
     <url>
-         <loc>https://artemis-ia.github.io/weavestruct/api/</loc>
+         <loc>https://weavestruct.readthedocs.io/api/</loc>
          <lastmod>2024-12-08</lastmod>
     </url>
     <url>
-         <loc>https://artemis-ia.github.io/weavestruct/configuration/</loc>
+         <loc>https://weavestruct.readthedocs.io/configuration/</loc>
          <lastmod>2024-12-08</lastmod>
     </url>
     <url>
-         <loc>https://artemis-ia.github.io/weavestruct/features/</loc>
+         <loc>https://weavestruct.readthedocs.io/features/</loc>
          <lastmod>2024-12-08</lastmod>
     </url>
     <url>
-         <loc>https://artemis-ia.github.io/weavestruct/installation/</loc>
+         <loc>https://weavestruct.readthedocs.io/installation/</loc>
          <lastmod>2024-12-08</lastmod>
     </url>
     <url>
-         <loc>https://artemis-ia.github.io/weavestruct/license/</loc>
+         <loc>https://weavestruct.readthedocs.io/license/</loc>
          <lastmod>2024-12-08</lastmod>
     </url>
     <url>
-         <loc>https://artemis-ia.github.io/weavestruct/mlflow/</loc>
+         <loc>https://weavestruct.readthedocs.io/mlflow/</loc>
          <lastmod>2024-12-08</lastmod>
     </url>
     <url>
-         <loc>https://artemis-ia.github.io/weavestruct/models/</loc>
+         <loc>https://weavestruct.readthedocs.io/models/</loc>
          <lastmod>2024-12-08</lastmod>
     </url>
     <url>
-         <loc>https://artemis-ia.github.io/weavestruct/usage/</loc>
+         <loc>https://weavestruct.readthedocs.io/usage/</loc>
          <lastmod>2024-12-08</lastmod>
     </url>
 </urlset>
