@@ -1,0 +1,38 @@
+name: Update OpenAPI Specification and Documentation
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  generate-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Cloner le dépôt
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2. Configurer Python
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.11'
+
+      # 3. Installer les dépendances
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install mkdocs-material
+
+      # 4. Générer le fichier openapi.json
+      - name: Generate OpenAPI Specification
+        run: |
+          python src/scripts/generate_openapi.py
+
+      # 5. Générer la documentation MkDocs
+      - name: Deploy Documentation
+        run: |
+          mkdocs build

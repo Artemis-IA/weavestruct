@@ -1,0 +1,2410 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Document Processing and Graph API",
+    "description": "API for Document processing, NER/Relation Extraction & Embeddings/Graph Indexing",
+    "version": "2.0.0"
+  },
+  "paths": {
+    "/metrics": {
+      "get": {
+        "summary": "Metrics",
+        "description": "Endpoint that serves Prometheus metrics.",
+        "operationId": "metrics_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/auth/token": {
+      "post": {
+        "tags": [
+          "Authentication",
+          "Authentication"
+        ],
+        "summary": "Login For Access Token",
+        "operationId": "login_for_access_token_auth_auth_token_post",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_login_for_access_token_auth_auth_token_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/datasets/datasets/": {
+      "get": {
+        "tags": [
+          "Datasets",
+          "Datasets"
+        ],
+        "summary": "Lister tous les datasets",
+        "description": "Liste tous les datasets disponibles.",
+        "operationId": "list_datasets_endpoint_datasets_datasets__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DatasetResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List Datasets Endpoint Datasets Datasets  Get"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Datasets",
+          "Datasets"
+        ],
+        "summary": "Cr\u00e9er un nouveau dataset",
+        "description": "Cr\u00e9e un nouveau dataset en t\u00e9l\u00e9chargeant des fichiers et en les traitant.\n\n- **name**: Nom du dataset (optionnel)\n- **files**: Liste de fichiers \u00e0 uploader\n- **labels**: Labels suppl\u00e9mentaires (optionnel)\n- **output_format**: Format de sortie (voir enum ExportFormat)",
+        "operationId": "create_dataset_endpoint_datasets_datasets__post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_create_dataset_endpoint_datasets_datasets__post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatasetResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/datasets/datasets/{dataset_id}": {
+      "get": {
+        "tags": [
+          "Datasets",
+          "Datasets"
+        ],
+        "summary": "Obtenir un dataset par ID",
+        "description": "Obtient un dataset sp\u00e9cifique par son ID.\n\n- **dataset_id**: ID du dataset \u00e0 obtenir",
+        "operationId": "get_dataset_endpoint_datasets_datasets__dataset_id__get",
+        "parameters": [
+          {
+            "name": "dataset_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Dataset Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatasetResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Datasets",
+          "Datasets"
+        ],
+        "summary": "Mettre \u00e0 jour un dataset par ID",
+        "operationId": "update_dataset_endpoint_datasets_datasets__dataset_id__put",
+        "parameters": [
+          {
+            "name": "dataset_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Dataset Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_update_dataset_endpoint_datasets_datasets__dataset_id__put"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatasetResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Datasets",
+          "Datasets"
+        ],
+        "summary": "Supprimer un dataset par ID",
+        "description": "Supprime un dataset sp\u00e9cifique par son ID.\n\n- **dataset_id**: ID du dataset \u00e0 supprimer",
+        "operationId": "delete_dataset_endpoint_datasets_datasets__dataset_id__delete",
+        "parameters": [
+          {
+            "name": "dataset_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Dataset Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Delete Dataset Endpoint Datasets Datasets  Dataset Id  Delete"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents/upload/": {
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Upload Files",
+        "description": "Upload files to S3, process them using the DocumentProcessor, and export results in specified formats.",
+        "operationId": "upload_files_documents_upload__post",
+        "parameters": [
+          {
+            "name": "export_formats",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/src__enums__documents__ExportFormat"
+              },
+              "title": "Formats d'exportation",
+              "description": "Choisissez les formats d'exportation",
+              "enum": [
+                "json",
+                "yaml",
+                "md"
+              ],
+              "default": [
+                "json"
+              ]
+            },
+            "description": "Choisissez les formats d'exportation"
+          },
+          {
+            "name": "use_ocr",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "title": "Utiliser OCR",
+              "description": "Activez l'OCR lors de la conversion.",
+              "default": false
+            },
+            "description": "Activez l'OCR lors de la conversion."
+          },
+          {
+            "name": "export_figures",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "title": "Exporter les figures",
+              "description": "Activer ou d\u00e9sactiver l'exportation des figures",
+              "default": true
+            },
+            "description": "Activer ou d\u00e9sactiver l'exportation des figures"
+          },
+          {
+            "name": "export_tables",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "title": "Exporter les tableaux",
+              "description": "Activer ou d\u00e9sactiver l'exportation des tableaux",
+              "default": true
+            },
+            "description": "Activer ou d\u00e9sactiver l'exportation des tableaux"
+          },
+          {
+            "name": "enrich_figures",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "title": "Enrichir les figures",
+              "description": "Activer ou d\u00e9sactiver l'enrichissement des figures",
+              "default": false
+            },
+            "description": "Activer ou d\u00e9sactiver l'enrichissement des figures"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_files_documents_upload__post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents/upload_path/": {
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Upload Path",
+        "description": "Upload all files from a directory to the `input` bucket, process them,\nand store results in the `output` and `layouts` buckets.",
+        "operationId": "upload_path_documents_upload_path__post",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_path_documents_upload_path__post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents/index_document/": {
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Index Document",
+        "description": "Index a document by extracting entities, embeddings, and relationships. \nAllows indexing either by uploading a document or providing its S3 URL.",
+        "operationId": "index_document_documents_index_document__post",
+        "parameters": [
+          {
+            "name": "export_formats",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/src__enums__documents__ExportFormat"
+              },
+              "title": "Formats d'exportation",
+              "description": "Choisissez les formats d'exportation",
+              "enum": [
+                "json",
+                "yaml",
+                "md"
+              ],
+              "default": [
+                "json"
+              ]
+            },
+            "description": "Choisissez les formats d'exportation"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_index_document_documents_index_document__post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents/index_path/": {
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Index Path",
+        "description": "Index all valid files in a directory.",
+        "operationId": "index_path_documents_index_path__post",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_index_path_documents_index_path__post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/entities/entities/": {
+      "get": {
+        "tags": [
+          "Entities"
+        ],
+        "summary": "Get Entities",
+        "operationId": "get_entities_entities_entities__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Entity"
+                  },
+                  "type": "array",
+                  "title": "Response Get Entities Entities Entities  Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Entities"
+        ],
+        "summary": "Create Entity",
+        "operationId": "create_entity_entities_entities__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntityCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/entities/entities/{entity_id}": {
+      "get": {
+        "tags": [
+          "Entities"
+        ],
+        "summary": "Get Entity",
+        "operationId": "get_entity_entities_entities__entity_id__get",
+        "parameters": [
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Entity Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Entities"
+        ],
+        "summary": "Delete Entity",
+        "operationId": "delete_entity_entities_entities__entity_id__delete",
+        "parameters": [
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Entity Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Delete Entity Entities Entities  Entity Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/graph/entities/": {
+      "get": {
+        "tags": [
+          "Graph"
+        ],
+        "summary": "Get All Entities",
+        "operationId": "get_all_entities_graph_entities__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Entity"
+                  },
+                  "type": "array",
+                  "title": "Response Get All Entities Graph Entities  Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/graph/relationships/": {
+      "get": {
+        "tags": [
+          "Graph"
+        ],
+        "summary": "Get All Relationships",
+        "operationId": "get_all_relationships_graph_relationships__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Relationship"
+                  },
+                  "type": "array",
+                  "title": "Response Get All Relationships Graph Relationships  Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/graph/visualize/": {
+      "get": {
+        "tags": [
+          "Graph"
+        ],
+        "summary": "Visualize Graph",
+        "operationId": "visualize_graph_graph_visualize__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "items": {
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "type": "object",
+                  "title": "Response Visualize Graph Graph Visualize  Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logging/log_models/": {
+      "post": {
+        "tags": [
+          "Logging"
+        ],
+        "summary": "Log Models",
+        "description": "API endpoint to trigger logging of model details.",
+        "operationId": "log_models_logging_log_models__post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logging/log_queries/": {
+      "post": {
+        "tags": [
+          "Logging"
+        ],
+        "summary": "Log Queries",
+        "description": "API endpoint to trigger logging of queries.",
+        "operationId": "log_queries_logging_log_queries__post",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Query"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/loopml/available_models": {
+      "get": {
+        "tags": [
+          "LoopML"
+        ],
+        "summary": "Available Models",
+        "operationId": "available_models_loopml_available_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response Available Models Loopml Available Models Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/loopml/get_huggingface_models": {
+      "get": {
+        "tags": [
+          "LoopML"
+        ],
+        "summary": "Get Gliner Models",
+        "description": "Fetch Hugging Face models with optional sorting.",
+        "operationId": "get_gliner_models_loopml_get_huggingface_models_get",
+        "parameters": [
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ModelInfoFilter"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sort models by 'size', 'recent', 'name', 'downloads', or 'likes'",
+              "default": "name",
+              "title": "Sort By"
+            },
+            "description": "Sort models by 'size', 'recent', 'name', 'downloads', or 'likes'"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/loopml/upload_model_from_huggingface": {
+      "post": {
+        "tags": [
+          "LoopML"
+        ],
+        "summary": "Upload Model Huggingface",
+        "description": "Upload a Hugging Face model and register it in MLflow.",
+        "operationId": "upload_model_huggingface_loopml_upload_model_from_huggingface_post",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_model_huggingface_loopml_upload_model_from_huggingface_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/loopml/upload_model_artifact": {
+      "post": {
+        "tags": [
+          "LoopML"
+        ],
+        "summary": "Upload Model Artifact",
+        "description": "Upload the model artifact to MLflow from Hugging Face or local cache.",
+        "operationId": "upload_model_artifact_loopml_upload_model_artifact_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_model_artifact_loopml_upload_model_artifact_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/loopml/download_model_artifact": {
+      "get": {
+        "tags": [
+          "LoopML"
+        ],
+        "summary": "Download Model Artifact",
+        "description": "Download a registered model artifact from MLflow.",
+        "operationId": "download_model_artifact_loopml_download_model_artifact_get",
+        "parameters": [
+          {
+            "name": "artifact_name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Name of the registered model to download",
+              "title": "Artifact Name"
+            },
+            "description": "Name of the registered model to download"
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Version of the model to download",
+              "title": "Version"
+            },
+            "description": "Version of the model to download"
+          },
+          {
+            "name": "alias",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Alias of the model version to download",
+              "title": "Alias"
+            },
+            "description": "Alias of the model version to download"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/loopml/delete_model": {
+      "delete": {
+        "tags": [
+          "LoopML"
+        ],
+        "summary": "Delete Model",
+        "operationId": "delete_model_loopml_delete_model_delete",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_delete_model_loopml_delete_model_delete"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/relationships/relationships/": {
+      "get": {
+        "tags": [
+          "Relationships"
+        ],
+        "summary": "Get Relationships",
+        "operationId": "get_relationships_relationships_relationships__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Relationship"
+                  },
+                  "type": "array",
+                  "title": "Response Get Relationships Relationships Relationships  Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Relationships"
+        ],
+        "summary": "Create Relationship",
+        "operationId": "create_relationship_relationships_relationships__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RelationshipCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Relationship"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/relationships/relationships/{relationship_id}": {
+      "get": {
+        "tags": [
+          "Relationships"
+        ],
+        "summary": "Get Relationship",
+        "operationId": "get_relationship_relationships_relationships__relationship_id__get",
+        "parameters": [
+          {
+            "name": "relationship_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Relationship Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Relationship"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Relationships"
+        ],
+        "summary": "Delete Relationship",
+        "operationId": "delete_relationship_relationships_relationships__relationship_id__delete",
+        "parameters": [
+          {
+            "name": "relationship_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Relationship Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Delete Relationship Relationships Relationships  Relationship Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/search/search/entities/": {
+      "get": {
+        "tags": [
+          "Search"
+        ],
+        "summary": "Search Entities",
+        "operationId": "search_entities_search_search_entities__get",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Keyword to search for",
+              "title": "Keyword"
+            },
+            "description": "Keyword to search for"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Entity"
+                  },
+                  "title": "Response Search Entities Search Search Entities  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/search/search/relationships/": {
+      "get": {
+        "tags": [
+          "Search"
+        ],
+        "summary": "Search Relationships",
+        "operationId": "search_relationships_search_search_relationships__get",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Keyword to search for",
+              "title": "Keyword"
+            },
+            "description": "Keyword to search for"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Relationship"
+                  },
+                  "title": "Response Search Relationships Search Search Relationships  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/train/train": {
+      "post": {
+        "tags": [
+          "Training"
+        ],
+        "summary": "Train Model",
+        "operationId": "train_model_train_train_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_train_model_train_train_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/train_operations/": {
+      "post": {
+        "tags": [
+          "Training Operations"
+        ],
+        "summary": "Train Model",
+        "operationId": "train_model_train_operations__post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_train_model_train_operations__post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics/": {
+      "get": {
+        "tags": [
+          "Metrics"
+        ],
+        "summary": "Metrics",
+        "operationId": "metrics_metrics__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_create_dataset_endpoint_datasets_datasets__post": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Nom du dataset"
+          },
+          "files": {
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "type": "array",
+            "title": "Files",
+            "description": "Fichiers \u00e0 uploader"
+          },
+          "labels": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Labels",
+            "description": "Labels suppl\u00e9mentaires"
+          },
+          "output_format": {
+            "$ref": "#/components/schemas/src__schemas__dataset__ExportFormat",
+            "description": "Format de sortie"
+          }
+        },
+        "type": "object",
+        "required": [
+          "files",
+          "output_format"
+        ],
+        "title": "Body_create_dataset_endpoint_datasets_datasets__post"
+      },
+      "Body_delete_model_loopml_delete_model_delete": {
+        "properties": {
+          "artifact_name": {
+            "type": "string",
+            "title": "Artifact Name",
+            "description": "Nom du mod\u00e8le enregistr\u00e9 \u00e0 supprimer"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version",
+            "description": "Version sp\u00e9cifique du mod\u00e8le \u00e0 supprimer (d\u00e9sactive automatiquement 'run_id')."
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id",
+            "description": "ID de l'ex\u00e9cution associ\u00e9 \u00e0 une version du mod\u00e8le (d\u00e9sactive automatiquement 'version')."
+          }
+        },
+        "type": "object",
+        "required": [
+          "artifact_name"
+        ],
+        "title": "Body_delete_model_loopml_delete_model_delete"
+      },
+      "Body_index_document_documents_index_document__post": {
+        "properties": {
+          "file": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "binary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "title": "Body_index_document_documents_index_document__post"
+      },
+      "Body_index_path_documents_index_path__post": {
+        "properties": {
+          "directory_path": {
+            "type": "string",
+            "title": "Directory Path"
+          }
+        },
+        "type": "object",
+        "required": [
+          "directory_path"
+        ],
+        "title": "Body_index_path_documents_index_path__post"
+      },
+      "Body_login_for_access_token_auth_auth_token_post": {
+        "properties": {
+          "grant_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "password"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grant Type"
+          },
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          },
+          "scope": {
+            "type": "string",
+            "title": "Scope",
+            "default": ""
+          },
+          "client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Id"
+          },
+          "client_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Secret"
+          }
+        },
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "Body_login_for_access_token_auth_auth_token_post"
+      },
+      "Body_train_model_train_operations__post": {
+        "properties": {
+          "dataset_file": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "binary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dataset File",
+            "description": "Upload dataset file (JSON list)"
+          },
+          "s3_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "S3 Url",
+            "description": "S3 URL of the dataset (e.g., s3://bucket/path/file.json)"
+          },
+          "huggingface_dataset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Huggingface Dataset",
+            "description": "HuggingFace dataset name (e.g., 'knowledgator/GLINER-multi-task-synthetic-data')"
+          },
+          "artifact_name": {
+            "type": "string",
+            "title": "Artifact Name",
+            "description": "Name of the base model",
+            "default": "knowledgator/gliner-multitask-large-v0.5"
+          },
+          "custom_model_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Model Name",
+            "description": "Custom name for the fine-tuned model"
+          },
+          "split_ratio": {
+            "type": "number",
+            "title": "Split Ratio",
+            "description": "Train/Eval split ratio",
+            "default": 0.9
+          },
+          "learning_rate": {
+            "type": "number",
+            "title": "Learning Rate",
+            "description": "Learning rate",
+            "default": 1e-05
+          },
+          "weight_decay": {
+            "type": "number",
+            "title": "Weight Decay",
+            "description": "Weight decay",
+            "default": 0.01
+          },
+          "batch_size": {
+            "type": "integer",
+            "title": "Batch Size",
+            "description": "Batch size",
+            "default": 16
+          },
+          "epochs": {
+            "type": "integer",
+            "title": "Epochs",
+            "description": "Number of epochs",
+            "default": 3
+          },
+          "compile_model": {
+            "type": "boolean",
+            "title": "Compile Model",
+            "description": "Compile the model for faster training",
+            "default": false
+          },
+          "training_params_file": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "binary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Training Params File",
+            "description": "Upload training parameters JSON file"
+          }
+        },
+        "type": "object",
+        "title": "Body_train_model_train_operations__post"
+      },
+      "Body_train_model_train_train_post": {
+        "properties": {
+          "dataset_file": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "binary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dataset File",
+            "description": "Upload dataset file (JSON list)"
+          },
+          "s3_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "S3 Url",
+            "description": "S3 URL of the dataset (e.g., s3://bucket/path/file.json)"
+          },
+          "huggingface_dataset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Huggingface Dataset",
+            "description": "HuggingFace dataset name"
+          },
+          "artifact_name": {
+            "type": "string",
+            "title": "Artifact Name",
+            "description": "Name of the base model from Hugging Face",
+            "default": "bert-base-uncased"
+          },
+          "custom_model_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Model Name",
+            "description": "Custom name for the fine-tuned model"
+          },
+          "split_ratio": {
+            "type": "number",
+            "title": "Split Ratio",
+            "description": "Train/Eval split ratio",
+            "default": 0.9
+          },
+          "learning_rate": {
+            "type": "number",
+            "title": "Learning Rate",
+            "description": "Learning rate",
+            "default": 1e-05
+          },
+          "weight_decay": {
+            "type": "number",
+            "title": "Weight Decay",
+            "description": "Weight decay",
+            "default": 0.01
+          },
+          "batch_size": {
+            "type": "integer",
+            "title": "Batch Size",
+            "description": "Batch size",
+            "default": 16
+          },
+          "epochs": {
+            "type": "integer",
+            "title": "Epochs",
+            "description": "Number of epochs",
+            "default": 3
+          },
+          "compile_model": {
+            "type": "boolean",
+            "title": "Compile Model",
+            "description": "Compile the model for faster training",
+            "default": false
+          },
+          "training_params_file": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "binary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Training Params File",
+            "description": "Upload training parameters JSON file"
+          }
+        },
+        "type": "object",
+        "title": "Body_train_model_train_train_post"
+      },
+      "Body_update_dataset_endpoint_datasets_datasets__dataset_id__put": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Nouveau nom du dataset"
+          },
+          "files": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Files",
+            "description": "Nouveaux fichiers \u00e0 uploader"
+          },
+          "labels": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Labels",
+            "description": "Nouveaux labels"
+          },
+          "output_format": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/src__schemas__dataset__ExportFormat"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Nouveau format de sortie"
+          }
+        },
+        "type": "object",
+        "title": "Body_update_dataset_endpoint_datasets_datasets__dataset_id__put"
+      },
+      "Body_upload_files_documents_upload__post": {
+        "properties": {
+          "files": {
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "type": "array",
+            "title": "Files"
+          }
+        },
+        "type": "object",
+        "required": [
+          "files"
+        ],
+        "title": "Body_upload_files_documents_upload__post"
+      },
+      "Body_upload_model_artifact_loopml_upload_model_artifact_post": {
+        "properties": {
+          "source_type": {
+            "$ref": "#/components/schemas/ModelSource",
+            "description": "Source of the model: 'huggingface' or 'local'"
+          },
+          "artifact_name": {
+            "type": "string",
+            "title": "Artifact Name",
+            "description": "Name of the model to be registered",
+            "default": "knowledgator/gliner-multitask-large-v0.5"
+          },
+          "task": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task",
+            "description": "Task type for the model (e.g., 'ner', 'text-classification')"
+          },
+          "local_model_file": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "binary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Model File",
+            "description": "Local model file (zip) if source is 'local'"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_type"
+        ],
+        "title": "Body_upload_model_artifact_loopml_upload_model_artifact_post"
+      },
+      "Body_upload_model_huggingface_loopml_upload_model_from_huggingface_post": {
+        "properties": {
+          "artifact_name": {
+            "type": "string",
+            "title": "Artifact Name",
+            "description": "Name of the Hugging Face model"
+          },
+          "register_name": {
+            "type": "string",
+            "title": "Register Name",
+            "description": "Name to register the model in MLflow"
+          },
+          "artifact_path": {
+            "type": "string",
+            "title": "Artifact Path",
+            "description": "Path to save artifacts in MLflow",
+            "default": "model_artifacts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "artifact_name",
+          "register_name"
+        ],
+        "title": "Body_upload_model_huggingface_loopml_upload_model_from_huggingface_post"
+      },
+      "Body_upload_path_documents_upload_path__post": {
+        "properties": {
+          "directory_path": {
+            "type": "string",
+            "title": "Directory Path"
+          },
+          "export_formats": {
+            "items": {
+              "$ref": "#/components/schemas/src__enums__documents__ExportFormat"
+            },
+            "type": "array",
+            "title": "Export Formats",
+            "default": [
+              "json",
+              "yaml",
+              "md"
+            ]
+          },
+          "use_ocr": {
+            "type": "boolean",
+            "title": "Use Ocr",
+            "default": false
+          },
+          "export_figures": {
+            "type": "boolean",
+            "title": "Export Figures",
+            "default": true
+          },
+          "export_tables": {
+            "type": "boolean",
+            "title": "Export Tables",
+            "default": true
+          },
+          "enrich_figures": {
+            "type": "boolean",
+            "title": "Enrich Figures",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "directory_path"
+        ],
+        "title": "Body_upload_path_documents_upload_path__post"
+      },
+      "DatasetResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "data": {
+            "type": "object",
+            "title": "Data"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "data",
+          "created_at"
+        ],
+        "title": "DatasetResponse"
+      },
+      "Entity": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "properties": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Properties"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The unique identifier of the entity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "type",
+          "id"
+        ],
+        "title": "Entity",
+        "description": "Model representing an entity with an ID, as returned from the database or API.",
+        "example": {
+          "id": "123e4567-e89b-12d3-a456-426614174001",
+          "name": "Sample Entity",
+          "properties": {
+            "location": "New York",
+            "employees": 100
+          },
+          "type": "Organization"
+        }
+      },
+      "EntityCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "properties": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Properties"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "type"
+        ],
+        "title": "EntityCreate",
+        "description": "Model for creating a new entity.\nInherits from EntityBase and can be extended for additional fields required at creation.",
+        "example": {
+          "name": "Sample Entity",
+          "properties": {
+            "location": "New York",
+            "employees": 100
+          },
+          "type": "Organization"
+        }
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ModelInfoFilter": {
+        "type": "string",
+        "enum": [
+          "size",
+          "recent",
+          "name",
+          "task",
+          "downloads",
+          "likes",
+          "emissions_thresholds"
+        ],
+        "title": "ModelInfoFilter"
+      },
+      "ModelSource": {
+        "type": "string",
+        "enum": [
+          "huggingface",
+          "local"
+        ],
+        "title": "ModelSource"
+      },
+      "Relationship": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "title": "Source Id",
+            "description": "The ID of the source entity"
+          },
+          "target_id": {
+            "type": "string",
+            "title": "Target Id",
+            "description": "The ID of the target entity"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "The type of the relationship"
+          },
+          "properties": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Properties",
+            "description": "Additional properties of the relationship"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The unique identifier of the relationship"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_id",
+          "target_id",
+          "type",
+          "id"
+        ],
+        "title": "Relationship",
+        "description": "Model representing a relationship with an ID, as returned from the database or API.",
+        "example": {
+          "id": "456e4567-e89b-12d3-a456-426614174003",
+          "properties": {
+            "since": "2021-01-01",
+            "status": "active"
+          },
+          "source_id": "123e4567-e89b-12d3-a456-426614174001",
+          "target_id": "789e4567-e89b-12d3-a456-426614174002",
+          "type": "Partnership"
+        }
+      },
+      "RelationshipCreate": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "title": "Source Id",
+            "description": "The ID of the source entity"
+          },
+          "target_id": {
+            "type": "string",
+            "title": "Target Id",
+            "description": "The ID of the target entity"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "The type of the relationship"
+          },
+          "properties": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Properties",
+            "description": "Additional properties of the relationship"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_id",
+          "target_id",
+          "type"
+        ],
+        "title": "RelationshipCreate",
+        "description": "Model for creating a new relationship.\nInherits from RelationshipBase and can be extended for additional fields required at creation.",
+        "example": {
+          "properties": {
+            "since": "2021-01-01",
+            "status": "active"
+          },
+          "source_id": "123e4567-e89b-12d3-a456-426614174001",
+          "target_id": "789e4567-e89b-12d3-a456-426614174002",
+          "type": "Partnership"
+        }
+      },
+      "Token": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "default": "bearer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token"
+        ],
+        "title": "Token"
+      },
+      "TrainResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "dataset_id": {
+            "type": "integer",
+            "title": "Dataset Id"
+          },
+          "epochs": {
+            "type": "integer",
+            "title": "Epochs"
+          },
+          "batch_size": {
+            "type": "integer",
+            "title": "Batch Size"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "run_id",
+          "dataset_id",
+          "epochs",
+          "batch_size",
+          "status",
+          "created_at"
+        ],
+        "title": "TrainResponse"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "src__enums__documents__ExportFormat": {
+        "type": "string",
+        "enum": [
+          "json",
+          "yaml",
+          "md",
+          "text",
+          "doctags"
+        ],
+        "title": "ExportFormat"
+      },
+      "src__schemas__dataset__ExportFormat": {
+        "type": "string",
+        "enum": [
+          "json",
+          "yaml",
+          "text",
+          "md",
+          "doctags",
+          "csv",
+          "jsonl",
+          "json_ner",
+          "json_rel",
+          "xml",
+          "rdf",
+          "ulma",
+          "conll",
+          "conllu"
+        ],
+        "title": "ExportFormat"
+      }
+    }
+  }
+}
