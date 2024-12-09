@@ -25,15 +25,22 @@ jobs:
 
       - name: Start FastAPI Server
         run: |
-          nohup uvicorn src.main:app --host 127.0.0.1 --port 8008 &
-          sleep 5  # Donne le temps au serveur de démarrer
+          nohup uvicorn src.main:app --host 127.0.0.1 --port 8008 > server.log 2>&1 &
+          sleep 10  # Donne le temps au serveur de démarrer
+          echo "Server logs:"
+          cat server.log
+
+      - name: Test API Accessibility
+        run: |
+          curl -I http://127.0.0.1:8008/openapi.json
+
 
       - name: Fetch OpenAPI Specification
         env:
           API_URL: ${{ secrets.API_URL }}
         run: |
           echo "Fetching OpenAPI Specification from $API_URL"
-          curl -o docs/static/swagger.json $API_URL
+          curl -o docs/static/swagger.json http://127.0.0.1:8008/openapi.json
           if [ $? -ne 0 ]; then
             echo "Failed to fetch OpenAPI specification"
             exit 1
