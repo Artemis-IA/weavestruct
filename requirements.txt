@@ -5,7 +5,7 @@ python-multipart
 aiofiles
 python-multipart
 pydantic
-
+python-jose
 # Logging
 loguru
 
