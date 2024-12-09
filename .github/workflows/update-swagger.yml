@@ -25,7 +25,7 @@ jobs:
 
       - name: Start FastAPI Server
         run: |
-          nohup uvicorn app.main:app --host 127.0.0.1 --port 8008 &
+          nohup uvicorn src.main:app --host 127.0.0.1 --port 8008 &
           sleep 5  # Donne le temps au serveur de démarrer
 
       - name: Fetch OpenAPI Specification
