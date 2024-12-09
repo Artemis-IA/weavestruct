@@ -14,6 +14,7 @@ import aiofiles
 from pathlib import Path
 import unicodedata
 from src.models.dataset import Dataset
+from src.models.document_log import DocumentLog, DocumentLogService
 from src.schemas.dataset import DatasetResponse
 from src.dependencies import (
     get_s3_service,
