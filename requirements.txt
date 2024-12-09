@@ -43,6 +43,7 @@ boto3
 
 # Custom modules
 nltk
+spacy
 gliner
 glirel
 docling
