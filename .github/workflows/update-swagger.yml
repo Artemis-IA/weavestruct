@@ -1,4 +1,4 @@
-name: Update Swagger Docs
+name: Update Swagger Documentation
 
 on:
   push:
@@ -18,24 +18,24 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: |
+          sudo apt-get update
+          sudo apt-get install -y curl
           python -m pip install --upgrade pip
           pip install requests
 
       - name: Fetch OpenAPI Specification
-        run: |
+        env:
           API_URL: ${{ secrets.API_URL }}
-          OUTPUT_PATH="docs/static/swagger.json"
-          response=$(curl --write-out "%{http_code}" --silent --output /tmp/swagger.json $API_URL)
-          if [ "$response" -eq 200 ]; then
-            mkdir -p $(dirname $OUTPUT_PATH)
-            mv /tmp/swagger.json $OUTPUT_PATH
-            echo "OpenAPI specification saved to $OUTPUT_PATH"
-          else
-            echo "Failed to fetch OpenAPI specification: HTTP $response"
+        run: |
+          echo "Fetching OpenAPI Specification from $API_URL"
+          curl -o docs/static/swagger.json $API_URL
+          if [ $? -ne 0 ]; then
+            echo "Failed to fetch OpenAPI specification"
             exit 1
           fi
+          echo "OpenAPI specification saved to docs/static/swagger.json"
 
       - name: Deploy Documentation
         run: |
