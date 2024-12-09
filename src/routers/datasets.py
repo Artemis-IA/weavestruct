@@ -15,7 +15,7 @@ from src.dependencies import get_db
 
 router = APIRouter(
     prefix="/datasets",
-    tags=["datasets"],
+    tags=["Datasets"],
     responses={404: {"description": "Not found"}},
 )
 

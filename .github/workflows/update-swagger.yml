@@ -1,0 +1,43 @@
+name: Update Swagger Docs
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  update-swagger:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Fetch OpenAPI Specification
+        run: |
+          API_URL: ${{ secrets.API_URL }}
+          OUTPUT_PATH="docs/static/swagger.json"
+          response=$(curl --write-out "%{http_code}" --silent --output /tmp/swagger.json $API_URL)
+          if [ "$response" -eq 200 ]; then
+            mkdir -p $(dirname $OUTPUT_PATH)
+            mv /tmp/swagger.json $OUTPUT_PATH
+            echo "OpenAPI specification saved to $OUTPUT_PATH"
+          else
+            echo "Failed to fetch OpenAPI specification: HTTP $response"
+            exit 1
+          fi
+
+      - name: Deploy Documentation
+        run: |
+          pip install mkdocs-material
+          mkdocs gh-deploy
