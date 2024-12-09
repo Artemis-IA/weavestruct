@@ -79,11 +79,7 @@ class AppLauncher:
         async def startup_event():
             logger.info("Application starting...")
             self.metrics_manager.start_emissions_tracker()
-            self.metrics_manager.start_metrics_server()
             system_metrics = self.metrics_manager.get_system_metrics()
-            device_type = settings.DEVICE
-            logger.info(f"Device Type: {device_type}")
-            # self.metrics_manager.validate_services()
 
         @self.app.on_event("shutdown")
         async def shutdown_event():

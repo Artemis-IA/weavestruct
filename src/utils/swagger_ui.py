@@ -19,7 +19,6 @@ class SwaggerUISetup:
     def _mount_static(self):
         if not self.static_dir.exists():
             raise RuntimeError(f"Static directory '{self.static_dir}' does not exist.")
-        logger.info(f"Static directory resolved to: {self.static_dir}")
         self.app.mount("/static", StaticFiles(directory=str(self.static_dir)), name="static")
 
     def _add_swagger_ui_route(self):

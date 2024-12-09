@@ -58,32 +58,25 @@ class MetricsManager:
         for collector in collectors:
             REGISTRY.unregister(collector)
             
-    def start_metrics_server(self):
+    # def start_metrics_server(self):
 
-        """
-        Start the Prometheus metrics server.
-        """
-        start_http_server(settings.PROMETHEUS_PORT_CARBON)
-        logger.info(f"Prometheus metrics server started on port (settings.PROMETHEUS_PORT_CARBON).")
+    #     """
+    #     Start the Prometheus metrics server.
+    #     """
+    #     start_http_server(settings.PROMETHEUS_PORT_CARBON)
+    #     logger.info(f"Prometheus metrics server started on port (settings.PROMETHEUS_PORT_CARBON).")
 
     def log_system_metrics(self):
-        """
-        Log system metrics: CPU, memory, GPU usage, and CO2 emissions.
-        """
         try:
             # Log CPU and memory usage
             self.CPU_USAGE.set(psutil.cpu_percent())
             self.MEMORY_USAGE.set(psutil.virtual_memory().used)
 
-            # Log GPU memory usage
             gpus = GPUtil.getGPUs()
             if gpus:
                 self.GPU_MEMORY_USAGE.set(gpus[0].memoryUsed)
-
-            # Ensure the emissions tracker is running
             self.start_emissions_tracker()
 
-            # Log CO2 emissions
             emissions = self.emissions_tracker.flush() if getattr(self.emissions_tracker, "_started", False) else None
             if emissions is not None:
                 self.CARBON_EMISSIONS.set(emissions)
@@ -92,18 +85,6 @@ class MetricsManager:
                 logger.info("No emissions data available.")
         except Exception as e:
             logger.warning(f"Error logging system metrics: {e}")
-
-    # def initialize_emissions_tracker(self):
-    #     lock_file = "/tmp/.codecarbon.lock"
-    #     if os.path.exists(lock_file):
-    #         try:
-    #             os.remove(lock_file)
-    #             logger.info("CodeCarbon lock file removed.")
-    #         except Exception as e:
-    #             logger.warning(f"Unable to remove CodeCarbon lock file: {e}")
-
-    #     self.emissions_tracker = EmissionsTracker(project_name="model_logging", save_to_file=False, save_to_prometheus=True, prometheus_url=f"localhost:${settings.PROMETHEUS_PORT}")
-    #     logger.info("CodeCarbon tracker initialized.")
 
 
     def start_emissions_tracker(self):
