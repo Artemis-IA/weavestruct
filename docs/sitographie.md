@@ -38,6 +38,8 @@
   [LangChain Documentation](https://api.python.langchain.com/en/latest/community/graph_vectorstores/langchain_community.graph_vectorstores.extractors.gliner_link_extractor.GLiNERLinkExtractor.html)  
   Extracteur de liens entre documents partageant des entités nommées.
 
+Medium https://medium.com/@zilliz_learn/gliner-generalist-model-for-named-entity-recognition-using-bidirectional-transformer-ed65165a4877 
+
 ---
 
 ## Docker, FastAPI, et Configurations Réseau

@@ -48,6 +48,5 @@ nav:
 
 extra:
   social:
-    - link: https://github.com/Artemis-IA/weavestruct
-    - type: github
     - icon: fontawesome/brands/github
+      link: https://github.com/Artemis-IA/weavestruct
