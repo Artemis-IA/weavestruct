@@ -357,6 +357,22 @@ class DocumentProcessor:
             # Extract graph data and links
             graph_docs = self.graph_transformer.convert_to_graph_documents(split_docs)
             doc_links = [self.gliner_extractor.extract_many(chunk) for chunk in split_docs]
+            # Log extracted nodes, edges, and links
+            logger.info("Extracted graph data:")
+            for graph_doc in graph_docs:
+                if hasattr(graph_doc, "nodes") and graph_doc.nodes:
+                    for node in graph_doc.nodes:
+                        logger.info(f"Node extracted: ID={node.id}, Name={node.properties.get('name', '')}, Type={node.type}")
+                if hasattr(graph_doc, "edges") and graph_doc.edges:
+                    for edge in graph_doc.edges:
+                        logger.info(f"Edge extracted: Start={edge.start}, End={edge.end}, Type={edge.type}")
+
+            logger.info("Extracted links:")
+            for links in doc_links:
+                for link in links:
+                    logger.info(f"Link extracted: Tag={link.tag}, Kind={link.kind}")
+
+            
             driver = self.neo4j_service.driver
             with driver.session() as session:
                 with session.begin_transaction() as tx:
@@ -407,20 +423,6 @@ class DocumentProcessor:
         export_tables: bool = True,
         enrich_figures: bool = False,
     ):
-        """
-        Orchestrates the complete workflow: processes a document and indexes its content into Neo4j.
-
-        Args:
-            s3_url (str): S3 URL of the document file.
-            export_formats (List[ExportFormat]): Formats for exporting processed documents.
-            use_ocr (bool): Whether to use OCR during processing.
-            export_figures (bool): Whether to export figures from the document.
-            export_tables (bool): Whether to export tables from the document.
-            enrich_figures (bool): Whether to enrich figures during processing.
-
-        Returns:
-            None
-        """
         try:
             logger.info(f"Starting full processing and indexing for document: {s3_url}")
 

@@ -12,6 +12,7 @@ router = APIRouter()
 # Dependency injection
 neo4j_service: Neo4jService = get_neo4j_service()
 
+
 @router.post("/entities/", response_model=Entity)
 async def create_entity(entity: EntityCreate):
     logger.info(f"Creating entity: {entity.name}")
