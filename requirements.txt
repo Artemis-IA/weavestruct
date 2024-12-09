@@ -28,12 +28,12 @@ torchvision --extra-index-url https://download.pytorch.org/whl/cu125
 torchaudio --extra-index-url https://download.pytorch.org/whl/cu125
 
 # LangChain and integrations
-langchain-ollama
 langchain-community
 langchain-core
 langchain-experimental
 langchain-text-splitters
-
+langchain-ollama
+langchain-huggingface
 # Database and cloud integrations
 neo4j
 sqlalchemy
