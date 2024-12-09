@@ -5,20 +5,19 @@ from loguru import logger
 from huggingface_hub import HfApi
 import mlflow
 from mlflow.tracking import MlflowClient
-from codecarbon import EmissionsTracker
+from src.utils.metrics import MetricsManager
 from typing import Optional
 import time
 from src.config import settings
 
 class ModelLoggerService:
     def __init__(self):
-        self.hf_api = HfApi()  # Initialize the Hugging Face API client
+        self.hf_api = HfApi()
         self.huggingface_cache = os.path.expanduser("~/.cache/huggingface/hub/")
         self.client = MlflowClient()
         self.emissions_tracker = None
-
-        # Initialize the MLflow tracking URI
-        db_url = os.getenv("DATABASE_URL", "sqlite:///mlflow.db")
+        self.metrics = MetricsManager(prometheus_port=settings.PROMETHEUS_PORT)
+        db_url = os.getenv("DATABASE_URL", "postgresql://postgres:password@localhost:5432/mlflow")
         mlflow.set_tracking_uri(db_url)
 
         # Initialize static models and CodeCarbon tracker
@@ -29,22 +28,8 @@ class ModelLoggerService:
             "Tokenizer Model": ("microsoft/deberta-v3-large", os.path.join(self.huggingface_cache, "models--microsoft--deberta-v3-large")),
             "Docling Models": ("ds4sd/docling-models", os.path.join(self.huggingface_cache, "models--ds4sd--docling-models"))
         }
-        self.initialize_emissions_tracker()
+        
 
-    def initialize_emissions_tracker(self):
-        """
-        Initialize CodeCarbon tracker with lock file cleanup.
-        """
-        lock_file = "/tmp/.codecarbon.lock"
-        if os.path.exists(lock_file):
-            try:
-                os.remove(lock_file)
-                logger.info("CodeCarbon lock file removed.")
-            except Exception as e:
-                logger.warning(f"Unable to remove CodeCarbon lock file: {e}")
-
-        self.emissions_tracker = EmissionsTracker(project_name="model_logging", save_to_file=False, save_to_prometheus=True, prometheus_url=f"localhost:${settings.PROMETHEUS_PORT_CARBON}")
-        logger.info("CodeCarbon tracker initialized.")
 
     def log_model_details(self):
         logger.info("Starting model logging process...")

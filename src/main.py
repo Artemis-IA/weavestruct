@@ -12,7 +12,7 @@ from src.utils.swagger_ui import SwaggerUISetup
 
 class AppLauncher:
     def __init__(self):
-        self.metrics_manager = MetricsManager(prometheus_port=settings.PROMETHEUS_PORT_CARBON)
+        self.metrics_manager = MetricsManager(prometheus_port=settings.PROMETHEUS_PORT)
         self.app = FastAPI(
             title="Document Processing and Graph API",
             version="2.0.0",
@@ -83,7 +83,7 @@ class AppLauncher:
             system_metrics = self.metrics_manager.get_system_metrics()
             device_type = settings.DEVICE
             logger.info(f"Device Type: {device_type}")
-            self.metrics_manager.validate_services()
+            # self.metrics_manager.validate_services()
 
         @self.app.on_event("shutdown")
         async def shutdown_event():

@@ -5,7 +5,7 @@ import psutil
 import GPUtil
 import torch
 from loguru import logger
-from prometheus_client import Counter, Histogram, Gauge, start_http_server
+from prometheus_client import CollectorRegistry, Counter, Histogram, Gauge, start_http_server, REGISTRY
 from codecarbon import EmissionsTracker
 from src.config import settings
 
@@ -15,7 +15,8 @@ class MetricsManager:
     """
 
     def __init__(self, prometheus_port: int = settings.PROMETHEUS_PORT):
-        # Define Prometheus metrics
+        MetricsManager._unregister_existing_metrics()
+        self.prometheus_port = prometheus_port
         self.REQUEST_COUNT = Counter("app_request_count", "Total number of requests")
         self.PROCESS_TIME = Histogram("app_process_time_seconds", "Request processing time")
         self.GPU_MEMORY_USAGE = Gauge("gpu_memory_usage_bytes", "GPU memory usage")
@@ -46,17 +47,24 @@ class MetricsManager:
             project_name="doc_processing",
             save_to_file=False,
             save_to_prometheus=True,
-            prometheus_url=f"http://localhost:{prometheus_port}",
+            prometheus_url=f"http://localhost:{settings.PROMETHEUS_PORT_CARBON}",
         )
 
-        self.prometheus_port = prometheus_port
 
+    @staticmethod
+    def _unregister_existing_metrics():
+        """Unregister all existing metrics from the default registry."""
+        collectors = list(REGISTRY._collector_to_names.keys())
+        for collector in collectors:
+            REGISTRY.unregister(collector)
+            
     def start_metrics_server(self):
+
         """
         Start the Prometheus metrics server.
         """
-        start_http_server(self.prometheus_port)
-        logger.info(f"Prometheus metrics server started on port {self.prometheus_port}.")
+        start_http_server(settings.PROMETHEUS_PORT_CARBON)
+        logger.info(f"Prometheus metrics server started on port (settings.PROMETHEUS_PORT_CARBON).")
 
     def log_system_metrics(self):
         """
@@ -85,10 +93,20 @@ class MetricsManager:
         except Exception as e:
             logger.warning(f"Error logging system metrics: {e}")
 
+    # def initialize_emissions_tracker(self):
+    #     lock_file = "/tmp/.codecarbon.lock"
+    #     if os.path.exists(lock_file):
+    #         try:
+    #             os.remove(lock_file)
+    #             logger.info("CodeCarbon lock file removed.")
+    #         except Exception as e:
+    #             logger.warning(f"Unable to remove CodeCarbon lock file: {e}")
+
+    #     self.emissions_tracker = EmissionsTracker(project_name="model_logging", save_to_file=False, save_to_prometheus=True, prometheus_url=f"localhost:${settings.PROMETHEUS_PORT}")
+    #     logger.info("CodeCarbon tracker initialized.")
+
+
     def start_emissions_tracker(self):
-        """
-        Ensure the emissions tracker is running.
-        """
         try:
             if self.emissions_tracker and not getattr(self.emissions_tracker, '_started', False):
                 self.emissions_tracker.start()
@@ -98,9 +116,6 @@ class MetricsManager:
             self._remove_codecarbon_lock()
 
     def stop_emissions_tracker(self):
-        """
-        Gracefully stop the emissions tracker.
-        """
         try:
             if self.emissions_tracker and hasattr(self.emissions_tracker, '_started') and self.emissions_tracker._started:
                 self.emissions_tracker.stop()
@@ -110,9 +125,6 @@ class MetricsManager:
 
     @staticmethod
     def get_system_metrics() -> dict:
-        """
-        Retrieve and log system metrics.
-        """
         metrics = {
             "cpu_usage_percent": psutil.cpu_percent(),
             "memory_usage_mb": psutil.virtual_memory().used / (1024 * 1024),

@@ -15,8 +15,8 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from src.models.document_log import DocumentLog, DocumentLogService
 from src.services.neo4j_service import Neo4jService
 from src.services.s3_service import S3Service
-from src.utils.metrics import REQUEST_COUNT, REQUEST_LATENCY
-from src.dependencies import get_neo4j_service, get_s3_service
+from src.utils.metrics import MetricsManager
+from src.dependencies import get_neo4j_service, get_s3_service, get_metrics_manager
 from src.models.entity import Entity
 from src.models.relationship import Relationship
 
@@ -24,7 +24,7 @@ router = APIRouter()
 
 neo4j_service: Neo4jService = get_neo4j_service()
 s3_client : S3Service = get_s3_service()
-
+metrics = get_metrics_manager()
 
 bucket_name = 'docs-input'
 
@@ -71,9 +71,9 @@ def add_graph_to_neo4j(graph_docs):
 
 # Endpoint to index documents
 @router.post("/index_nerrel/")
-@REQUEST_LATENCY.time()
+@metrics.NEO4J_REQUEST_LATENCY.time()
 def index_pdfs(folder_path: Optional[str] = Form("/home/pi/Documents/IF-SRV/1pdf_subset")):
-    REQUEST_COUNT.inc()
+    metrics.NEO4J_REQUEST_COUNT.inc()
     if not os.path.isdir(folder_path):
         raise HTTPException(status_code=400, detail="Invalid folder path")
 
@@ -82,23 +82,17 @@ def index_pdfs(folder_path: Optional[str] = Form("/home/pi/Documents/IF-SRV/1pdf
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
 
     start_time = time.time()
-    with mlflow.start_run(run_name="Index PDFs"):
-        for doc in documents:
-            if not hasattr(doc, "page_content"):
-                continue
-            split_docs = text_splitter.split_documents([doc])
-            graph_docs = graph_transformer.convert_to_graph_documents(split_docs)
-            add_graph_to_neo4j(graph_docs)
+    for doc in documents:
+        if not hasattr(doc, "page_content"):
+            continue
+        split_docs = text_splitter.split_documents([doc])
+        graph_docs = graph_transformer.convert_to_graph_documents(split_docs)
+        add_graph_to_neo4j(graph_docs)
 
-            file_name = doc.metadata.get("source", "unknown")
-            s3_url = upload_to_s3(file_name, bucket_name)
-            mlflow.log_param("file_name", file_name)
-            mlflow.log_metric("doc_upload_success", int(s3_url is not None))
-            
-            if s3_url:
-                document_log_service = DocumentLogService(neo4j_service.session_factory)
-                document_log_service.log_document(file_name, s3_url)
-        mlflow.log_metric("processing_time", time.time() - start_time)
+        file_name = doc.metadata.get("source", "unknown")
+        s3_url = upload_to_s3(file_name, bucket_name)
+        if s3_url:
+            logger.info(f"Document {file_name} uploaded to S3: {s3_url}")
 
     return {"message": "Documents indexed successfully"}
 

@@ -33,7 +33,6 @@ def get_db() -> Generator[Session, None, None]:
 
 @lru_cache
 def get_metrics_manager() -> MetricsManager:
-    """Returns a singleton instance of MetricsManager."""
     return MetricsManager(prometheus_port=settings.PROMETHEUS_PORT)
 
 # Dependency to get the S3 service
