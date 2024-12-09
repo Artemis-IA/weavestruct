@@ -35,11 +35,19 @@ nav:
   - Fonctionnalités:
       - Présentation: features.md
   - API:
-      - Documentation Swagger: api.md
+      - Overview: api.md
+      - Documentation Swagger: api/swagger.md
       - Endpoints: usage.md
   - Configuration: configuration.md
   # - Authentification: auth.md
   - ML Flow: mlflow.md
   - Les modèles: models.md
+  - Sitographie: sitographie.md
   - À propos: about.md
   - License: license.md
+
+extra:
+  social:
+    - link: https://github.com/Artemis-IA/weavestruct
+    - type: github
+    - icon: fontawesome/brands/github
