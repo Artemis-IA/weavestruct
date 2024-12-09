@@ -20,10 +20,13 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y curl
           python -m pip install --upgrade pip
-          pip install requests pytest mkdocs-material
+          pip install fastapi uvicorn requests pytest mkdocs-material
+
+      - name: Start FastAPI Server
+        run: |
+          nohup uvicorn app.main:app --host 127.0.0.1 --port 8008 &
+          sleep 5  # Donne le temps au serveur de démarrer
 
       - name: Fetch OpenAPI Specification
         env:
