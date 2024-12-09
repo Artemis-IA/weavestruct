@@ -6,6 +6,9 @@ aiofiles
 python-multipart
 pydantic
 python-jose
+passlib
+httpx
+
 # Logging
 loguru
 
