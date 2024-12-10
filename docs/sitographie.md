@@ -10,6 +10,10 @@
 - **Dépôt GitHub de Docling v2**  
   [GitHub - dsrdatta/docling_v2](https://github.com/dsrdatta/docling_v2)  
   Code source et documentation de Docling v2.
+
+ [Docling: A Versatile Document Parsing Tool - Medium](https://medium.com/ai-artistry/docling-a-versatile-document-parsing-tool-8db098fcfb2e)
+
+[Building Document Parsing Pipelines with Python - Medium](https://lasha-dolenjashvili.medium.com/building-document-parsing-pipelines-with-python-3c06f62569ad)
 ---
 
 ## GLiNER et GLiREL (NER et Extraction de Relations)
@@ -24,10 +28,17 @@
   [GitHub - urchade/GLiNER](https://github.com/urchade/GLiNER)  
   Code source, modèles pré-entraînés et exemples d'utilisation.
 
+- **Google Colab - "GLiNER-Studio" by Knowledgator** 
+  [Gliner_Studio.ipynb](https://colab.research.google.com/github/Knowledgator/GLiNER-Studio/blob/main/notebooks/Gliner_Studio.ipynb)
+
 ### GLiREL : Generalist and Lightweight Model for Relation Extraction
 - **Dépôt GitHub de GLiREL**  
   [GitHub - jackboyla/GLiREL](https://github.com/jackboyla/GLiREL)  
   Code source, modèles pré-entraînés et exemples d'utilisation d'un modèle généraliste et léger pour l'extraction de relations.
+
+- **"GLiNER : le succès du modèle de reconnaissance d'entités nommées par F.initiatives"** 
+[Le modèle GLiNER par F.initiatives](https://www.f-initiatives.com/actualites/rd/gliner-le-succes-du-modele-de-reconnaissance-dentites-nommees-par-f-initiatives/)
+
 
 ### Intégration GLiNER / GLiREL avec LangChain
 - **GlinerGraphTransformer**  
@@ -38,21 +49,28 @@
   [LangChain Documentation](https://api.python.langchain.com/en/latest/community/graph_vectorstores/langchain_community.graph_vectorstores.extractors.gliner_link_extractor.GLiNERLinkExtractor.html)  
   Extracteur de liens entre documents partageant des entités nommées.
 
-Medium https://medium.com/@zilliz_learn/gliner-generalist-model-for-named-entity-recognition-using-bidirectional-transformer-ed65165a4877 
 
+[Deep Dive "sous le capot" du modèle - Medium](https://medium.com/@zilliz_learn/gliner-generalist-model-for-named-entity-recognition-using-bidirectional-transformer-ed65165a4877)
+---
+
+[Enhancing Retrieval-Augmented Generation: Tackling Polysemy, Homonyms and Entity Ambiguity with GLiNER for Improved Performance](https://medium.com/@mollelmike/enhancing-retrieval-augmented-generation-tackling-polysemy-homonyms-and-entity-ambiguity-with-0fa4d395c863)
+
+[Understanting PII Anonymization](https://medium.com/@jubelahmed/understanding-pii-anonymization-with-python-a-simple-guide-68863cc0d129)
+
+[Semantic Chunking for RAG - Medium](https://medium.com/the-ai-forum/semantic-chunking-for-rag-f4733025d5f5)
+
+[How to Run Llama 3.2-Vision Locally With Ollama: A Game Changer for Edge AI](https://medium.com/@tapanbabbar/how-to-run-llama-3-2-vision-on-ollama-a-game-changer-for-edge-ai-80cb0e8d8928)
 ---
 
 ## Docker, FastAPI, et Configurations Réseau
 
-18. [Setting Up FastAPI with Docker](https://fastapi.tiangolo.com/deployment/docker/)  
+18. [Setting Up FastAPI](https://fastapi.tiangolo.com/deployment/docker/)  
 20. [Docker Networking Simplified](https://docs.docker.com/network/)  
 21. [MinIO with Traefik](https://min.io/docs/minio/linux/)  
 22. [Securing FastAPI with OAuth2](https://auth0.com/)  
-23. [Building APIs with FastAPI](https://testdriven.io/)  
 24. [Traefik Documentation](https://doc.traefik.io/traefik/)  
-25. [PostgreSQL in Docker Containers](https://hub.docker.com/_/postgres)  
-26. [Managing Docker Containers Programmatically (docker-py)](https://docker-py.readthedocs.io/)  
-27. [Cloudflared + Docker Integration](https://github.com/cloudflare/cloudflared)
+25. [PostgreSQL in Docker Containers](https://hub.docker.com/_/postgres)   
+27. [Cloudflared](https://github.com/cloudflare/cloudflared)
 
 ---
 
@@ -60,12 +78,6 @@ Medium https://medium.com/@zilliz_learn/gliner-generalist-model-for-named-entity
 
 28. [Generating Embeddings with Ollama](https://ollama.ai/)  
 29. [Using Hugging Face Models for Embedding Tasks](https://huggingface.co/docs/)  
-30. [Introduction to Vector Databases (Pinecone)](https://pinecone.io/)  
-31. [Optimizing Embeddings for Search](https://towardsdatascience.com/)  
-32. [Embedding Generation Best Practices](https://neptune.ai/)  
-33. [PyTorch Embedding Layer](https://pytorch.org/docs/)  
-34. [Comparing Embedding Models](https://arxiv.org/abs/2112.01515)  
-35. [Vector Similarity Search with FAISS](https://github.com/facebookresearch/faiss)
 
 ### LangChain
 36. [LangChain Documentation](https://python.langchain.com/)  
