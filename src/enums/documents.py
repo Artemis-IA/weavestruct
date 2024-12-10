@@ -1,3 +1,4 @@
+# src/enums/documents.py
 from docling.datamodel.base_models import InputFormat, OutputFormat
 from pydantic import BaseModel, Field
 from typing import List, Dict
@@ -16,13 +17,18 @@ class ImportFormat(str, Enum):
     MD = InputFormat.MD.value
     YAML = "yaml"
 
-class ExportFormat(str, Enum):
-    JSON = OutputFormat.JSON.value
-    YAML = "yaml"
-    MARKDOWN = OutputFormat.MARKDOWN.value
-    TEXT = OutputFormat.TEXT.value
-    DOCTAGS = OutputFormat.DOCTAGS.value
+# class ExportFormat(str, Enum):
+#     JSON = OutputFormat.JSON.value
+#     YAML = "yaml"
+#     MARKDOWN = OutputFormat.MARKDOWN.value
+#     TEXT = OutputFormat.TEXT.value
+#     DOCTAGS = OutputFormat.DOCTAGS.value
 
+class ExportFormat(str, Enum):
+    JSON = "json"
+    YAML = "yaml"
+    TEXT = "text"
+    MARKDOWN = "md"
 
 # Conversion status
 class ConversionStatus(str, Enum):

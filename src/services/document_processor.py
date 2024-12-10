@@ -133,7 +133,7 @@ class DocumentProcessor:
             self.session.rollback()
             raise
 
-    def export_document(
+    def _export_file(
         self,
         result: ConversionResult,
         export_formats: List[ExportFormat],
@@ -144,7 +144,7 @@ class DocumentProcessor:
         try:
             doc_filename = Path(result.input.file).stem
             if result.status == ConversionStatus.SUCCESS:
-                output_dir = Path(self.s3_service.output_bucket)  # Utilisé temporairement pour le stockage local avant l'upload
+                output_dir = Path(self.s3_service.output_bucket)  
                 output_dir.mkdir(parents=True, exist_ok=True)
                 self._export_file(
                     result=result,
@@ -203,33 +203,6 @@ class DocumentProcessor:
             logger.error(f"Error exporting document: {e}")
             raise
 
-    def _export_file(
-        self,
-        result: ConversionResult,
-        output_dir: Path,
-        export_formats: List[ExportFormat],
-        export_figures: bool,
-        export_tables: bool,
-        doc_filename: str
-    ):
-        """Save a specific document format locally."""
-        for ext in export_formats:
-            file_path = output_dir / f"{doc_filename}.{ext}"
-            try:
-                with file_path.open("w", encoding="utf-8") as file:
-                    if ext == "json":
-                        json.dump(result.document.export_to_dict(), file, ensure_ascii=False, indent=2)
-                    elif ext == "yaml":
-                        yaml.dump(result.document.export_to_dict(), file, allow_unicode=True)
-                    elif ext == "md":
-                        file.write(result.document.export_to_markdown())
-                    else:
-                        logger.warning(f"Unsupported export format: {ext}")
-                        continue
-                logger.info(f"Exported file: {file_path}")
-            except Exception as e:
-                logger.error(f"Failed to export file {file_path}: {e}")
-                raise
 
     def process_documents(
         self,

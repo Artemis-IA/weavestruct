@@ -19,11 +19,11 @@ async def upload_files(
         default=[ExportFormat.JSON],
         title="Formats d'exportation",
         description="Choisissez les formats d'exportation",
-        enum=[ExportFormat.JSON, ExportFormat.YAML, ExportFormat.MARKDOWN]
+        # enum=[ExportFormat.JSON, ExportFormat.YAML, ExportFormat.MARKDOWN, ExportFormat.TEXT]
     ),
     use_ocr: bool = Query(False, title="Utiliser OCR", description="Activez l'OCR lors de la conversion."),
-    export_figures: bool = Query(True, title="Exporter les figures", description="Activer ou désactiver l'exportation des figures"),
-    export_tables: bool = Query(True, title="Exporter les tableaux", description="Activer ou désactiver l'exportation des tableaux"),
+    export_figures: bool = Query(False, title="Exporter les figures", description="Activer ou désactiver l'exportation des figures"),
+    export_tables: bool = Query(False, title="Exporter les tableaux", description="Activer ou désactiver l'exportation des tableaux"),
     enrich_figures: bool = Query(False, title="Enrichir les figures", description="Activer ou désactiver l'enrichissement des figures"),
     s3_service: S3Service = Depends(get_s3_service),
     document_processor: DocumentProcessor = Depends(get_document_processor),
