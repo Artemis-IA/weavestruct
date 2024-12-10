@@ -255,27 +255,47 @@ class DocumentProcessor:
 
         logger.info(f"Document {local_path.name} converted successfully")
 
+
         # Step 4: Export processed document results to S3
-        output_dir = Path(self.s3_service.output_bucket)
+        output_dir = Path("/tmp/exports")
         output_dir.mkdir(parents=True, exist_ok=True)
+        doc_filename = local_path.stem
 
-        for fmt in export_formats:
-            export_path = output_dir / f"{local_path.stem}.{fmt}"
-            with export_path.open("w", encoding="utf-8") as f:
-                if fmt == "json":
-                    json.dump(conversion_result.document.export_to_dict(), f, indent=2)
-                elif fmt == "yaml":
-                    yaml.dump(conversion_result.document.export_to_dict(), f)
-                elif fmt == "md":
-                    f.write(conversion_result.document.export_to_markdown())
+        def upload_to_s3(file_path: Path, bucket: str):
+            """Helper function to upload a file to S3."""
+            s3_key = f"output/{file_path.name}"
+            try:
+                self.s3_service.upload_file(file_path, bucket_name=bucket)
+                logger.info(f"Uploaded {file_path} to {bucket}/{s3_key}")
+            except Exception as e:
+                logger.error(f"Failed to upload {file_path} to S3: {e}")
 
-            # Upload the exported file to the `output` bucket
-            s3_output_key = f"output/{local_path.stem}.{fmt}"
-            upload_url = self.s3_service.upload_file(export_path, bucket_name=self.s3_service.output_bucket)
-            if upload_url:
-                logger.info(f"Uploaded {export_path} to {self.s3_service.output_bucket}/{s3_output_key}")
-            else:
-                logger.error(f"Failed to upload {export_path} to S3")
+        # Export des résultats dans les formats sélectionnés
+        if ExportFormat.JSON in export_formats:
+            json_path = output_dir / f"{doc_filename}.json"
+            with json_path.open("w", encoding="utf-8") as json_file:
+                json.dump(conversion_result.document.export_to_dict(), json_file, ensure_ascii=False, indent=2)
+            upload_to_s3(json_path, self.s3_service.output_bucket)
+
+        if ExportFormat.YAML in export_formats:
+            yaml_path = output_dir / f"{doc_filename}.yaml"
+            with yaml_path.open("w", encoding="utf-8") as yaml_file:
+                yaml.dump(conversion_result.document.export_to_dict(), yaml_file, allow_unicode=True, default_flow_style=False)
+            upload_to_s3(yaml_path, self.s3_service.output_bucket)
+
+        if ExportFormat.MARKDOWN in export_formats:
+            md_path = output_dir / f"{doc_filename}.md"
+            with md_path.open("w", encoding="utf-8") as md_file:
+                md_file.write(conversion_result.document.export_to_markdown())
+            upload_to_s3(md_path, self.s3_service.output_bucket)
+
+        if ExportFormat.TEXT in export_formats:
+            text_path = output_dir / f"{doc_filename}.txt"
+            with text_path.open("w", encoding="utf-8") as text_file:
+                text_file.write(conversion_result.document.export_to_text())
+            upload_to_s3(text_path, self.s3_service.output_bucket)
+
+
 
         # Optionnel: Supprimer les fichiers exportés localement après l'upload
         for fmt in export_formats:
@@ -304,6 +324,7 @@ class DocumentProcessor:
             logger.info(f"Deleted local file: {local_path}")
 
         # Log document metadata
+        s3_output_key = f"output/{local_path.stem}.{export_formats[0].value.lower()}"
         self.log_document(file_name=local_path.name, s3_url=s3_output_key)
 
         # Log metrics to Prometheus

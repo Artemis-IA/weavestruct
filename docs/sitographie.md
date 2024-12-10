@@ -28,6 +28,8 @@
   [GitHub - urchade/GLiNER](https://github.com/urchade/GLiNER)  
   Code source, modèles pré-entraînés et exemples d'utilisation.
 
+- [🤗 Hugging Space by Tom Aarsen](https://huggingface.co/spaces/tomaarsen/gliner_medium-v2.1)
+
 - **Google Colab - "GLiNER-Studio" by Knowledgator** 
   [Gliner_Studio.ipynb](https://colab.research.google.com/github/Knowledgator/GLiNER-Studio/blob/main/notebooks/Gliner_Studio.ipynb)
 
@@ -55,13 +57,22 @@
 
 [Enhancing Retrieval-Augmented Generation: Tackling Polysemy, Homonyms and Entity Ambiguity with GLiNER for Improved Performance](https://medium.com/@mollelmike/enhancing-retrieval-augmented-generation-tackling-polysemy-homonyms-and-entity-ambiguity-with-0fa4d395c863)
 
+[GLiNER: A Zero-Shot NER that outperforms ChatGPT and traditional NER models](https://netraneupane.medium.com/gliner-zero-shot-ner-outperforming-chatgpt-and-traditional-ner-models-1f4aae0f9eef)
+
 [Understanting PII Anonymization](https://medium.com/@jubelahmed/understanding-pii-anonymization-with-python-a-simple-guide-68863cc0d129)
 
 [Semantic Chunking for RAG - Medium](https://medium.com/the-ai-forum/semantic-chunking-for-rag-f4733025d5f5)
 
+[Introducing GraphRAG with LangChain and Neo4j](https://medium.com/microsoftazure/introducing-graphrag-with-langchain-and-neo4j-90446df17c1e)
+
+
+[Setup collaborative MLflow with PostgreSQL as Tracking Server and MinIO as Artifact Store using docker containers](https://medium.com/@amir_masoud/setup-collaborative-mlflow-with-postgresql-as-tracking-server-and-minio-as-artifact-store-using-45c76a9d9814)
+
 [How to Run Llama 3.2-Vision Locally With Ollama: A Game Changer for Edge AI](https://medium.com/@tapanbabbar/how-to-run-llama-3-2-vision-on-ollama-a-game-changer-for-edge-ai-80cb0e8d8928)
 ---
 
+[MLflow Tracking Server](https://mlflow.org/docs/2.17.2/tracking/server.html)
+[MLflow (2.17.2) Model Registry](https://mlflow.org/docs/2.17.2/model-registry.html#adding-an-mlflow-model-to-the-model-registry)
 ## Docker, FastAPI, et Configurations Réseau
 
 18. [Setting Up FastAPI](https://fastapi.tiangolo.com/deployment/docker/)  
