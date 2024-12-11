@@ -86,7 +86,7 @@ class GlinerELService:
             })
         return results
 
-    def extract_links_for_documents(self, documents: List[Document]):
+    def extract_links_for_document(self, documents: List[Document]):
         """
         Utilise GLiNERLinkExtractor pour extraire des liens (basés sur les entités nommées)
         et les ajoute aux métadonnées de chaque document.
@@ -94,5 +94,19 @@ class GlinerELService:
         for doc in documents:
             links = self.link_extractor.extract_one(doc)
             # On ajoute les links aux métadonnées
+            add_links(doc, links)
+        return documents
+
+    def extract_links_for_documents(self, documents: List[Document]):
+        """
+        Utilise GLiNERLinkExtractor pour extraire des liens sur plusieurs documents simultanément.
+        On utilise extract_many() pour traiter tous les documents en une seule passe.
+        """
+        # extract_many prend un itérable de documents et retourne un itérable de sets de liens
+        links_iter = self.link_extractor.extract_many(documents)
+
+        # On itère à la fois sur les documents et sur l'itérable de liens retourné
+        for doc, links in zip(documents, links_iter):
+            # Chaque 'links' est un set[Link] correspondant au document
             add_links(doc, links)
         return documents

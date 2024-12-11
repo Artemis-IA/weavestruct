@@ -18,7 +18,7 @@ class AppLauncher:
             version="2.0.0",
             description="API for Document processing, NER/Relation Extraction & Embeddings/Graph Indexing",
             docs_url="/",
-            redoc_url=None,
+            redoc_url="/redoc",
             openapi_url="/openapi.json",
         )
 

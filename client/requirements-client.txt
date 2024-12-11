@@ -9,3 +9,4 @@ plotly
 dash
 httpx
 streamlit-agraph
+streamlit-pdf-viewer

@@ -4,6 +4,7 @@ from pathlib import Path
 import boto3
 import json
 import yaml
+import base64
 
 def get_s3_client():
     """Crée un client S3 en utilisant les variables d'environnement."""
@@ -20,6 +21,17 @@ def fetch_file_from_s3(s3_client, bucket_name, file_key):
     """
     obj = s3_client.get_object(Bucket=bucket_name, Key=file_key)
     return obj["Body"].read()
+
+def display_pdf(pdf_bytes):
+    """
+    Affiche un fichier PDF avec un visualiseur intégré.
+    """
+    if pdf_bytes:
+        base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="800px"></iframe>'
+        st.markdown(pdf_display, unsafe_allow_html=True)
+    else:
+        st.info("Aucun document PDF à afficher.")
 
 def main():
     st.set_page_config(layout="wide", page_title="Document Viewer")
@@ -39,7 +51,11 @@ def main():
         st.sidebar.warning("Aucun fichier PDF disponible dans le bucket S3.")
         return
 
-    selected_file = st.sidebar.selectbox("Choisissez un document PDF", files)
+    selected_file = st.sidebar.selectbox("Choisissez un document PDF", ["-- Sélectionnez un fichier --"] + files, index=0)
+
+    if selected_file == "-- Sélectionnez un fichier --":
+        st.info("Veuillez sélectionner un fichier dans la barre latérale pour commencer.")
+        return
 
     # Mise en page : deux colonnes
     col1, col2 = st.columns([2, 3])
@@ -56,8 +72,8 @@ def main():
                 file_name=Path(selected_file).name,
                 mime="application/pdf",
             )
-            # Affichage du PDF dans Streamlit
-            st.pdf(pdf_bytes)
+            # Affichage ergonomique du PDF
+            display_pdf(pdf_bytes)
         except Exception as e:
             st.error(f"Erreur lors de la récupération du PDF: {e}")
 
@@ -66,12 +82,10 @@ def main():
         st.header("Formats Convertis")
 
         # Formats disponibles
-        output_formats = ["yaml", "json", "md", "txt"]
+        output_formats = ["txt", "md", "json", "yaml"]
         format_selector = st.selectbox("Sélectionnez un format de sortie", output_formats)
 
         # On suppose que les documents convertis sont stockés dans des buckets séparés ou chemins préfixés
-        # Exemple : "docs-output-json", "docs-output-yaml", "docs-output-md", "docs-output-txt"
-        # Ajustez selon votre architecture.
         bucket_map = {
             "json": "docs-output-json",
             "yaml": "docs-output-yaml",
