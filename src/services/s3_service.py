@@ -1,4 +1,5 @@
 # services/s3_service.py
+import os
 import boto3
 from botocore.exceptions import NoCredentialsError, ClientError
 from loguru import logger
@@ -54,6 +55,15 @@ class S3Service:
             logger.error(f"Failed to upload file {file_path} to S3: {e}")
         return None
 
+
+    def upload_to_s3(self, file_name, bucket):
+        try:
+            self.upload_file(Path(file_name), bucket, os.path.basename(file_name))
+            return f"s3://{bucket}/{os.path.basename(file_name)}"
+        except Exception as e:
+            logger.error(f"Failed to upload {file_name}: {e}")
+            return None
+        
     def upload_fileobj(self, file_obj: IO, bucket_name: str, object_name: str) -> Optional[str]:
         """
         Upload a file-like object directly to S3.

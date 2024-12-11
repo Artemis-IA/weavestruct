@@ -26,7 +26,6 @@ from src.dependencies import (
     get_graph_transformer,
 )
 from src.config import settings
-from src.services.gliner_service import GLiNERService
 import json
 from datetime import datetime
 from src.models.document_log import DocumentLog, DocumentLogService
@@ -91,7 +90,7 @@ class DatasetService:
                     logger.warning(f"No text extracted from document: {temp_file}")
                     continue
 
-                # Extract entities using GLiNERService
+                # Extract entities 
                 logger.info(f"Extracting entities from {len(cleaned_texts)} texts...")
                 try:
                     entities_list = self.annotation_pipeline.extract_entities(cleaned_texts)

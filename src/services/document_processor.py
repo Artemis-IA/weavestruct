@@ -26,11 +26,7 @@ from docling_core.types.doc import PictureItem
 from src.enums.documents import ImportFormat, ExportFormat, ConversionStatus
 from src.services.s3_service import S3Service
 from src.services.mlflow_service import MLFlowService
-from src.services.pgvector_service import PGVectorService
-from src.services.neo4j_service import Neo4jService
-from src.services.embedding_service import EmbeddingService
-from src.services.gliner_service import GLiNERService
-from src.services.glirel_service import GLiRELService
+
 
 from src.models.document_log import DocumentLog, DocumentLogService
 from src.models.document import Document

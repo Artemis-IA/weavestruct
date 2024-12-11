@@ -2,7 +2,6 @@ from neo4j import GraphDatabase, Transaction
 from loguru import logger
 from typing import List, Dict, Any, Optional
 from src.models.document import Document
-from src.services.glirel_service import GLiRELService
 
 
 class Neo4jService:
@@ -75,8 +74,8 @@ class Neo4jService:
                                 logger.info(f"Indexed Node: {node.id}, Type: {node.type}")
 
                         # Add relationships
-                        if hasattr(graph_doc, "edges") and graph_doc.edges:
-                            GLiRELService.add_relationships(tx, graph_doc.edges)
+                        # if hasattr(graph_doc, "edges") and graph_doc.edges:
+                        #     GLiRELService.add_relationships(tx, graph_doc.edges)
 
                         # Add links
                         for link in links:

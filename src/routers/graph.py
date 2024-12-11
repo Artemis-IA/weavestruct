@@ -19,6 +19,7 @@ from src.utils.metrics import MetricsManager
 from src.dependencies import get_neo4j_service, get_s3_service, get_metrics_manager
 from src.models.entity import Entity
 from src.models.relationship import Relationship
+from src.config import settings
 
 router = APIRouter()
 
@@ -26,7 +27,7 @@ neo4j_service: Neo4jService = get_neo4j_service()
 s3_client : S3Service = get_s3_service()
 metrics = get_metrics_manager()
 
-bucket_name = 'docs-input'
+bucket_name = settings.INPUT_BUCKET
 
 # GLiNER extractor and transformer
 with open('conf/gli_config.yml', 'r') as file:
@@ -44,13 +45,6 @@ graph_transformer = GlinerGraphTransformer(
     relationship_confidence_threshold=0.1,
 )
 
-def upload_to_s3(file_name, bucket):
-    try:
-        s3_client.upload_file(file_name, bucket, os.path.basename(file_name))
-        return f"s3://{bucket}/{os.path.basename(file_name)}"
-    except Exception as e:
-        logger.error(f"Failed to upload {file_name}: {e}")
-        return None
 
 def add_graph_to_neo4j(graph_docs):
     with neo4j_service.driver.session() as session:

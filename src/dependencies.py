@@ -17,8 +17,7 @@ from src.services.pgvector_service import PGVectorService
 from src.services.neo4j_service import Neo4jService
 from src.services.rag_service import RAGChainService
 from src.services.embedding_service import EmbeddingService
-from src.services.gliner_service import GLiNERService
-from src.services.glirel_service import GLiRELService
+
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_experimental.graph_transformers.gliner import GlinerGraphTransformer
@@ -172,19 +171,6 @@ def get_gliner_extractor() -> GLiNERLinkExtractor:
         model=settings.GLINER_MODEL_NAME,
     )
 
-# Dependency to get the GLiNER service
-@lru_cache
-def get_gliner_service() -> GLiNERService:
-    """Returns an instance of the GLiNER service."""
-    return GLiNERService()
-
-
-# Dependency to get the GLiREL service
-@lru_cache
-def get_glirel_service() -> GLiRELService:
-    """Returns an instance of the GLiREL service."""
-    return GLiRELService()
-
 # Dependency to get the Graph Transformer
 @lru_cache
 def get_graph_transformer() -> GlinerGraphTransformer:
@@ -210,17 +196,13 @@ def get_rag_service() -> RAGChainService:
 
 # Updated Dependency to get the DocumentProcessor
 @lru_cache
-def get_document_processor(
-    db: Session = Depends(get_db),
-    gliner_service: GLiNERService = Depends(get_gliner_service),
-    glirel_service: GLiRELService = Depends(get_glirel_service)
-) -> DocumentProcessor:
+def get_document_processor(db: Session = Depends(get_db)) -> DocumentProcessor:
     """Returns an instance of the DocumentProcessor with all dependencies."""
     s3_service = get_s3_service()
     mlflow_service = get_mlflow_service()
     # pgvector_service = get_pgvector_vector_store()
     text_splitter = get_text_splitter()
-    embedding_service = get_embedding_service()
+    # embedding_service = get_embedding_service()
 
     return DocumentProcessor(
         s3_service=s3_service,
