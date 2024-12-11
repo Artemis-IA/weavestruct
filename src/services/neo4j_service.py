@@ -1,6 +1,8 @@
 from neo4j import GraphDatabase, Transaction
 from loguru import logger
 from typing import List, Dict, Any, Optional
+from src.models.document import Document
+from src.services.glirel_service import GLiRELService
 
 
 class Neo4jService:
@@ -22,15 +24,78 @@ class Neo4jService:
             self.driver.close()
             logger.info("Neo4j connection closed.")
 
-    def index_graph(self, nodes: List[Dict[str, Any]], edges: List[Dict[str, Any]]):
-        """
-        Index nodes and edges into the Neo4j database.
-        """
-        with self.driver.session() as session:
-            if nodes:
-                session.write_transaction(self._index_nodes, nodes)
-            if edges:
-                session.write_transaction(self._index_edges, edges)
+
+    def index_graph(self, doc: Document):
+        """Process a document to extract nodes and relationships, adding them to Neo4j."""
+        try:
+            split_docs = self.text_splitter.split_documents([doc])
+            split_docs = [
+                Document(page_content=self.clean_text(chunk.page_content), metadata=chunk.metadata)
+                for chunk in split_docs
+            ]
+            logger.debug(f"Document split into {len(split_docs)} chunks.")
+
+            # Extract graph data and links
+            graph_docs = self.graph_transformer.convert_to_graph_documents(split_docs)
+            doc_links = [self.gliner_extractor.extract_many(chunk) for chunk in split_docs]
+            # Log extracted nodes, edges, and links
+            logger.info("Extracted graph data:")
+            for graph_doc in graph_docs:
+                if hasattr(graph_doc, "nodes") and graph_doc.nodes:
+                    for node in graph_doc.nodes:
+                        logger.info(f"Node extracted: ID={node.id}, Name={node.properties.get('name', '')}, Type={node.type}")
+                if hasattr(graph_doc, "edges") and graph_doc.edges:
+                    for edge in graph_doc.edges:
+                        logger.info(f"Edge extracted: Start={edge.start}, End={edge.end}, Type={edge.type}")
+
+            logger.info("Extracted links:")
+            for links in doc_links:
+                for link in links:
+                    logger.info(f"Link extracted: Tag={link.tag}, Kind={link.kind}")
+
+            
+            driver = self.neo4j_service.driver
+            with driver.session() as session:
+                with session.begin_transaction() as tx:
+                    for graph_doc, links in zip(graph_docs, doc_links):
+                        # Add nodes
+                        if hasattr(graph_doc, "nodes") and graph_doc.nodes:
+                            for node in graph_doc.nodes:
+                                tx.run(
+                                    """
+                                    MERGE (e:Entity {id: $id, name: $name, type: $type})
+                                    ON CREATE SET e.created_at = timestamp()
+                                    """,
+                                    {
+                                        "id": node.id,
+                                        "name": node.properties.get("name", ""),
+                                        "type": node.type,
+                                    },
+                                )
+                                logger.info(f"Indexed Node: {node.id}, Type: {node.type}")
+
+                        # Add relationships
+                        if hasattr(graph_doc, "edges") and graph_doc.edges:
+                            GLiRELService.add_relationships(tx, graph_doc.edges)
+
+                        # Add links
+                        for link in links:
+                            if not link.tag or not link.kind:
+                                logger.warning(f"Skipping invalid link: {link}")
+                                continue
+                            logger.info(f"Adding Link: {link}")
+                            tx.run(
+                                """
+                                MERGE (e:Entity {name: $name})
+                                ON CREATE SET e.created_at = timestamp()
+                                RETURN e
+                                """,
+                                {"name": link.tag},
+                            )
+        except Exception as e:
+            logger.error(f"Error processing document: {doc.metadata.get('name', 'unknown')} - {e}")
+
+
 
     @staticmethod
     def _index_nodes(tx: Transaction, nodes: List[Dict[str, Any]]):

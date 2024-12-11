@@ -69,9 +69,12 @@ class Settings(BaseSettings):
     MINIO_API_URL: str = os.getenv("MINIO_API_URL", "http://minio:9000")
     MINIO_URL: str = os.getenv("MINIO_URL", "http://localhost:9000")
     INPUT_BUCKET: str = os.getenv("INPUT_BUCKET", "docs-input")
-    OUTPUT_BUCKET: str = os.getenv("OUTPUT_BUCKET", "docs-output")
-    LAYOUTS_BUCKET: str = os.getenv("LAYOUTS_BUCKET", "layouts")
-    
+    OUTPUT_JSON_BUCKET: str = "docs-output-json"
+    OUTPUT_MD_BUCKET: str = "docs-output-md"
+    OUTPUT_TXT_BUCKET: str = "docs-output-txt"
+    OUTPUT_YAML_BUCKET: str = "docs-output-yaml"
+    LAYOUTS_FIGURES_BUCKET: str = "docs-layouts-figures"
+    LAYOUTS_TABLES_BUCKET: str = "docs-layouts-tables"
     # AWS settings for MinIO compatibility
     AWS_ACCESS_KEY_ID: str = os.getenv("AWS_ACCESS_KEY_ID", "minio")
     AWS_SECRET_ACCESS_KEY: str = os.getenv("AWS_SECRET_ACCESS_KEY", "minio123")

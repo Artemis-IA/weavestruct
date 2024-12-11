@@ -8,17 +8,34 @@ from urllib.parse import urlparse
 from src.config import settings
 
 class S3Service:
-    def __init__(self, s3_client, endpoint_url: str, access_key: str, secret_key: str, region_name: Optional[str] = None, input_bucket: str = "input", output_bucket: str = "output", layouts_bucket: str = "layouts"):
+    def __init__(
+        self,
+        s3_client,
+        endpoint_url=settings.MINIO_URL,
+        access_key=settings.MINIO_ACCESS_KEY,
+        secret_key=settings.MINIO_SECRET_KEY,
+        input_bucket=settings.INPUT_BUCKET,
+        output_json_bucket=settings.OUTPUT_JSON_BUCKET,
+        output_md_bucket=settings.OUTPUT_MD_BUCKET,
+        output_txt_bucket=settings.OUTPUT_TXT_BUCKET,
+        output_yaml_bucket=settings.OUTPUT_YAML_BUCKET,
+        layouts_figures_bucket=settings.LAYOUTS_FIGURES_BUCKET,
+        layouts_tables_bucket=settings.LAYOUTS_TABLES_BUCKET
+    ):
         self.s3_client = boto3.client(
             's3',
             endpoint_url=endpoint_url,
             aws_access_key_id=access_key,
             aws_secret_access_key=secret_key,
-            region_name=region_name
         )
-        self.input_bucket = settings.INPUT_BUCKET
-        self.output_bucket = settings.OUTPUT_BUCKET
-        self.layouts_bucket = settings.LAYOUTS_BUCKET
+        self.input_bucket = input_bucket
+        self.output_json_bucket = output_json_bucket
+        self.output_md_bucket = output_md_bucket
+        self.output_txt_bucket = output_txt_bucket
+        self.output_yaml_bucket = output_yaml_bucket
+        self.layouts_figures_bucket = layouts_figures_bucket
+        self.layouts_tables_bucket = layouts_tables_bucket
+
 
         logger.info(f"Connected to S3 at {endpoint_url}")
 
@@ -51,6 +68,34 @@ class S3Service:
             logger.error(f"Failed to upload file object to S3: {e}")
         return None
 
+    def upload_to_specific_bucket(self, file_path: Path, bucket_type: str) -> Optional[str]:
+        bucket_mapping = {
+            "json": self.output_json_bucket,
+            "md": self.output_md_bucket,
+            "text": self.output_txt_bucket,
+            "yaml": self.output_yaml_bucket,
+            "figures": self.layouts_figures_bucket,
+            "tables": self.layouts_tables_bucket,
+        }
+
+        bucket_name = bucket_mapping.get(bucket_type)
+        if not bucket_name:
+            logger.error(f"Invalid bucket type: {bucket_type}")
+            return None
+
+        object_name = file_path.name
+        try:
+            self.s3_client.upload_file(str(file_path), bucket_name, object_name)
+            logger.info(f"File {file_path} uploaded to {bucket_name} as {object_name}")
+            return f"https://{bucket_name}/{object_name}"
+        except FileNotFoundError:
+            logger.error(f"The file {file_path} was not found.")
+        except NoCredentialsError:
+            logger.error("Credentials not available for S3.")
+        except ClientError as e:
+            logger.error(f"Failed to upload file {file_path} to bucket {bucket_name}: {e}")
+        return None
+
     def download_file(self, bucket_name: str, object_name: str, download_path: Path) -> bool:
         try:
             self.s3_client.download_file(bucket_name, object_name, str(download_path))
@@ -60,6 +105,22 @@ class S3Service:
             logger.error("Credentials not available for S3.")
         except ClientError as e:
             logger.error(f"Failed to download file {object_name} from S3: {e}")
+        return False
+    
+
+    def download_fileobj(self, bucket_name: str, object_name: str, file_obj: IO) -> bool:
+        """
+        Download an S3 object to a file-like object.
+        """
+        try:
+            self.s3_client.download_fileobj(bucket_name, object_name, file_obj)
+            file_obj.seek(0)
+            logger.info(f"File {object_name} downloaded from bucket {bucket_name} into memory")
+            return True
+        except NoCredentialsError:
+            logger.error("Credentials not available for S3.")
+        except ClientError as e:
+            logger.error(f"Failed to download file object {object_name} from S3: {e}")
         return False
     
     def parse_s3_url(self, s3_url: str) -> Optional[Tuple[str, str]]:

@@ -1,533 +1,542 @@
-labels:
-  # PII Entities
-  - PERSON
-  - NAME
-  - FIRST_NAME
-  - LAST_NAME
-  - FULL_NAME
-  - MAIDEN_NAME
-  - ADDRESS
-  - STREET_ADDRESS
-  - POSTAL_CODE
-  - CITY
-  - STATE
-  - COUNTRY
-  - PHONE_NUMBER
-  - LANDLINE_NUMBER
-  - MOBILE_NUMBER
-  - FAX_NUMBER
-  - EMAIL_ADDRESS
-  - PERSONAL_EMAIL
-  - PROFESSIONAL_EMAIL
-  - DATE_OF_BIRTH
-  - PLACE_OF_BIRTH
-  - AGE
-  - SOCIAL_SECURITY_NUMBER
-  - ID_CARD_NUMBER
-  - PASSPORT_NUMBER
-  - DRIVER_LICENSE_NUMBER
-  - RESIDENCE_PERMIT_NUMBER
-  - VOTER_ID_NUMBER
-  - TAX_IDENTIFICATION_NUMBER
-  - PROFESSIONAL_ID_NUMBER
-  - FINANCIAL_INFORMATION
-  - CREDIT_CARD_NUMBER
-  - DEBIT_CARD_NUMBER
-  - BANK_ACCOUNT_NUMBER
+étiquettes:
+  # Entités PII
+  - PERSONNE
+  - NOM
+  - PRÉNOM
+  - NOM_DE_FAMILLE
+  - NOM_COMPLET
+  - NOM_DE_JEUNE_FILLE
+  - ADRESSE
+  - ADRESSE_RUE
+  - CODE_POSTAL
+  - VILLE
+  - ÉTAT
+  - PAYS
+  - NUMÉRO_DE_TÉLÉPHONE
+  - NUMÉRO_DE_LIGNE_FIXE
+  - NUMÉRO_DE_PORTABLE
+  - NUMÉRO_DE_FAX
+  - ADRESSE_EMAIL
+  - EMAIL_PERSONNEL
+  - EMAIL_PROFESSIONNEL
+  - DATE_DE_NAISSANCE
+  - LIEU_DE_NAISSANCE
+  - ÂGE
+  - NUMÉRO_DE_SÉCURITÉ_SOCIALE
+  - NUMÉRO_DE_CARTE_D'IDENTITÉ
+  - NUMÉRO_DE_PASSPORT
+  - NUMÉRO_DE_PERMIS_DE_CONDUIRE
+  - NUMÉRO_DE_TITRE_DE_SÉJOUR
+  - NUMÉRO_D'IDENTIFIANT_ÉLECTEUR
+  - NUMÉRO_D'IDENTIFIANT_FISCAL
+  - NUMÉRO_D'IDENTIFIANT_PROFESSIONNEL
+  - INFORMATIONS_FINANCIÈRES
+  - NUMÉRO_DE_CARTE_DE_CRÉDIT
+  - NUMÉRO_DE_CARTE_DE_DÉBIT
+  - NUMÉRO_DE_COMPTE_BANCAIRE
   - IBAN
   - BIC
-  - SWIFT_CODE
-  - MEDICAL_INFORMATION
-  - MEDICAL_RECORDS
-  - HEALTH_DATA
-  - GENETIC_DATA
-  - DISABILITY_INFORMATION
-  - BIOMETRIC_DATA
-  - FINGERPRINT
-  - FACIAL_RECOGNITION
-  - RETINA_SCAN
-  - VOICE_PRINT
-  - DNA
-  - ONLINE_IDENTIFIERS
-  - USERNAME
-  - PSEUDONYM
-  - LOGIN_CREDENTIALS
-  - PASSWORD
-  - SECURITY_QUESTION
-  - IP_ADDRESS
-  - MAC_ADDRESS
-  - DEVICE_ID
-  - SERIAL_NUMBER
+  - CODE_SWIFT
+  - INFORMATIONS_MÉDICALES
+  - DOSSIERS_MÉDICAUX
+  - DONNÉES_DE_SANTÉ
+  - DONNÉES_GÉNÉTIQUES
+  - INFORMATIONS_HANDICAP
+  - DONNÉES_BIOMÉTRIQUES
+  - EMPREINTE_DIGITALE
+  - RECONNAISSANCE_FACIALE
+  - SCAN_RÉTINIEN
+  - EMPREINTE_VOCALE
+  - ADN
+  - IDENTIFIANTS_EN_LIGNE
+  - NOM_UTILISATEUR
+  - PSEUDONYME
+  - IDENTIFIANTS_DE_CONNEXION
+  - MOT_DE_PASSE
+  - QUESTION_DE_SÉCURITÉ
+  - ADRESSE_IP
+  - ADRESSE_MAC
+  - ID_APPAREIL
+  - NUMÉRO_DE_SÉRIE
   - UUID
-  - MOBILE_AD_ID
-  - GEOLOCATION_DATA
-  - GPS_COORDINATES
-  - GEOLOCATION_HISTORY
-  - REAL_TIME_LOCATION
+  - ID_PUBLICITAIRE_MOBILE
+  - DONNÉES_DE_GÉOLOCALISATION
+  - COORDONNÉES_GPS
+  - HISTORIQUE_DE_GÉOLOCALISATION
+  - LOCALISATION_EN_TEMPS_RÉEL
   - COOKIES
-  - TRACKING_IDENTIFIERS
-  - PROFESSIONAL_INFORMATION
-  - JOB_TITLE
-  - EMPLOYER
-  - CAREER_HISTORY
-  - SALARY
-  - EMPLOYEE_NUMBER
-  - PROFESSIONAL_REFERENCES
-  - EDUCATIONAL_INFORMATION
-  - DEGREE
-  - SCHOOL
-  - GRADES
-  - CERTIFICATES
-  - MARITAL_STATUS
-  - GENDER
-  - NATIONALITY
-  - CITIZENSHIP
-  - PHOTOGRAPH
-  - FAMILY_PHOTO
-  - PERSONAL_VIDEO
-  - AUDIO_RECORDING
-  - VOICE_MAIL
+  - IDENTIFIANTS_DE_SUIVI
+  - INFORMATIONS_PROFESSIONNELLES
+  - INTITULÉ_DU_POSTE
+  - EMPLOYEUR
+  - HISTORIQUE_DE_CARRIÈRE
+  - SALAIRE
+  - NUMÉRO_D'EMPLOYÉ
+  - RÉFÉRENCES_PROFESSIONNELLES
+  - INFORMATIONS_ÉDUCATIVES
+  - DIPLÔME
+  - ÉCOLE
+  - NOTES
+  - CERTIFICATS
+  - ÉTAT_CIVIL
+  - GENRE
+  - NATIONALITÉ
+  - CITOYENNETÉ
+  - PHOTOGRAPHIE
+  - PHOTO_DE_FAMILLE
+  - VIDÉO_PERSONNELLE
+  - ENREGISTREMENT_AUDIO
+  - BOÎTE_VOCALE
   - SIGNATURE
-  - PERSONAL_PREFERENCES
-  - INTERESTS
-  - HOBBIES
-  - SHOPPING_HABITS
-  - DIETARY_PREFERENCES
-  - BROWSING_HISTORY
-  - WEBSITE_VISITS
-  - SEARCH_HISTORY
-  - DOWNLOAD_HISTORY
-  - PRIVATE_COMMUNICATION
+  - PRÉFÉRENCES_PERSONNELLES
+  - INTÉRÊTS
+  - LOISIRS
+  - HABITUDES_D'ACHAT
+  - PRÉFÉRENCES_ALIMENTAIRES
+  - HISTORIQUE_DE_NAVIGATION
+  - VISITES_DE_SITES_WEB
+  - HISTORIQUE_DE_RECHERCHE
+  - HISTORIQUE_DE_TÉLÉCHARGEMENT
+  - COMMUNICATION_PRIVÉE
   - MESSAGES
   - EMAILS
-  - LETTERS
-  - SOCIAL_MEDIA_CONVERSATIONS
-  - FAMILY_INFORMATION
-  - FAMILY_MEMBER_NAMES
-  - CHILDREN_INFORMATION
-  - SPOUSE_INFORMATION
-  - FAMILY_HISTORY
-  - VEHICLE_INFORMATION
-  - REGISTRATION_NUMBER
-  - LICENSE_PLATE_NUMBER
-  - VEHICLE_MODEL
+  - LETTRES
+  - CONVERSATIONS_SUR_LES_RÉSEAUX_SOCIAUX
+  - INFORMATIONS_FAMILIALES
+  - NOMS_DES_MEMBRES_DE_LA_FAMILLE
+  - INFORMATIONS_SUR_LES_ENFANTS
+  - INFORMATIONS_SUR_LE_CONJOINT
+  - HISTORIQUE_FAMILIAL
+  - INFORMATIONS_SUR_LE_VÉHICULE
+  - NUMÉRO_D'IMMATRICULATION
+  - NUMÉRO_DE_PLAQUE_D'IMMATRICULATION
+  - MODÈLE_DE_VÉHICULE
   - VIN
-  - SOCIAL_MEDIA_DATA
-  - SOCIAL_MEDIA_PROFILES
-  - POSTS
-  - FRIENDS_AND_FOLLOWERS
-  - RELATIONSHIPS
-  - SHARED_INFORMATION
-  - TAX_INFORMATION
-  - TAX_NUMBER
-  - TAX_RETURNS
-  - INCOME_INFORMATION
-  - LEGAL_INFORMATION
-  - CRIMINAL_RECORD
-  - LAWSUIT_INFORMATION
-  - LEGAL_STATUS
-  - INSURANCE_INFORMATION
-  - INSURANCE_POLICY_NUMBER
-  - COVERAGE_DETAILS
-  - INSURANCE_CLAIMS
-  - GOVERNMENT_IDENTIFIERS
-  - TAXPAYER_NUMBER
-  - BENEFICIARY_NUMBER
-  - GOVERNMENT_ID_NUMBER
-  - POLITICAL_OPINIONS
-  - RELIGIOUS_BELIEFS
-  - PHILOSOPHICAL_BELIEFS
-  - UNION_MEMBERSHIP
-  - SEXUAL_ORIENTATION
-  - MILITARY_STATUS
-  - TRAVEL_INFORMATION
-  - ITINERARIES
-  - RESERVATIONS
-  - TRAVEL_HISTORY
-  - VISA_INFORMATION
-  - TRANSACTION_DATA
-  - PURCHASE_HISTORY
-  - INVOICES
-  - RECEIPTS
-  - ONLINE_ORDERS
-  - SUBSCRIPTION_INFORMATION
-  - SERVICE_SUBSCRIPTIONS
-  - SUBSCRIBER_NUMBERS
-  - SUBSCRIPTION_PREFERENCES
-  - SENSOR_DATA
-  - SMARTWATCH_DATA
-  - FITNESS_TRACKING_DATA
-  - HEALTH_DEVICE_DATA
-  - SECURITY_INFORMATION
-  - SECURITY_QUESTIONS
-  - SECURITY_ANSWERS
-  - METADATA
-  - TIMESTAMP
-  - FILE_INFORMATION
-  - IMAGE_METADATA
-  - LANGUAGE_INFORMATION
-  - LANGUAGES_SPOKEN
-  - LANGUAGE_PREFERENCES
-  - CULTURAL_INFORMATION
-  - ETHNIC_ORIGIN
-  - CULTURAL_TRADITIONS
-  - HABITS
-  - CONSUMPTION_HABITS
-  - COMMUNICATION_HABITS
-  - ACCESS_LOGS
-  - LOGIN_RECORDS
-  - ACCESS_HISTORY
-  - CONNECTION_IP_ADDRESS
-  - LICENSE_INFORMATION
-  - PROFESSIONAL_LICENSES
+  - DONNÉES_DES_RÉSEAUX_SOCIAUX
+  - PROFILS_DES_RÉSEAUX_SOCIAUX
+  - PUBLICATIONS
+  - AMIS_ET_ABONNÉS
+  - RELATIONS
+  - INFORMATIONS_PARTAGÉES
+  - INFORMATIONS_FISCALES
+  - NUMÉRO_FISCAL
+  - DÉCLARATIONS_FISCALES
+  - INFORMATIONS_SUR_LE_REVENU
+  - INFORMATIONS_LÉGALES
+  - CASIER_JUDICIAIRE
+  - INFORMATIONS_SUR_LES_PROCÈS
+  - STATUT_LÉGAL
+  - INFORMATIONS_D'ASSURANCE
+  - NUMÉRO_DE_POLICE_D'ASSURANCE
+  - DÉTAILS_DE_LA_COUPERTURE
+  - RÉCLAMATIONS_D'ASSURANCE
+  - IDENTIFIANTS_GOUVERNEMENTAUX
+  - NUMÉRO_DE_CONTRIBUABLE
+  - NUMÉRO_DE_BÉNÉFICIAIRE
+  - NUMÉRO_D'IDENTIFICATION_GOUVERNEMENTAL
+  - OPINIONS_POLITIQUES
+  - CROYANCES_RELIGIEUSES
+  - CROYANCES_PHILOSOPHIQUES
+  - ADHÉSION_SYNDICALE
+  - ORIENTATION_SEXUELLE
+  - STATUT_MILITAIRE
+  - INFORMATIONS_DE_VOYAGE
+  - ITINÉRAIRES
+  - RÉSERVATIONS
+  - HISTORIQUE_DE_VOYAGE
+  - INFORMATIONS_SUR_LE_VISA
+  - DONNÉES_DE_TRANSACTION
+  - HISTORIQUE_D'ACHAT
+  - FACTURES
+  - REÇUS
+  - COMMANDES_EN_LIGNE
+  - INFORMATIONS_D'ABONNEMENT
+  - ABONNEMENTS_AUX_SERVICES
+  - NUMÉROS_D'ABONNÉ
+  - PRÉFÉRENCES_D'ABONNEMENT
+  - DONNÉES_DES_CAPTEURS
+  - DONNÉES_DE_MONTRE_INTELLIGENTE
+  - DONNÉES_DE_SUIVI_FITNESS
+  - DONNÉES_D'APPAREIL_DE_SANTÉ
+  - INFORMATIONS_DE_SÉCURITÉ
+  - QUESTIONS_DE_SÉCURITÉ
+  - RÉPONSES_DE_SÉCURITÉ
+  - MÉTADONNÉES
+  - HORODATAGE
+  - INFORMATIONS_SUR_LE_FICHIER
+  - MÉTADONNÉES_D'IMAGE
+  - INFORMATIONS_SUR_LA_LANGUE
+  - LANGUES_PARLÉES
+  - PRÉFÉRENCES_LINGUISTIQUES
+  - INFORMATIONS_CULTURELLES
+  - ORIGINE_ETHNIQUE
+  - TRADITIONS_CULTURELLES
+  - HABITUDES
+  - HABITUDES_DE_CONSOMMATION
+  - HABITUDES_DE_COMMUNICATION
+  - JOURNAUX_D'ACCÈS
+  - ENREGISTREMENTS_DE_CONNEXION
+  - HISTORIQUE_D'ACCÈS
+  - ADRESSE_IP_DE_CONNEXION
+  - INFORMATIONS_DE_LICENCE
+  - LICENCES_PROFESSIONNELLES
   - CERTIFICATIONS
-  - LICENSE_NUMBERS
-  - CUSTOMER_INTERACTION_DATA
-  - CALL_RECORDINGS
-  - SUPPORT_CHATS
-  - FEEDBACK_AND_COMMENTS
-  - CONTRACT_INFORMATION
-  - AGREEMENT_DETAILS
+  - NUMÉROS_DE_LICENCE
+  - DONNÉES_D'INTERACTION_CLIENT
+  - ENREGISTREMENTS_D'APPEL
+  - CHATS_D'ASSISTANCE
+  - COMMENTAIRES_ET_AVIS
+  - INFORMATIONS_SUR_LE_CONTRAT
+  - DÉTAILS_DE_L'ACCORD
   - SIGNATURES
-  - SPECIFIC_TERMS
-  - MARKETING_PREFERENCES
-  - CONSENTS
-  - COMMUNICATION_PREFERENCES
-  - CAMPAIGN_HISTORY
-  - THIRD_PARTY_DATA
-  - AGGREGATED_INFORMATION
-  - DATA_BROKER_INFORMATION
-  - ENRICHED_PROFILES
-  - COPYRIGHT_INFORMATION
-  - COPYRIGHTED_WORKS
-  - REGISTRATION_NUMBERS
-  - SPONSORSHIP_INFORMATION
-  - REFERRAL_INFORMATION
-  - SPONSOR_RELATIONSHIP
-  - REAL_ESTATE_INFORMATION
-  - OWNED_PROPERTIES
-  - PROPERTY_ADDRESSES
-  - PROPERTY_VALUES
-  - MOBILE_APP_DATA
-  - APP_PERMISSIONS
-  - APP_COLLECTED_DATA
-  - LIFE_EVENTS
-  - MARRIAGE
-  - CHILD_BIRTH
-  - FAMILY_DEATH
-  - CAREER_CHANGES
-  
-  # Corporate Governance & Executive Entities
-  - "Company"
-  - "Company Executives"
-  - "Board of Directors"
-  - "Audit Committee"
-  - "Chief Financial Officer (CFO)"
-  - "Chief Executive Officer (CEO)"
-  - "Chief Operations Officer (COO)"
-  - "Chief Sustainability Officer (CSO)"
-  - "Chief Technology Officer (CTO)"
-  - "Chief Marketing Officer (CMO)"
-  - "General Counsel"
-  - "Corporate Secretary"
-  - "Governance and Compliance Committee"
-  - "Risk Manager"
-  - "Independent Directors"
-  - "Shareholders"
-  - "Stakeholders"
-  - "Corporate Lawyers"
-  - "Investor Relations Managers"
-  - "Advisory Board"
-  - "Governance Experts"
+  - TERMES_SPÉCIFIQUES
+  - PRÉFÉRENCES_MARKETING
+  - CONSENTEMENTS
+  - PRÉFÉRENCES_DE_COMMUNICATION
+  - HISTORIQUE_DES_CAMPAGNES
+  - DONNÉES_TIERS
+  - INFORMATIONS_AGRÉGÉES
+  - INFORMATIONS_DES_BROKERS_DE_DONNÉES
+  - PROFILS_ENRICHIS
+  - INFORMATIONS_SUR_LE_DROIT_D'AUTEUR
+  - ŒUVRES_SOUS_DROITS_D'AUTEUR
+  - NUMÉROS_D'ENREGISTREMENT
+  - INFORMATIONS_DE_PARRAINAGE
+  - INFORMATIONS_DE_RÉFÉRENCE
+  - RELATION_DE_PARRAINAGE
+  - INFORMATIONS_SUR_L'IMMOBILIER
+  - PROPRIÉTÉS_POSSEDÉES
+  - ADRESSES_DES_PROPRIÉTÉS
+  - VALEURS_DES_PROPRIÉTÉS
+  - DONNÉES_D'APPLICATION_MOBILE
+  - AUTORISATIONS_D'APPLICATION
+  - DONNÉES_COLLECTÉES_PAR_L'APPLICATION
+  - ÉVÉNEMENTS_DE_LA_VIE
+  - MARIAGE
+  - NAISSANCE_D'ENFANT
+  - DÉCÈS_DANS_LA_FAMILLE
+  - CHANGEMENTS_DE_CARRIÈRE
 
-  # Financial Entities
-  - "Institutional Investors"
-  - "Private Equity Firms"
-  - "Hedge Funds"
-  - "Pension Funds"
-  - "Sovereign Wealth Funds"
-  - "Venture Capital Firms"
-  - "Investment Banks"
-  - "Retail Banks"
-  - "Credit Rating Agencies"
-  - "Insurance Companies"
-  - "Audit Firms"
-  - "Tax Advisors"
-  - "ESG Funds"
-  - "Financial Regulators"
-  - "Stock Exchanges"
-  - "Monetary Authorities"
-  - "Securities Commissions"
-  - "Asset Management Firms"
-  - "Wealth Management Firms"
-  - "Corporate Creditors"
-  - "Debt Holders"
+  # Entités de Gouvernance d'Entreprise & Exécutives
+  - "Entreprise"
+  - "Dirigeants d'entreprise"
+  - "Conseil d'Administration"
+  - "Comité d'Audit"
+  - "Directeur Financier (CFO)"
+  - "Directeur Général (CEO)"
+  - "Directeur des Opérations (COO)"
+  - "Directeur du Développement Durable (CSO)"
+  - "Directeur Technique (CTO)"
+  - "Directeur Marketing (CMO)"
+  - "Conseil Juridique"
+  - "Secrétaire Général"
+  - "Comité de Gouvernance et Conformité"
+  - "Gestionnaire des Risques"
+  - "Administrateurs Indépendants"
+  - "Actionnaires"
+  - "Parties Prenantes"
+  - "Avocats d'Entreprise"
+  - "Responsables des Relations Investisseurs"
+  - "Comité Consultatif"
+  - "Experts en Gouvernance"
 
-  # ESG & Sustainability Entities
-  - "ESG Rating Agencies"
-  - "ESG Data Providers"
-  - "Sustainability Committee"
-  - "Environmental Advocacy Groups"
-  - "Human Rights Organizations"
-  - "Carbon Credit Traders"
-  - "Non-Governmental Organizations (NGOs)"
-  - "Social Responsibility Committees"
-  - "Labor Unions"
-  - "Consumer Advocacy Groups"
-  - "Corporate Social Responsibility (CSR) Teams"
-  - "Environmental Agencies"
-  - "Ethics Committees"
-  - "Diversity Officers"
-  - "Social Impact Investors"
-  - "Sustainability Analysts"
-  - "Impact Funds"
+  # Entités Financières
+  - "Investisseurs Institutionnels"
+  - "Sociétés de Capital-Investissement"
+  - "Fonds Speculatifs"
+  - "Caisses de Retraite"
+  - "Fonds Souverains"
+  - "Sociétés de Capital Risque"
+  - "Banques d'Investissement"
+  - "Banques de Détail"
+  - "Agences de Notation de Crédit"
+  - "Compagnies d'Assurance"
+  - "Cabinets d'Audit"
+  - "Conseillers Fiscaux"
+  - "Fonds ESG"
+  - "Régulateurs Financiers"
+  - "Bourses"
+  - "Autorités Monétaires"
+  - "Commissions des Valeurs Mobilières"
+  - "Sociétés de Gestion d'Actifs"
+  - "Sociétés de Gestion de Fortune"
+  - "Créanciers d'Entreprise"
+  - "Détenteurs de Dette"
 
-  # Political & Governmental Entities
-  - "Governments"
-  - "Government Agencies"
-  - "Regulatory Authorities"
-  - "Political Parties"
-  - "Legislators"
-  - "Lobbying Groups"
-  - "Public Policy Think Tanks"
-  - "Law Enforcement Agencies"
-  - "Ministries of Finance"
-  - "Foreign Affairs Ministries"
-  - "Chambers of Commerce"
-  - "Diplomatic Missions"
-  - "International Monetary Fund (IMF)"
-  - "World Bank"
-  - "World Trade Organization (WTO)"
-  - "Geopolitical Organizations"
-  - "Sanctions Units (e.g., OFAC)"
-  - "Trade Ministries"
-  - "Intergovernmental Organizations"
-  - "Military Contractors"
+  # Entités ESG & Durabilité
+  - "Agences de Notation ESG"
+  - "Fournisseurs de Données ESG"
+  - "Comité de Développement Durable"
+  - "Groupes de Défense de l'Environnement"
+  - "Organisations des Droits de l'Homme"
+  - "Négociants de Crédits Carbone"
+  - "Organisations Non Gouvernementales (ONG)"
+  - "Comités de Responsabilité Sociale"
+  - "Syndicats"
+  - "Groupes de Défense des Consommateurs"
+  - "Équipes de Responsabilité Sociale des Entreprises (RSE)"
+  - "Agences Environnementales"
+  - "Comités d'Éthique"
+  - "Responsables de la Diversité"
+  - "Investisseurs à Impact Social"
+  - "Analystes en Durabilité"
+  - "Fonds d'Impact"
 
-  # Legal Entities
-  - "International Courts"
-  - "Corporate Legal Departments"
-  - "Law Firms"
-  - "Compliance Officers"
-  - "Anti-Corruption Watchdogs"
-  - "Dispute Resolution Bodies"
-  - "Intellectual Property Offices"
-  - "Data Protection Authorities"
-  - "Cybersecurity Law Firms"
-  - "Human Rights Lawyers"
-  - "Market Competition Authorities"
-  - "Antitrust Authorities"
-  - "Sanctioning Bodies"
+  # Entités Politiques & Gouvernementales
+  - "Gouvernements"
+  - "Agences Gouvernementales"
+  - "Autorités de Régulation"
+  - "Partis Politiques"
+  - "Législateurs"
+  - "Groupes de Lobbying"
+  - "Think Tanks de Politiques Publiques"
+  - "Organismes d'Application de la Loi"
+  - "Ministères des Finances"
+  - "Ministères des Affaires Étrangères"
+  - "Chambres de Commerce"
+  - "Missions Diplomatiques"
+  - "Fonds Monétaire International (FMI)"
+  - "Banque Mondiale"
+  - "Organisation Mondiale du Commerce (OMC)"
+  - "Organisations Géopolitiques"
+  - "Unités de Sanctions (ex : OFAC)"
+  - "Ministères du Commerce"
+  - "Organisations Intergouvernementales"
+  - "Entrepreneurs Militaires"
 
-  # Media & Civil Society Entities
-  - "News Agencies"
-  - "Investigative Reporters"
-  - "Whistleblower Organizations"
+  # Entités Légales
+  - "Cours Internationales"
+  - "Départements Juridiques d'Entreprise"
+  - "Cabinets d'Avocats"
+  - "Comités de Conformité"
+  - "Veilleurs Anticorruption"
+  - "Organismes de Résolution des Conflits"
+  - "Bureaux de Propriété Intellectuelle"
+  - "Autorités de Protection des Données"
+  - "Cabinets d'Avocats en Cybersécurité"
+  - "Avocats de Droits de l'Homme"
+  - "Autorités de Concurrence du Marché"
+  - "Autorités Antitrust"
+  - "Organes de Sanctions"
+
+  # Médias & Entités de Société Civile
+  - "Agences de Presse"
+  - "Journalistes d'Investigation"
+  - "Organisations de Lanceurs d'Alerte"
   - "Transparency International"
-  - "Civil Rights Groups"
-  - "Freedom of Information Watchdogs"
-  - "NGOs Focused on Corruption"
-  - "Public Relations Firms"
-  - "Civil Liberties Organizations"
-  - "Journalists"
-  - "Social Media Platforms"
-  - "Investigative Bloggers"
-  - "Fact-Checking Organizations"
+  - "Groupes des Droits Civiques"
+  - "Organisations de Surveillance de la Liberté d'Information"
+  - "ONG Axées sur la Corruption"
+  - "Entreprises de Relations Publiques"
+  - "Organisations de Libertés Civiles"
+  - "Journalistes"
+  - "Plateformes de Médias Sociaux"
+  - "Blogueurs d'Investigation"
+  - "Organisations de Vérification des Faits"
 
-  # Geopolitical & Intelligence Entities
-  - "National Intelligence Agencies"
-  - "Military Organizations"
-  - "Defense Contractors"
-  - "Geopolitical Analysts"
-  - "Global Risk Consultancies"
-  - "Strategic Intelligence Teams"
-  - "Counterterrorism Units"
-  - "Sanctions Enforcement Units"
-  - "National Security Agencies"
-  - "Political Risk Advisory Firms"
-  - "Diplomatic Attachés"
+  # Entités Géopolitiques & de Renseignement
+  - "Agences Nationales de Renseignement"
+  - "Organisations Militaires"
+  - "Entrepreneurs de Défense"
+  - "Analystes Géopolitiques"
+  - "Cabinets de Conseil en Risques Globaux"
+  - "Équipes de Renseignement Stratégiques"
+  - "Unités de Contre-Terrorisme"
+  - "Unités d'Application des Sanctions"
+  - "Agences de Sécurité Nationale"
+  - "Cabinets de Conseil en Risques Politiques"
+  - "Attachés Diplomatiques"
 
-  # Time Elements
+  # Éléments de Temps
   - "Date"
-  - "Time"
-  - "Month"
-  - "Year"
-  - "Week"
-  - "Day"
-  - "Hour"
-  - "Fiscal Year"
-  - "Quarter"
-  - "Annual Report"
-  - "Audit Period"
-  - "Budget Cycle"
-  - "Sanctions Period"
-  - "Election Cycle"
-  - "Mergers & Acquisitions Timeline"
+  - "Heure"
+  - "Mois"
+  - "Année"
+  - "Semaine"
+  - "Jour"
+  - "Heure"
+  - "Année Fiscale"
+  - "Trimestre"
+  - "Rapport Annuel"
+  - "Période d'Audit"
+  - "Cycle Budgétaire"
+  - "Période de Sanctions"
+  - "Cycle Électoral"
+  - "Chronologie des Fusions & Acquisitions"
 
-  # Geographic & Location Entities
-  - "Headquarters Location"
-  - "Regional Offices"
-  - "Corporate Jurisdiction"
-  - "Sanctioned Countries"
-  - "Trade Zones"
-  - "Supply Chain Locations"
-  - "Embassies"
-  - "International Borders"
-  - "Free Trade Zones"
-  - "Disaster Zones"
-  - "Conflict Zones"
-
-
-
-
-
+  # Entités Géographiques & de Localisation
+  - "Siège Social"
+  - "Bureaux Régionaux"
+  - "Juridiction de l'Entreprise"
+  - "Pays Sanctionnés"
+  - "Zones de Commerce"
+  - "Emplacements de la Chaîne d'Approvisionnement"
+  - "Ambassades"
+  - "Frontières Internationales"
+  - "Zones de Libre-Échange"
+  - "Zones Sinistrées"
+  - "Zones de Conflit"
 
 allowed_nodes:
-  # Governance Nodes
-  - "Board of Directors"
-  - "Audit Committee"
-  - "Chief Financial Officer (CFO)"
-  - "Chief Executive Officer (CEO)"
-  - "Chief Operations Officer (COO)"
-  - "Chief Sustainability Officer (CSO)"
-  - "Chief Technology Officer (CTO)"
-  - "Governance and Compliance Committee"
-  - "Independent Directors"
-  - "Company Executives"
-  - "Shareholders"
-  - "Stakeholders"
-  - "Corporate Lawyers"
-  - "Advisory Board"
-  - "Governance Experts"
+  # Nœuds de Gouvernance
+  - "Conseil d'Administration"
+  - "Comité d'Audit"
+  - "Directeur Financier (CFO)"
+  - "Directeur Général (CEO)"
+  - "Directeur des Opérations (COO)"
+  - "Directeur du Développement Durable (CSO)"
+  - "Directeur Technique (CTO)"
+  - "Comité de Gouvernance et Conformité"
+  - "Administrateurs Indépendants"
+  - "Dirigeants d'Entreprise"
+  - "Actionnaires"
+  - "Parties Prenantes"
+  - "Avocats d'Entreprise"
+  - "Comité Consultatif"
+  - "Experts en Gouvernance"
 
-  # Financial Nodes
-  - "Institutional Investors"
-  - "Hedge Funds"
-  - "Private Equity Firms"
-  - "Venture Capital Firms"
-  - "Banks"
-  - "Investment Banks"
-  - "Credit Rating Agencies"
-  - "Sovereign Wealth Funds"
-  - "Monetary Authorities"
-  - "Pension Funds"
-  - "Audit Firms"
-  - "ESG Funds"
-  - "Financial Analysts"
-  - "Corporate Creditors"
-  - "Debt Holders"
-  - "Wealth Management Advisors"
+  # Nœuds Financiers
+  - "Investisseurs Institutionnels"
+  - "Fonds Speculatifs"
+  - "Sociétés de Capital-Investissement"
+  - "Sociétés de Capital Risque"
+  - "Banques"
+  - "Banques d'Investissement"
+  - "Agences de Notation de Crédit"
+  - "Fonds Souverains"
+  - "Autorités Monétaires"
+  - "Caisses de Retraite"
+  - "Cabinets d'Audit"
+  - "Fonds ESG"
+  - "Analystes Financiers"
+  - "Créanciers d'Entreprise"
+  - "Détenteurs de Dette"
+  - "Conseillers en Gestion de Fortune"
 
-  # ESG & Sustainability Nodes
-  - "ESG Rating Agencies"
-  - "ESG Data Providers"
-  - "Environmental Agencies"
-  - "Human Rights Organizations"
-  - "Carbon Trading Firms"
-  - "Social Responsibility Committees"
-  - "Environmental Advocacy Groups"
-  - "NGOs"
-  - "Corporate Social Responsibility (CSR) Teams"
-  - "Consumer Advocacy Groups"
-  - "Sustainability Analysts"
-  - "Impact Funds"
+  # Nœuds ESG & Durabilité
+  - "Agences de Notation ESG"
+  - "Fournisseurs de Données ESG"
+  - "Agences Environnementales"
+  - "Organisations des Droits de l'Homme"
+  - "Sociétés de Négociation de Carbone"
+  - "Comités de Responsabilité Sociale"
+  - "Groupes de Défense de l'Environnement"
+  - "ONG"
+  - "Équipes de Responsabilité Sociale d'Entreprise (RSE)"
+  - "Groupes de Défense des Consommateurs"
+  - "Analystes en Durabilité"
+  - "Fonds d'Impact"
 
-  # Political Nodes
-  - "Governments"
-  - "Political Parties"
-  - "Regulatory Authorities"
-  - "Geopolitical Organizations"
-  - "Diplomatic Missions"
-  - "Public Policy Think Tanks"
-  - "Chambers of Commerce"
-  - "Law Enforcement Agencies"
-  - "Customs and Border Protection"
-  - "International Trade Organizations"
-  - "International Monetary Fund (IMF)"
-  - "Foreign Embassies"
+  # Nœuds Politiques
+  - "Gouvernements"
+  - "Partis Politiques"
+  - "Autorités de Régulation"
+  - "Organisations Géopolitiques"
+  - "Missions Diplomatiques"
+  - "Think Tanks de Politiques Publiques"
+  - "Chambres de Commerce"
+  - "Agences d'Application de la Loi"
+  - "Douanes et Protection des Frontières"
+  - "Organisations Internationales du Commerce"
+  - "Fonds Monétaire International (FMI)"
+  - "Ambassades Étrangères"
 
-  # Legal Nodes
-  - "International Courts"
-  - "Corporate Legal Departments"
-  - "Law Firms"
-  - "Dispute Resolution Bodies"
-  - "Antitrust Authorities"
-  - "Market Competition Authorities"
-  - "Compliance Officers"
-  - "Data Protection Authorities"
-  - "Anti-Corruption Watchdogs"
+  # Nœuds Légaux
+  - "Cours Internationales"
+  - "Départements Juridiques d'Entreprise"
+  - "Cabinets d'Avocats"
+  - "Organismes de Résolution des Conflits"
+  - "Autorités Antitrust"
+  - "Autorités de Concurrence du Marché"
+  - "Responsables de la Conformité"
+  - "Autorités de Protection des Données"
+  - "Veilleurs Anticorruption"
 
-  # Geopolitical Nodes
-  - "National Intelligence Agencies"
-  - "Military Organizations"
-  - "Defense Contractors"
-  - "National Security Agencies"
-  - "Political Risk Analysts"
-  - "Strategic Intelligence Teams"
-  - "Sanctions Enforcement Bodies"
-  - "Diplomatic Attachés"
+  # Nœuds Géopolitiques
+  - "Agences Nationales de Renseignement"
+  - "Organisations Militaires"
+  - "Entrepreneurs de Défense"
+  - "Agences de Sécurité Nationale"
+  - "Analystes des Risques Politiques"
+  - "Équipes de Renseignement Stratégiques"
+  - "Organes d'Application des Sanctions"
+  - "Attachés Diplomatiques"
 
-  # Media & Civil Society Nodes
-  - "News Agencies"
-  - "Journalists"
-  - "Investigative Reporters"
-  - "Whistleblower Organizations"
+  # Nœuds Médias & Société Civile
+  - "Agences de Presse"
+  - "Journalistes"
+  - "Journalistes d'Investigation"
+  - "Organisations de Lanceurs d'Alerte"
   - "Transparency International"
-  - "Civil Rights Groups"
-  - "Public Relations Firms"
-  - "Human Rights Watchdogs"
-  - "Social Media Analysts"
+  - "Groupes des Droits Civiques"
+  - "Cabinets de Relations Publiques"
+  - "Organisations de Surveillance des Droits de l'Homme"
+  - "Analystes des Médias Sociaux"
 
-  # Time Nodes
-  - "Fiscal Year"
-  - "Audit Period"
-  - "Annual Report"
-  - "Budget Cycle"
-  - "Election Cycle"
-  - "Mergers & Acquisitions Timeline"
+  # Nœuds de Temps
+  - "Année Fiscale"
+  - "Période d'Audit"
+  - "Rapport Annuel"
+  - "Cycle Budgétaire"
+  - "Cycle Électoral"
+  - "Chronologie des Fusions & Acquisitions"
 
-  # Geographic Nodes
-  - "Headquarters"
-  - "Regional Offices"
-  - "Sanctioned Countries"
-  - "Trade Zones"
-  - "Embassies"
-  - "Supply Chain Nodes"
-  - "Free Trade Zones"
-  - "Conflict Zones"
+  # Nœuds Géographiques
+  - "Siège Social"
+  - "Bureaux Régionaux"
+  - "Pays Sanctionnés"
+  - "Zones de Commerce"
+  - "Ambassades"
+  - "Nœuds de la Chaîne d'Approvisionnement"
+  - "Zones de Libre-Échange"
+  - "Zones de Conflit"
 
-
-
-
-
-
-  
 allowed_relationships:
 
-  - "collaborates_with"
-  - "reports_to"
-  - "influences"
-  - "owns_shares_in"
-  - "funds"
-  - "sanctions"
-  - "certifies"
-  - "regulates"
-  - "audits"
-  - "supplies_to"
-  - "monitors"
-  - "investigates"
-  - "prosecutes"
-  - "imposes_sanctions_on"
-  - "enforces"
-  - "litigates"
-  - "lobbies"
-  - "lends_to"
-  - "provides_services_to"
-  - "trades_with"
-  - "consults_for"
-  - "partners_with"
-  - "advises"
-  - "competes_with"
-  - "strategizes_with"
-  - "manages"
-  - "oversees"
+  - "collabore_avec"
+  - "rend_compte_à"
+  - "influence"
+  - "possède_des_actions_dans"
+  - "finance"
+  - "sanctionne"
+  - "certifie"
+  - "régule"
+  - "audite"
+  - "fournit_à"
+  - "surveille"
+  - "enquête_sur"
+  - "poursuit"
+  - "impose_des_sanctions_à"
+  - "applique"
+  - "litige_avec"
+  - "fait_du_lobbying"
+  - "prête_à"
+  - "fournit_des_services_à"
+  - "commerce_avec"
+  - "consultant_pour"
+  - "partenaire_avec"
+  - "conseille"
+  - "est_en_compétition_avec"
+  - "stratégise_avec"
+  - "gère"
+  - "supervise"
+  - "détient_une_part_majoritaire_dans"
+  - "est_une_filiale_de"
+  - "est_la_société_mère_de"
+  - "a_une_alliance_stratégique_avec"
+  - "est_affilié_à"
+  - "a_une_coentreprise_avec"
+  - "licencie_la_technologie_à"
+  - "fournit_un_financement_à"
+  - "est_réglementé_par"
+  - "est_audité_par"
+  - "est_membre_de"
+  - "a_un_contrat_avec"
+  - "a_un_différend_avec"
+  - "est_acquis_par"
+  - "a_fusionné_avec"
+  - "s'est_désengagé_de"
+  - "est_poursuivi_par"
+  - "emploie"
+  - "est_gouverné_par"
+  - "viole_la_réglementation_de"

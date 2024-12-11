@@ -74,27 +74,17 @@ class DocumentProcessor:
         self,
         s3_service: S3Service,
         mlflow_service: MLFlowService,
-        pgvector_service: PGVectorService,
-        neo4j_service: Neo4jService,
-        embedding_service: EmbeddingService,
-        gliner_service: GLiNERService,
-        glirel_service: GLiRELService,
+        # pgvector_service: PGVectorService,
+        # embedding_service: EmbeddingService,
         session: Session,
         text_splitter: CharacterTextSplitter,
-        graph_transformer: GlinerGraphTransformer,
-        gliner_extractor: GLiNERLinkExtractor,
     ):
         self.s3_service = s3_service
         self.mlflow_service = mlflow_service
-        self.pgvector_service = pgvector_service
-        self.neo4j_service = neo4j_service
-        self.embedding_service = embedding_service
-        self.gliner_service = gliner_service
-        self.glirel_service = glirel_service
+        # self.pgvector_service = pgvector_service
+        # self.embedding_service = embedding_service
         self.session = session
         self.text_splitter = text_splitter
-        self.graph_transformer = graph_transformer
-        self.gliner_extractor = gliner_extractor
 
     def create_converter(
         self,
@@ -143,42 +133,46 @@ class DocumentProcessor:
         """Export document into specified formats and upload to S3."""
         try:
             doc_filename = Path(result.input.file).stem
-            if result.status == ConversionStatus.SUCCESS:
-                output_dir = Path(self.s3_service.output_bucket)  
-                output_dir.mkdir(parents=True, exist_ok=True)
-                self._export_file(
-                    result=result,
-                    output_dir=output_dir,
-                    export_formats=export_formats,
-                    export_figures=export_figures,
-                    export_tables=export_tables,
-                    doc_filename=doc_filename
-                )
-                logger.info(f"Document exported successfully: {doc_filename}")
+            if result.status != ConversionStatus.SUCCESS:
+                logger.warning(f"Document export failed for {doc_filename}: {result.status}")
+                return
 
-                # Upload exported files to S3 output bucket
-                for ext in export_formats:
-                    file_path = output_dir / f"{doc_filename}.{ext}"
-                    s3_output_key = f"output/{doc_filename}.{ext}"
-                    self.s3_service.upload_file(file_path, bucket_name=self.s3_service.output_bucket)
-                    logger.info(f"Uploaded {file_path} to {self.s3_service.output_bucket}/{s3_output_key}")
+            output_dir = Path("/tmp/exports")
+            output_dir.mkdir(parents=True, exist_ok=True)
 
-                if export_figures:
-                    figures_dir = output_dir / "figures"
-                    for figure_file in figures_dir.glob("*.png"):
-                        s3_figures_key = f"layouts/figures/{figure_file.name}"
-                        self.s3_service.upload_file(figure_file, bucket_name=self.s3_service.layouts_bucket)
-                        logger.info(f"Uploaded {figure_file} to {self.s3_service.layouts_bucket}/{s3_figures_key}")
+            # Export des formats demandés
+            for fmt in export_formats:
+                file_path = output_dir / f"{doc_filename}.{fmt.value.lower()}"
+                with file_path.open("w", encoding="utf-8") as file_obj:
+                    if fmt == ExportFormat.JSON:
+                        json.dump(result.document.export_to_dict(), file_obj, ensure_ascii=False, indent=2)
+                    elif fmt == ExportFormat.YAML:
+                        yaml.dump(result.document.export_to_dict(), file_obj, allow_unicode=True, default_flow_style=False)
+                    elif fmt == ExportFormat.MARKDOWN:
+                        file_obj.write(result.document.export_to_markdown())
+                    elif fmt == ExportFormat.TEXT:
+                        file_obj.write(result.document.export_to_text())
 
-                if export_tables:
-                    tables_dir = output_dir / "tables"
-                    for table_file in tables_dir.glob("*.csv"):
-                        s3_tables_key = f"layouts/tables/{table_file.name}"
-                        self.s3_service.upload_file(table_file, bucket_name=self.s3_service.layouts_bucket)
-                        logger.info(f"Uploaded {table_file} to {self.s3_service.layouts_bucket}/{s3_tables_key}")
+                self.s3_service.upload_to_specific_bucket(file_path, fmt.value.lower())
+                logger.info(f"Exported and uploaded {file_path} as {fmt.value}")
+
+            # Export des figures et tableaux
+            if export_figures:
+                figures_dir = output_dir / "figures"
+                figures_dir.mkdir(parents=True, exist_ok=True)
+                for figure_file in figures_dir.glob("*.png"):
+                    self.s3_service.upload_to_specific_bucket(figure_file, "figures")
+                    logger.info(f"Exported and uploaded figure {figure_file}")
+
+            if export_tables:
+                tables_dir = output_dir / "tables"
+                tables_dir.mkdir(parents=True, exist_ok=True)
+                for table_file in tables_dir.glob("*.csv"):
+                    self.s3_service.upload_to_specific_bucket(table_file, "tables")
+                    logger.info(f"Exported and uploaded table {table_file}")
 
                 # Log document metadata
-                self.log_document(file_name=result.input.file, s3_url=s3_output_key)
+                self.log_document(file_name=result.input.file, s3_url=f"output/{doc_filename}.{export_formats[0].value.lower()}")
 
                 # Optionnel: Supprimer les fichiers exportés localement après l'upload
                 for ext in export_formats:
@@ -254,70 +248,9 @@ class DocumentProcessor:
             return []
 
         logger.info(f"Document {local_path.name} converted successfully")
-
-
-        # Step 4: Export processed document results to S3
-        output_dir = Path("/tmp/exports")
-        output_dir.mkdir(parents=True, exist_ok=True)
-        doc_filename = local_path.stem
-
-        def upload_to_s3(file_path: Path, bucket: str):
-            """Helper function to upload a file to S3."""
-            s3_key = f"output/{file_path.name}"
-            try:
-                self.s3_service.upload_file(file_path, bucket_name=bucket)
-                logger.info(f"Uploaded {file_path} to {bucket}/{s3_key}")
-            except Exception as e:
-                logger.error(f"Failed to upload {file_path} to S3: {e}")
-
-        # Export des résultats dans les formats sélectionnés
-        if ExportFormat.JSON in export_formats:
-            json_path = output_dir / f"{doc_filename}.json"
-            with json_path.open("w", encoding="utf-8") as json_file:
-                json.dump(conversion_result.document.export_to_dict(), json_file, ensure_ascii=False, indent=2)
-            upload_to_s3(json_path, self.s3_service.output_bucket)
-
-        if ExportFormat.YAML in export_formats:
-            yaml_path = output_dir / f"{doc_filename}.yaml"
-            with yaml_path.open("w", encoding="utf-8") as yaml_file:
-                yaml.dump(conversion_result.document.export_to_dict(), yaml_file, allow_unicode=True, default_flow_style=False)
-            upload_to_s3(yaml_path, self.s3_service.output_bucket)
-
-        if ExportFormat.MARKDOWN in export_formats:
-            md_path = output_dir / f"{doc_filename}.md"
-            with md_path.open("w", encoding="utf-8") as md_file:
-                md_file.write(conversion_result.document.export_to_markdown())
-            upload_to_s3(md_path, self.s3_service.output_bucket)
-
-        if ExportFormat.TEXT in export_formats:
-            text_path = output_dir / f"{doc_filename}.txt"
-            with text_path.open("w", encoding="utf-8") as text_file:
-                text_file.write(conversion_result.document.export_to_text())
-            upload_to_s3(text_path, self.s3_service.output_bucket)
-
-
-
-        # Optionnel: Supprimer les fichiers exportés localement après l'upload
-        for fmt in export_formats:
-            file_path = output_dir / f"{local_path.stem}.{fmt}"
-            if file_path.exists():
-                file_path.unlink()
-                logger.info(f"Deleted local file: {file_path}")
-
-        if export_figures:
-            figures_dir = output_dir / "figures"
-            if figures_dir.exists():
-                for figure_file in figures_dir.glob("*.png"):
-                    figure_file.unlink()
-                    logger.info(f"Deleted local figure file: {figure_file}")
-
-        if export_tables:
-            tables_dir = output_dir / "tables"
-            if tables_dir.exists():
-                for table_file in tables_dir.glob("*.csv"):
-                    table_file.unlink()
-                    logger.info(f"Deleted local table file: {table_file}")
-
+        
+        # Step 4: Export results
+        self._export_file(conversion_result, export_formats, export_figures, export_tables)
         # Clean up the downloaded file
         if local_path.exists():
             local_path.unlink()
@@ -338,76 +271,6 @@ class DocumentProcessor:
 
         return []  # Retournez la liste des documents traités si nécessaire
     
-    def index_graph(self, doc: Document):
-        """Process a document to extract nodes and relationships, adding them to Neo4j."""
-        try:
-            split_docs = self.text_splitter.split_documents([doc])
-            split_docs = [
-                Document(page_content=self.clean_text(chunk.page_content), metadata=chunk.metadata)
-                for chunk in split_docs
-            ]
-            logger.debug(f"Document split into {len(split_docs)} chunks.")
-
-            # Extract graph data and links
-            graph_docs = self.graph_transformer.convert_to_graph_documents(split_docs)
-            doc_links = [self.gliner_extractor.extract_many(chunk) for chunk in split_docs]
-            # Log extracted nodes, edges, and links
-            logger.info("Extracted graph data:")
-            for graph_doc in graph_docs:
-                if hasattr(graph_doc, "nodes") and graph_doc.nodes:
-                    for node in graph_doc.nodes:
-                        logger.info(f"Node extracted: ID={node.id}, Name={node.properties.get('name', '')}, Type={node.type}")
-                if hasattr(graph_doc, "edges") and graph_doc.edges:
-                    for edge in graph_doc.edges:
-                        logger.info(f"Edge extracted: Start={edge.start}, End={edge.end}, Type={edge.type}")
-
-            logger.info("Extracted links:")
-            for links in doc_links:
-                for link in links:
-                    logger.info(f"Link extracted: Tag={link.tag}, Kind={link.kind}")
-
-            
-            driver = self.neo4j_service.driver
-            with driver.session() as session:
-                with session.begin_transaction() as tx:
-                    for graph_doc, links in zip(graph_docs, doc_links):
-                        # Add nodes
-                        if hasattr(graph_doc, "nodes") and graph_doc.nodes:
-                            for node in graph_doc.nodes:
-                                tx.run(
-                                    """
-                                    MERGE (e:Entity {id: $id, name: $name, type: $type})
-                                    ON CREATE SET e.created_at = timestamp()
-                                    """,
-                                    {
-                                        "id": node.id,
-                                        "name": node.properties.get("name", ""),
-                                        "type": node.type,
-                                    },
-                                )
-                                logger.info(f"Indexed Node: {node.id}, Type: {node.type}")
-
-                        # Add relationships
-                        if hasattr(graph_doc, "edges") and graph_doc.edges:
-                            GLiRELService.add_relationships(tx, graph_doc.edges)
-
-                        # Add links
-                        for link in links:
-                            if not link.tag or not link.kind:
-                                logger.warning(f"Skipping invalid link: {link}")
-                                continue
-                            logger.info(f"Adding Link: {link}")
-                            tx.run(
-                                """
-                                MERGE (e:Entity {name: $name})
-                                ON CREATE SET e.created_at = timestamp()
-                                RETURN e
-                                """,
-                                {"name": link.tag},
-                            )
-        except Exception as e:
-            logger.error(f"Error processing document: {doc.metadata.get('name', 'unknown')} - {e}")
-
     def process_and_index_document(
         self,
         s3_url: str,

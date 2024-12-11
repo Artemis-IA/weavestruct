@@ -19,7 +19,6 @@ async def upload_files(
         default=[ExportFormat.JSON],
         title="Formats d'exportation",
         description="Choisissez les formats d'exportation",
-        # enum=[ExportFormat.JSON, ExportFormat.YAML, ExportFormat.MARKDOWN, ExportFormat.TEXT]
     ),
     use_ocr: bool = Query(False, title="Utiliser OCR", description="Activez l'OCR lors de la conversion."),
     export_figures: bool = Query(False, title="Exporter les figures", description="Activer ou désactiver l'exportation des figures"),
@@ -28,20 +27,16 @@ async def upload_files(
     s3_service: S3Service = Depends(get_s3_service),
     document_processor: DocumentProcessor = Depends(get_document_processor),
 ):
-    """
-    Upload files to S3, process them using the DocumentProcessor, and export results in specified formats.
-    """
+
     logger.info(f"Received {len(files)} files for processing.")
     success_count, failure_count = 0, 0
 
     for file in files:
         try:
-            # Upload the file to the input bucket
             s3_input_key = f"input/{file.filename}"
             s3_service.upload_fileobj(file.file, s3_service.input_bucket, s3_input_key)
             logger.info(f"File {file.filename} uploaded to S3 input bucket.")
 
-            # Process the document
             s3_input_url = s3_service.get_s3_url(s3_service.input_bucket, s3_input_key)
             document_processor.process_documents(
                 s3_url=s3_input_url,
@@ -66,21 +61,42 @@ async def upload_files(
     }
 
 
+# Endpoint pour traiter tous les fichiers d'un répertoire local
 @router.post("/upload_path/")
 async def upload_path(
-    directory_path: str = Form(...),
-    export_formats: List[ExportFormat] = Form(default=["json", "yaml", "md"]),
-    use_ocr: bool = Form(False),
-    export_figures: bool = Form(True),
-    export_tables: bool = Form(True),
-    enrich_figures: bool = Form(False),
+    directory_path: str = Form("/home/pi/Documents/IF-SRV/dataset-cac40-pdf"),
+    export_formats: List[ExportFormat] = Query(
+        default=[ExportFormat.JSON],
+        title="Formats d'exportation",
+        description="Choisissez les formats d'exportation",
+    ),
+    use_ocr: bool = Query(False, title="Utiliser OCR", description="Activez l'OCR lors de la conversion."),
+    export_figures: bool = Query(False, title="Exporter les figures", description="Activer ou désactiver l'exportation des figures"),
+    export_tables: bool = Query(False, title="Exporter les tableaux", description="Activer ou désactiver l'exportation des tableaux"),
+    enrich_figures: bool = Query(False, title="Enrichir les figures", description="Activer ou désactiver l'enrichissement des figures"),
     s3_service: S3Service = Depends(get_s3_service),
     document_processor: DocumentProcessor = Depends(get_document_processor),
 ):
     """
-    Upload all files from a directory to the `input` bucket, process them,
-    and store results in the `output` and `layouts` buckets.
+    Upload tous les fichiers d'un répertoire local vers le bucket `input`,
+    puis les traite et stocke les résultats dans les buckets de sortie appropriés.
     """
+
+    # Mapping des formats string -> enum ExportFormat
+    valid_mappings = {
+        "json": ExportFormat.JSON,
+        "yaml": ExportFormat.YAML,
+        "md": ExportFormat.MARKDOWN,
+        "text": ExportFormat.TEXT
+    }
+    # Convertir les formats reçus en enums ExportFormat
+    try:
+        export_format_enums = [valid_mappings[fmt.lower()] for fmt in export_formats if fmt.lower() in valid_mappings]
+        if not export_format_enums:
+            raise ValueError("No valid export formats provided.")
+    except KeyError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid export format: {e}")
+
     dir_path = Path(directory_path)
     if not dir_path.is_dir():
         raise HTTPException(status_code=400, detail="Invalid directory path")
@@ -92,17 +108,16 @@ async def upload_path(
 
     for file_path in files:
         try:
-            # Upload file to the `input` bucket
+            # On upload directement le fichier sur S3 depuis le système de fichiers local
             s3_input_key = f"input/{file_path.name}"
-            with file_path.open("rb") as file_obj:
-                s3_service.upload_fileobj(file_obj, s3_service.input_bucket, s3_input_key)
+            s3_service.upload_file(file_path, s3_service.input_bucket, s3_input_key)
             logger.info(f"File {file_path.name} uploaded to input bucket")
 
-            # Process the document and store results in the `output` and `layouts` buckets
+            # Traitement du document
             s3_input_url = s3_service.get_s3_url(s3_service.input_bucket, s3_input_key)
             document_processor.process_documents(
                 s3_url=s3_input_url,
-                export_formats=export_formats,
+                export_formats=export_format_enums,
                 use_ocr=use_ocr,
                 export_figures=export_figures,
                 export_tables=export_tables,

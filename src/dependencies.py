@@ -45,12 +45,18 @@ def get_s3_service() -> S3Service:
         access_key=settings.MINIO_ACCESS_KEY,
         secret_key=settings.MINIO_SECRET_KEY,
         input_bucket=settings.INPUT_BUCKET,
-        output_bucket=settings.OUTPUT_BUCKET,
-        layouts_bucket=settings.LAYOUTS_BUCKET
+        output_json_bucket=settings.OUTPUT_JSON_BUCKET,
+        output_md_bucket=settings.OUTPUT_MD_BUCKET,
+        output_txt_bucket=settings.OUTPUT_TXT_BUCKET,
+        output_yaml_bucket=settings.OUTPUT_YAML_BUCKET,
+        layouts_figures_bucket=settings.LAYOUTS_FIGURES_BUCKET,
+        layouts_tables_bucket=settings.LAYOUTS_TABLES_BUCKET
     )
 
     # Vérification et création des buckets si nécessaire
-    required_buckets = [settings.INPUT_BUCKET, settings.OUTPUT_BUCKET, settings.LAYOUTS_BUCKET]
+    required_buckets = [settings.INPUT_BUCKET, settings.OUTPUT_JSON_BUCKET, settings.OUTPUT_MD_BUCKET,
+                        settings.OUTPUT_TXT_BUCKET, settings.OUTPUT_YAML_BUCKET, settings.LAYOUTS_FIGURES_BUCKET,
+                        settings.LAYOUTS_TABLES_BUCKET]
     existing_buckets = s3_service.list_buckets() or []
 
     for bucket in required_buckets:
@@ -212,23 +218,17 @@ def get_document_processor(
     """Returns an instance of the DocumentProcessor with all dependencies."""
     s3_service = get_s3_service()
     mlflow_service = get_mlflow_service()
-    pgvector_service = get_pgvector_vector_store()
+    # pgvector_service = get_pgvector_vector_store()
     text_splitter = get_text_splitter()
-    neo4j_service = get_neo4j_service()
     embedding_service = get_embedding_service()
-    gliner_extractor = get_gliner_extractor()
-    graph_transformer = get_graph_transformer()
 
     return DocumentProcessor(
         s3_service=s3_service,
         mlflow_service=mlflow_service,
-        pgvector_service=pgvector_service,
-        neo4j_service=neo4j_service,
-        embedding_service=embedding_service,
-        gliner_service=gliner_service,
-        glirel_service=glirel_service,
+        # pgvector_service=pgvector_service,
+        # embedding_service=embedding_service,
+        # gliner_service=gliner_service,
+        # glirel_service=glirel_service,
         session=db,
         text_splitter=text_splitter,
-        graph_transformer=graph_transformer,
-        gliner_extractor=gliner_extractor,
     )
