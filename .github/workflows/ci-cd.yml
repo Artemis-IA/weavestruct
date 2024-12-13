@@ -61,7 +61,7 @@ jobs:
             const octokit = github.getOctokit(process.env.GITHUB_TOKEN);
             await octokit.actions.createWorkflowDispatch({
               owner: 'Artemis-IA',
-              repo: 'mlflow-minio-postgres-labelstudio',
+              repo: 'mlops_backend',
               workflow_id: 'deploy.yml',
               ref: 'main',
             });
