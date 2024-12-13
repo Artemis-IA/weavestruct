@@ -71,6 +71,7 @@ class Settings(BaseSettings):
     MINIO_API_URL: str = os.getenv("MINIO_API_URL", "http://minio:9000")
     MINIO_URL: str = os.getenv("MINIO_URL", "http://localhost:9000")
     INPUT_BUCKET: str = os.getenv("INPUT_BUCKET", "docs-input")
+    OUTPUT_BUCKET: str = os.getenv("OUTPUT_BUCKET", "docs-output")
     OUTPUT_JSON_BUCKET: str = "docs-output-json"
     OUTPUT_MD_BUCKET: str = "docs-output-md"
     OUTPUT_TXT_BUCKET: str = "docs-output-txt"

@@ -81,8 +81,6 @@ class DatasetService:
             all_annotations = []
             for temp_file in temp_files:
                 texts = self.dataset_processor.extract_texts(temp_file)
-                logger.info(f"Raw texts extracted from file '{temp_file.name}': {texts}")
-
                 cleaned_texts = [self.dataset_processor.clean_text(text) for text in texts]
                 logger.info(f"Cleaned texts from file '{temp_file.name}': {cleaned_texts}")
 
@@ -93,7 +91,7 @@ class DatasetService:
                 # Extract entities 
                 logger.info(f"Extracting entities from {len(cleaned_texts)} texts...")
                 try:
-                    entities_list = self.annotation_pipeline.extract_entities(cleaned_texts)
+                    entities_list = self.annotation_pipeline.extract_entities(cleaned_texts, labels)
                     logger.info(f"Extracted entities from cleaned texts: {entities_list}")
                 except Exception as e:
                     logger.error(f"Error extracting entities: {e}")
@@ -123,7 +121,17 @@ class DatasetService:
             if output_format.lower() == "json-ner":
                 dataset_content = json.dumps(all_annotations, ensure_ascii=False, indent=2)
             elif output_format.lower() == "conllu":
-                dataset_content = self.format_to_conllu(all_annotations)
+                dataset_content = self.convert_to_conllu(all_annotations)
+            elif output_format.lower() == "conll":
+                dataset_content = self.convert_to_conll(all_annotations)
+            elif output_format.lower() == "json-rel":
+                dataset_content = json.dumps(all_annotations, ensure_ascii=False, indent=2)
+            elif output_format.lower() == "xml":
+                dataset_content = self.convert_to_xml(all_annotations)
+            elif output_format.lower() == "rdf":
+                dataset_content = self.convert_to_rdf(all_annotations)
+            elif output_format.lower() == "uima":
+                dataset_content = self.convert_to_uima(all_annotations)
             else:
                 raise ValueError(f"Unsupported output format: {output_format}")
             logger.info(f"Dataset content generated for output format '{output_format}': {dataset_content[:500]}")

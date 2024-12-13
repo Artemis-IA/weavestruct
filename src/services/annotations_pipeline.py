@@ -87,19 +87,18 @@ class AnnotationPipelines:
         if not texts:
             logger.error("No texts provided for entity extraction.")
             return []
-
         if labels is None:
             logger.warning("No labels provided. Defaulting to ['person', 'organization', 'email'].")
             labels = ["person", "organization", "email"]
 
         try:
-            # Prepare input with labels as context
-            annotated_texts = [(text, {'re_labels': labels}) for text in texts if text.strip()]
+            # Ensure input adheres to required format
+            annotated_texts = [(text, {'glirel_labels': labels}) for text in texts if text.strip()]
             docs = self.nlp.pipe(annotated_texts, as_tuples=True)
             results = []
             for doc in docs:
-                if doc is None or doc.ents is None:
-                    logger.warning(f"Skipping document with no entities: {doc}")
+                if not doc.ents:
+                    logger.warning("No entities found in document.")
                     results.append([])
                     continue
                 filtered_ents = filter_spans(doc.ents)
@@ -111,6 +110,7 @@ class AnnotationPipelines:
         except Exception as e:
             logger.error(f"Error during entity extraction: {e}")
             return []
+
 
     def annotate_relations(self, text: str, labels: Dict) -> List[Dict]:
         doc = self.nlp(text)
