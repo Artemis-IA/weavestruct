@@ -7,6 +7,10 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_huggingface import HuggingFaceEndpoint
 
+# Ollama embeddings and model setup
+ollama_emb = OllamaEmbeddings(model="llama3.2")
+llm = ChatOllama(model="llama3.2")
+
 class RAGChainService:
     def __init__(self, retriever):
         self.retriever = retriever

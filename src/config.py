@@ -2,9 +2,12 @@
 import os
 from pathlib import Path
 from typing import ClassVar, Dict, Optional
+from pydantic import field_validator, ValidationError
+import re
 from pydantic_settings import BaseSettings
 import torch
 from dotenv import load_dotenv
+load_dotenv()
 
 
 class Settings(BaseSettings):
@@ -20,8 +23,6 @@ class Settings(BaseSettings):
     
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = int(os.getenv("PORT", 8008))
-
-    DISCORD_WEBHOOK_URL: Optional[str] = os.getenv("DISCORD_WEBHOOK_URL")
 
     # Neo4j
     NEO4J_URI: str = os.getenv("NEO4J_URI", "bolt://0.0.0.0:7687")
@@ -158,7 +159,21 @@ class Settings(BaseSettings):
     # Ollama
     OLLAMA_MODEL: str ="nomic-embed-text"
 
+    # Discord Webhook URL
+    DISCORD_WEBHOOK_URL: str = os.getenv("DISCORD_WEBHOOK_URL")
+
+    @field_validator("DISCORD_WEBHOOK_URL")
+    def validate_discord_webhook_url(cls, value):
+        # Regex pour valider un webhook Discord
+        pattern = r"^https://discord\.com/api/webhooks/\d+/[A-Za-z0-9_-]+$"
+        if not re.match(pattern, value):
+            raise ValueError(
+                "DISCORD_WEBHOOK_URL must be a valid Discord webhook URL, "
+                "e.g., 'https://discord.com/api/webhooks/1234567890/abcdef123456'"
+            )
+        return value
     
+
     def get_spacy_config(self) -> Dict[str, str]:
         return {
             "gliner_model": self.GLINER_MODEL_NAME,

@@ -23,8 +23,17 @@ class MetricsManager:
         self.PROCESS_TIME = self._get_or_create_metric(
             Histogram, "app_process_time_seconds", "Request processing time"
         )
+        self.USING_GPU = self._get_or_create_metric(
+            Gauge, "using_gpu", "Whether the GPU is being used (1 for GPU, 0 for CPU)"
+        )
         self.GPU_MEMORY_USAGE = self._get_or_create_metric(
             Gauge, "gpu_memory_usage_bytes", "GPU memory usage"
+        )
+        self.GPU_MEMORY_USAGE_GB = self._get_or_create_metric(
+            Gauge, "gpu_memory_usage_gb", "GPU memory usage in GB"
+        )
+        self.GPU_TEMPERATURE = self._get_or_create_metric(
+            Gauge, "gpu_temperature_celsius", "GPU temperature in Celsius"
         )
         self.CPU_USAGE = self._get_or_create_metric(
             Gauge, "cpu_usage_percent", "CPU usage percentage"
@@ -60,6 +69,7 @@ class MetricsManager:
             Counter, "document_processing_success", "Number of successfully processed documents"
         )
         self.DOCUMENT_PROCESSING_FAILURES = self._get_or_create_metric(Counter, "document_processing_failures", "Number of failed document processing attempts")
+
         # CO2 emissions tracker
         self.emissions_tracker = None
         self.current_task_name = None
@@ -80,12 +90,23 @@ class MetricsManager:
             self.CPU_USAGE.set(psutil.cpu_percent())
             self.MEMORY_USAGE.set(psutil.virtual_memory().used)
 
-            gpus = GPUtil.getGPUs()
-            if gpus:
-                self.GPU_MEMORY_USAGE.set(gpus[0].memoryUsed)
+            if torch.cuda.is_available():
+                gpus = GPUtil.getGPUs()
+                if gpus:
+                    gpu = gpus[0]
+                    self.GPU_MEMORY_USAGE_GB.set(gpu.memoryUsed / 1024)  # Convert to GB
+                    self.GPU_TEMPERATURE.set(gpu.temperature)
+                    logger.info(f"GPU Memory: {gpu.memoryUsed / 1024:.2f} GB, Temp: {gpu.temperature} °C")
+                else:
+                    logger.warning("No GPUs found.")
+            else:
+                logger.info("Using CPU. No GPU metrics available.")
         except Exception as e:
             logger.warning(f"Error logging system metrics: {e}")
- 
+
+    def log_hardware_usage(self):
+        hardware, _, _ = self.detect_hardware_usage()
+        self.USING_GPU.set(1 if hardware == "GPU" else 0)
 
     def start_emissions_tracker(self):
         """
@@ -169,6 +190,7 @@ class MetricsManager:
         except Exception as e:
             logger.error(f"Failed to flush emissions data: {e}")
 
+
     @staticmethod
     def get_system_metrics() -> dict:
         metrics = {
@@ -196,9 +218,6 @@ class MetricsManager:
         return metrics
 
     def validate_services(self):
-        """
-        Validate the availability of critical services at startup.
-        """
         from src.dependencies import get_s3_service, get_mlflow_service, get_pgvector_vector_store, get_neo4j_service
 
         try:
