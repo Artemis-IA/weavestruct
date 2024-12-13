@@ -2,8 +2,9 @@ import streamlit as st
 import requests
 import pandas as pd
 import plotly.express as px
+import os
 
-PROMETHEUS_URL = "http://localhost:9090/metrics"
+PROMETHEUS_URL = os.getenv("PROMETHEUS_URL")
 
 def fetch_metrics():
     response = requests.get(PROMETHEUS_URL)

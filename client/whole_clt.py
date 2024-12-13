@@ -11,19 +11,19 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-API_URL = "http://localhost:8008/"
+API_URL = os.getenv("API_URL")
 NEO4J_URI = os.getenv("NEO4J_URI")
 NEO4J_USER = os.getenv("NEO4J_USER")
 NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
 PROMETHEUS_URL = "http://localhost:9090/metrics"
 FASTAPI_URL = "http://localhost:8000"
-MINIO_ENDPOINT = "localhost:9000"
+MINIO_API_URL = "localhost:9000"
 MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
 MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
 
 # Configuration MinIO
 minio_client = Minio(
-    MINIO_ENDPOINT,
+    MINIO_API_URL,
     access_key=MINIO_ACCESS_KEY,
     secret_key=MINIO_SECRET_KEY,
     secure=False,
