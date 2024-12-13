@@ -1,9 +1,11 @@
 streamlit
 boto3
 py2neo
+neo4j
 minio
 pandas
 markdown
+PyYAML
 PyPDF2
 plotly
 dash
