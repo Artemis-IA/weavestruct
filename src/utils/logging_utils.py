@@ -12,12 +12,12 @@ from src.config import settings
 
 class ModelLoggerService:
     def __init__(self):
-        self.hf_api = HfApi()
+        self.hf_api =HfApi(token=settings.HF_API_TOKEN)
         self.huggingface_cache = os.path.expanduser("~/.cache/huggingface/hub/")
         self.client = MlflowClient()
         # self.emissions_tracker = None
         # self.metrics = MetricsManager(prometheus_port=settings.PROMETHEUS_PORT)
-        db_url = os.getenv("DATABASE_URL", "postgresql://postgres:password@localhost:5432/mlflow")
+        db_url = os.getenv("DATABASE_URL", "postgresql://postgre_user:postgre_password@0.0.0.0:5432/mlflow_db")
         mlflow.set_tracking_uri(db_url)
 
         # Initialize static models and CodeCarbon tracker
