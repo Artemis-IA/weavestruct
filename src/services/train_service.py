@@ -90,12 +90,12 @@ class TrainService:
 
             train_data, eval_data = self.split_dataset(data, train_input.split_ratio)
 
-            # Load model using ModelManager
-            model = self.model_manager.load_model(train_input.artifact_name)
+            model_dir = Path(f"models/{train_input.artifact_name}")
+            model = self.model_manager.load_or_register_model(train_input.artifact_name, model_dir)
 
             # Start MLFlow run
-            run_name = f"Training: {train_input.custom_model_name or train_input.artifact_name}"
-            self.mlflow_service.start_run(run_name=run_name)
+            self.mlflow_service.start_run(run_name=f"Training: {train_input.artifact_name}")
+
             self.mlflow_service.log_params({
                 "artifact_name": train_input.artifact_name,
                 "custom_model_name": train_input.custom_model_name,

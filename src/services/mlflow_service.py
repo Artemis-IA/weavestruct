@@ -86,17 +86,34 @@ class MLFlowService:
         except Exception as e:
             logger.error(f"Failed to log and register model {artifact_name}: {e}")
             raise ValueError(f"Error logging model artifact for {artifact_name}: {e}")
-        
-    def register_model(self, artifact_name: str, model_dir: Path):
+
+    def load_model(self, artifact_name: str, alias: str = "latest") -> Any:
+        """
+        Charge un modèle MLflow en utilisant un alias spécifique ou une version donnée.
+        """
         try:
-            model_uri = str(model_dir.resolve())
-            result = mlflow.register_model(
-                model_uri=model_uri,
-                name=artifact_name
-            )
-            logger.info(f"Model {artifact_name} registered successfully with version {result.version}.")
-        except Exception as e:
+            model_uri = f"models:/{artifact_name}/{alias}"
+            logger.info(f"Loading model: {model_uri}")
+            model = mlflow.pyfunc.load_model(model_uri)
+            return model
+        except mlflow.exceptions.MlflowException as e:
+            logger.error(f"Failed to load model {artifact_name} with alias {alias}: {e}")
+            raise RuntimeError(f"Error loading model '{artifact_name}': {e}")
+        
+    def register_model(self, artifact_name: str, model_dir: Path, artifact_path: str = "model"):
+        """
+        Enregistre un modèle dans MLflow en créant une version du modèle.
+        """
+        try:
+            with mlflow.start_run(run_name=f"Register {artifact_name}"):
+                mlflow.log_artifacts(str(model_dir), artifact_path=artifact_path)
+                model_uri = f"runs:/{mlflow.active_run().info.run_id}/{artifact_path}"
+                self.client.create_registered_model(artifact_name)
+                self.client.create_model_version(name=artifact_name, source=model_uri, run_id=mlflow.active_run().info.run_id)
+                logger.info(f"Model {artifact_name} registered successfully.")
+        except mlflow.exceptions.MlflowException as e:
             logger.error(f"Failed to register model {artifact_name}: {e}")
+            raise RuntimeError(f"Error during model registration: {e}")
 
     def get_registered_model(self, artifact_name: str):
         """

@@ -31,8 +31,6 @@ def create_gliner_spacy(nlp: Language, name: str, gliner_model: str, device: str
         threshold=0.3,
         map_location=device,
     )
-
-
 @Language.factory("glirel_factory")
 def create_glirel(nlp: Language, name: str, glirel_model: str, device: str) -> SpacyGLiRELWrapper:
     return SpacyGLiRELWrapper(
@@ -40,7 +38,6 @@ def create_glirel(nlp: Language, name: str, glirel_model: str, device: str) -> S
         device=device,
         threshold=0.3,
     )
-
 
 class AnnotationPipelines:
     def __init__(self):
@@ -50,14 +47,12 @@ class AnnotationPipelines:
     def _initialize_spacy_pipeline(self):
         nlp = spacy.blank("fr")
         config = self.settings.get_spacy_config()
-
         # Ajouter GLiNER
         nlp.add_pipe(
             "gliner_spacy_factory",
             name="gliner_spacy",
             config={"gliner_model": config["gliner_model"], "device": config["device"]},
         )
-
         # Ajouter GLiREL
         nlp.add_pipe(
             "glirel_factory",
@@ -65,19 +60,57 @@ class AnnotationPipelines:
             after="gliner_spacy",
             config={"glirel_model": config["glirel_model"], "device": config["device"]},
         )
-
         return nlp
 
-    def annotate_ner(self, text: str) -> List[Dict]:
-        doc = self.nlp(text)
-        filtered_ents = filter_spans(doc.ents)
-        entities = [
-            {"text": ent.text, "label": ent.label_, "start": ent.start_char, "end": ent.end_char}
-            for ent in filtered_ents
-            if isinstance(ent.start_char, int) and isinstance(ent.end_char, int) and ent.start_char < ent.end_char
-        ]
-        logger.info(f"Extracted entities: {entities}")
-        return entities
+    def annotate_ner(self, text: str, labels: List[str]) -> List[Dict]:
+        if not text.strip():
+            logger.warning("Empty or whitespace-only text provided for NER annotation.")
+            return []
+
+        try:
+            # Pass text with labels as context
+            doc = self.nlp.pipe([(text, {'re_labels': labels})], as_tuples=True)
+            doc = list(doc)[0]  # Retrieve the first document
+            filtered_ents = filter_spans(doc.ents)
+            entities = [
+                {"text": ent.text, "label": ent.label_, "start": ent.start_char, "end": ent.end_char}
+                for ent in filtered_ents
+                if isinstance(ent.start_char, int) and isinstance(ent.end_char, int) and ent.start_char < ent.end_char
+            ]
+            logger.info(f"Extracted entities: {entities}")
+            return entities
+        except Exception as e:
+            logger.error(f"Error during NER annotation: {e}")
+            return []
+
+    def extract_entities(self, texts: List[str], labels: Optional[List[str]] = None) -> List[List[Dict]]:
+        if not texts:
+            logger.error("No texts provided for entity extraction.")
+            return []
+
+        if labels is None:
+            logger.warning("No labels provided. Defaulting to ['person', 'organization', 'email'].")
+            labels = ["person", "organization", "email"]
+
+        try:
+            # Prepare input with labels as context
+            annotated_texts = [(text, {'re_labels': labels}) for text in texts if text.strip()]
+            docs = self.nlp.pipe(annotated_texts, as_tuples=True)
+            results = []
+            for doc in docs:
+                if doc is None or doc.ents is None:
+                    logger.warning(f"Skipping document with no entities: {doc}")
+                    results.append([])
+                    continue
+                filtered_ents = filter_spans(doc.ents)
+                results.append([
+                    {"text": ent.text, "label": ent.label_, "start": ent.start_char, "end": ent.end_char}
+                    for ent in filtered_ents
+                ])
+            return results
+        except Exception as e:
+            logger.error(f"Error during entity extraction: {e}")
+            return []
 
     def annotate_relations(self, text: str, labels: Dict) -> List[Dict]:
         doc = self.nlp(text)
@@ -92,9 +125,6 @@ class AnnotationPipelines:
         ]
         logger.info(f"Extracted relations: {relations}")
         return relations
-
-    def extract_entities(self, texts: List[str]) -> List[List[Dict]]:
-        return [self.annotate_ner(text) for text in texts]
 
     def extract_relations(self, texts: List[str], labels: Dict) -> List[List[Dict]]:
         return [self.annotate_relations(text, labels) for text in texts]

@@ -1,7 +1,7 @@
 # src/config.py
 import os
 from pathlib import Path
-from typing import ClassVar, Dict
+from typing import ClassVar, Dict, Optional
 from pydantic_settings import BaseSettings
 import torch
 from dotenv import load_dotenv
@@ -21,8 +21,10 @@ class Settings(BaseSettings):
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = int(os.getenv("PORT", 8008))
 
+    DISCORD_WEBHOOK_URL: Optional[str] = os.getenv("DISCORD_WEBHOOK_URL")
+
     # Neo4j
-    NEO4J_URI: str = os.getenv("NEO4J_URI", "bolt://neo4j:7687")
+    NEO4J_URI: str = os.getenv("NEO4J_URI", "bolt://0.0.0.0:7687")
     NEO4J_AUTH: str = os.getenv("NEO4J_AUTH", "neo4j/your_password")
     NEO4J_USER: str = os.getenv("NEO4J_USER", "neo4j")
     NEO4J_PASSWORD: str = os.getenv("NEO4J_PASSWORD", "your_password")

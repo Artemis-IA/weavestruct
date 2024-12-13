@@ -41,6 +41,8 @@ class ModelManager:
         Returns:
             The loaded model.
         """
+        if not alias:
+            alias = "latest" 
         try:
             if alias:
                 model_uri = f"models:/{artifact_name}@{alias}"
@@ -162,7 +164,18 @@ class ModelManager:
             logger.error(f"Failed to fetch models from Hugging Face: {e}")
             raise ValueError(f"Error fetching models: {e}")
 
-
+    def load_or_register_model(self, artifact_name: str, model_dir: Path, alias: Optional[str] = "latest"):
+        """
+        Tente de charger un modèle. Si le modèle n'existe pas, il est enregistré.
+        """
+        try:
+            logger.info(f"Attempting to load model '{artifact_name}' with alias '{alias}'.")
+            return self.mlflow_service.load_model(artifact_name, alias)
+        except RuntimeError:
+            logger.warning(f"Model '{artifact_name}' not found. Attempting to register...")
+            self.mlflow_service.register_model(artifact_name, model_dir)
+            return self.mlflow_service.load_model(artifact_name, alias)
+        
     def fetch_and_register_hf_model(self, artifact_name: str, artifact_path: str, register_name: str):
         """Download a model from Hugging Face and register it in MLflow."""
         try:

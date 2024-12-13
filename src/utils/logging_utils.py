@@ -15,8 +15,8 @@ class ModelLoggerService:
         self.hf_api = HfApi()
         self.huggingface_cache = os.path.expanduser("~/.cache/huggingface/hub/")
         self.client = MlflowClient()
-        self.emissions_tracker = None
-        self.metrics = MetricsManager(prometheus_port=settings.PROMETHEUS_PORT)
+        # self.emissions_tracker = None
+        # self.metrics = MetricsManager(prometheus_port=settings.PROMETHEUS_PORT)
         db_url = os.getenv("DATABASE_URL", "postgresql://postgres:password@localhost:5432/mlflow")
         mlflow.set_tracking_uri(db_url)
 

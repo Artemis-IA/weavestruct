@@ -13,59 +13,67 @@ class MetricsManager:
     """
     Manage application metrics, system stats logging, and Prometheus metrics server.
     """
-
     def __init__(self, prometheus_port: int = settings.PROMETHEUS_PORT):
-        MetricsManager._unregister_existing_metrics()
         self.prometheus_port = prometheus_port
-        self.REQUEST_COUNT = Counter("app_request_count", "Total number of requests")
-        self.PROCESS_TIME = Histogram("app_process_time_seconds", "Request processing time")
-        self.GPU_MEMORY_USAGE = Gauge("gpu_memory_usage_bytes", "GPU memory usage")
-        self.CPU_USAGE = Gauge("cpu_usage_percent", "CPU usage percentage")
-        self.MEMORY_USAGE = Gauge("memory_usage_bytes", "Memory usage in bytes")
-        self.CARBON_EMISSIONS = Gauge("carbon_emissions_grams", "Estimated CO2 emissions")
-
+        # self._unregister_existing_metrics()
+        # Reuse existing metrics or create new ones
+        self.REQUEST_COUNT = self._get_or_create_metric(
+            Counter, "app_request_count", "Total number of requests"
+        )
+        self.PROCESS_TIME = self._get_or_create_metric(
+            Histogram, "app_process_time_seconds", "Request processing time"
+        )
+        self.GPU_MEMORY_USAGE = self._get_or_create_metric(
+            Gauge, "gpu_memory_usage_bytes", "GPU memory usage"
+        )
+        self.CPU_USAGE = self._get_or_create_metric(
+            Gauge, "cpu_usage_percent", "CPU usage percentage"
+        )
+        self.MEMORY_USAGE = self._get_or_create_metric(
+            Gauge, "memory_usage_bytes", "Memory usage in bytes"
+        )
+        self.CARBON_EMISSIONS = self._get_or_create_metric(
+            Gauge, "carbon_emissions_grams", "Estimated CO2 emissions"
+        )
         # Neo4j metrics
-        self.NEO4J_REQUEST_COUNT = Counter("neo4j_request_count", "Number of requests sent to Neo4j")
-        self.NEO4J_REQUEST_FAILURES = Counter("neo4j_request_failures", "Number of failed Neo4j requests")
-        self.NEO4J_REQUEST_LATENCY = Histogram("neo4j_request_latency_seconds", "Latency of Neo4j requests")
-
+        self.NEO4J_REQUEST_COUNT = self._get_or_create_metric(
+            Counter, "neo4j_request_count", "Number of requests sent to Neo4j"
+        )
+        self.NEO4J_REQUEST_FAILURES = self._get_or_create_metric(
+            Counter, "neo4j_request_failures", "Number of failed Neo4j requests"
+        )
+        self.NEO4J_REQUEST_LATENCY = self._get_or_create_metric(
+            Histogram, "neo4j_request_latency_seconds", "Latency of Neo4j requests"
+        )
         # PostgreSQL metrics
-        self.POSTGRES_QUERY_COUNT = Counter("postgres_query_count", "Number of successful PostgreSQL queries")
-        self.POSTGRES_QUERY_FAILURES = Counter("postgres_query_failures", "Number of failed PostgreSQL queries")
-        self.POSTGRES_QUERY_LATENCY = Histogram("postgres_query_latency_seconds", "Latency of PostgreSQL queries")
-
+        self.POSTGRES_QUERY_COUNT = self._get_or_create_metric(
+            Counter, "postgres_query_count", "Number of successful PostgreSQL queries"
+        )
+        self.POSTGRES_QUERY_FAILURES = self._get_or_create_metric(
+            Counter, "postgres_query_failures", "Number of failed PostgreSQL queries"
+        )
+        self.POSTGRES_QUERY_LATENCY = self._get_or_create_metric(
+            Histogram, "postgres_query_latency_seconds", "Latency of PostgreSQL queries"
+        )
         # Document processing metrics
-        self.DOCUMENT_PROCESSING_SUCCESS = Counter(
-            "document_processing_success", "Number of successfully processed documents"
+        self.DOCUMENT_PROCESSING_SUCCESS = self._get_or_create_metric(
+            Counter, "document_processing_success", "Number of successfully processed documents"
         )
-        self.DOCUMENT_PROCESSING_FAILURES = Counter(
-            "document_processing_failures", "Number of failed document processing attempts"
-        )
-
+        self.DOCUMENT_PROCESSING_FAILURES = self._get_or_create_metric(Counter, "document_processing_failures", "Number of failed document processing attempts")
         # CO2 emissions tracker
-        self.emissions_tracker = EmissionsTracker(
-            project_name="doc_processing",
-            save_to_file=False,
-            save_to_prometheus=True,
-            prometheus_url=f"http://localhost:{settings.PROMETHEUS_PORT_CARBON}",
-        )
+        self.emissions_tracker = None
+        self.current_task_name = None
 
 
-    @staticmethod
-    def _unregister_existing_metrics():
-        """Unregister all existing metrics from the default registry."""
-        collectors = list(REGISTRY._collector_to_names.keys())
-        for collector in collectors:
-            REGISTRY.unregister(collector)
+    def _get_or_create_metric(self, metric_type, name, description):
+        """
+        Get an existing metric if it is already registered, otherwise create it.
+        """
+        for collector in REGISTRY._collector_to_names.keys():
+            if name in REGISTRY._collector_to_names[collector]:
+                return collector
+        return metric_type(name, description)
             
-    # def start_metrics_server(self):
-
-    #     """
-    #     Start the Prometheus metrics server.
-    #     """
-    #     start_http_server(settings.PROMETHEUS_PORT_CARBON)
-    #     logger.info(f"Prometheus metrics server started on port (settings.PROMETHEUS_PORT_CARBON).")
-
     def log_system_metrics(self):
         try:
             # Log CPU and memory usage
@@ -75,34 +83,91 @@ class MetricsManager:
             gpus = GPUtil.getGPUs()
             if gpus:
                 self.GPU_MEMORY_USAGE.set(gpus[0].memoryUsed)
-            self.start_emissions_tracker()
-
-            emissions = self.emissions_tracker.flush() if getattr(self.emissions_tracker, "_started", False) else None
-            if emissions is not None:
-                self.CARBON_EMISSIONS.set(emissions)
-                logger.info(f"CO2 emissions logged: {emissions:.6f} kgCO₂eq")
-            else:
-                logger.info("No emissions data available.")
         except Exception as e:
             logger.warning(f"Error logging system metrics: {e}")
-
+ 
 
     def start_emissions_tracker(self):
+        """
+        Démarre le tracker d'émissions global.
+        """
         try:
-            if self.emissions_tracker and not getattr(self.emissions_tracker, '_started', False):
+            if not self.emissions_tracker:
+                self.emissions_tracker = EmissionsTracker(
+                project_name="doc_processing",
+                save_to_file=False,
+                save_to_prometheus=True,
+                prometheus_url=f"http://0.0.0.0:{settings.PROMETHEUS_PORT}", 
+            )
                 self.emissions_tracker.start()
                 logger.info("Emissions tracker started.")
+            else:
+                logger.info("Emissions tracker is already running.")
         except Exception as e:
-            logger.error(f"Error starting emissions tracker: {e}")
-            self._remove_codecarbon_lock()
+            logger.error(f"Failed to start emissions tracker: {e}")
 
     def stop_emissions_tracker(self):
+        """
+        Arrête le tracker d'émissions global.
+        """
         try:
-            if self.emissions_tracker and hasattr(self.emissions_tracker, '_started') and self.emissions_tracker._started:
-                self.emissions_tracker.stop()
-                logger.info("Emissions tracker stopped.")
+            if self.emissions_tracker:
+                total_emissions = self.emissions_tracker.stop()
+                logger.info(f"Emissions tracker stopped. Total CO2 emissions: {total_emissions:.6f} kg.")
+                self.emissions_tracker = None
+            else:
+                logger.info("Emissions tracker is not running.")
         except Exception as e:
-            logger.error(f"Error stopping emissions tracker: {e}")
+            logger.error(f"Failed to stop emissions tracker: {e}")
+
+    def start_task(self, task_name: str):
+        """
+        Démarre une tâche spécifique pour le suivi des émissions.
+        """
+        if not self.emissions_tracker:
+            logger.error("Emissions tracker is not running. Start it before starting tasks.")
+            return
+
+        try:
+            self.emissions_tracker.start_task(task_name)
+            self.current_task_name = task_name
+            logger.info(f"Task '{task_name}' started.")
+        except Exception as e:
+            logger.error(f"Failed to start task '{task_name}': {e}")
+
+    def stop_task(self, task_name: str = None):
+        """
+        Arrête le suivi des émissions pour une tâche spécifique.
+        """
+        if not self.emissions_tracker:
+            logger.error("Emissions tracker is not running. Start it before stopping tasks.")
+            return
+
+        try:
+            task_name = task_name or self.current_task_name
+            if not task_name:
+                logger.error("No task name specified.")
+                return
+
+            emissions = self.emissions_tracker.stop_task(task_name)
+            logger.info(f"Task '{task_name}' stopped. Task emissions: {emissions.emissions:.6f} kg.")
+            self.current_task_name = None
+        except Exception as e:
+            logger.error(f"Failed to stop task '{task_name}': {e}")
+
+    def flush_emissions_data(self):
+        """
+        Vide les données d'émissions sans arrêter le tracker.
+        """
+        if not self.emissions_tracker:
+            logger.error("Emissions tracker is not running.")
+            return
+
+        try:
+            emissions = self.emissions_tracker.flush()
+            logger.info(f"Emissions data flushed. Current total: {emissions:.6f} kg.")
+        except Exception as e:
+            logger.error(f"Failed to flush emissions data: {e}")
 
     @staticmethod
     def get_system_metrics() -> dict:
@@ -110,7 +175,6 @@ class MetricsManager:
             "cpu_usage_percent": psutil.cpu_percent(),
             "memory_usage_mb": psutil.virtual_memory().used / (1024 * 1024),
         }
-
         # GPU metrics
         gpus = GPUtil.getGPUs()
         if gpus:
@@ -130,19 +194,6 @@ class MetricsManager:
 
         logger.info(f"System metrics: {metrics}")
         return metrics
-
-    @staticmethod
-    def _remove_codecarbon_lock() -> None:
-        """
-        Remove CodeCarbon lock file to avoid tracker errors.
-        """
-        lock_file = "/tmp/.codecarbon.lock"
-        if os.path.exists(lock_file):
-            try:
-                os.remove(lock_file)
-                logger.info("CodeCarbon lock file removed.")
-            except Exception as e:
-                logger.warning(f"Error removing CodeCarbon lock file: {e}")
 
     def validate_services(self):
         """

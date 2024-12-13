@@ -20,6 +20,10 @@ class AppLauncher:
             docs_url="/",
             redoc_url="/redoc",
             openapi_url="/openapi.json",
+            swagger_ui_parameters={
+                "defaultModelsExpandDepth": -1,  # Fermer les modèles de réponse
+                "defaultTagsExpandDepth": 0,    # Fermer toutes les sections des tags
+            },
         )
 
     def setup(self):

@@ -25,7 +25,7 @@ router = APIRouter()
 
 @router.post("/train", response_model=TrainResponse)
 async def train_model(
-    dataset_file: Optional[UploadFile] = File(None, description="Upload dataset file (JSON list)"),
+    dataset_file: Optional[bytes] = File(None, description="Upload dataset file (JSON list)"),
     s3_url: Optional[str] = Form(None, description="S3 URL of the dataset (e.g., s3://bucket/path/file.json)"),
     huggingface_dataset: Optional[str] = Form(None, description="HuggingFace dataset name"),
     artifact_name: str = Form("bert-base-uncased", description="Name of the base model from Hugging Face"),
@@ -36,7 +36,7 @@ async def train_model(
     batch_size: int = Form(16, description="Batch size"),
     epochs: int = Form(3, description="Number of epochs"),
     compile_model: bool = Form(False, description="Compile the model for faster training"),
-    training_params_file: Optional[UploadFile] = File(None, description="Upload training parameters JSON file"),
+    training_params_file: Optional[bytes] = File(None, description="Upload training parameters JSON file"),
     db=Depends(get_db),
     s3_service: S3Service = Depends(get_s3_service),
     mlflow_service: MLFlowService = Depends(get_mlflow_service),

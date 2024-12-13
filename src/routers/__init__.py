@@ -21,6 +21,6 @@ ROUTERS = [
     {"router": loopml_router, "prefix": "/loopml", "tags": ["LoopML"]},
     {"router": relationships_router, "prefix": "/relationships", "tags": ["Relationships"]},
     # {"router": search_router, "prefix": "/search", "tags": ["Search"]},
-#     {"router": trainb_router, "prefix": "/train", "tags": ["Training"]},
-#     {"router": train_router, "prefix": "/train_operations", "tags": ["Training Operations"]},
+    # {"router": trainb_router, "prefix": "/train", "tags": ["Training"]},
+    {"router": train_router, "prefix": "/train_operations", "tags": ["Training"]},
 ]
