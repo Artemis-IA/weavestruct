@@ -15,7 +15,7 @@ from src.services.model_manager import ModelManager
 from src.services.document_processor import DocumentProcessor
 from src.services.pgvector_service import PGVectorService
 from src.services.neo4j_service import Neo4jService
-from src.services.rag_service import RAGChainService
+# from src.services.rag_service import RAGChainService
 from src.services.embedding_service import EmbeddingService
 
 
@@ -188,10 +188,10 @@ def get_graph_transformer() -> GlinerGraphTransformer:
 
 # Dependency to get the RAG service
 @lru_cache
-def get_rag_service() -> RAGChainService:
-    """Returns an instance of the RAG Chain Service."""
-    vector_store = get_pgvector_vector_store()
-    return RAGChainService(retriever=vector_store.as_retriever())
+# def get_rag_service() -> RAGChainService:
+#     """Returns an instance of the RAG Chain Service."""
+#     vector_store = get_pgvector_vector_store()
+#     return RAGChainService(retriever=vector_store.as_retriever())
 
 
 # Updated Dependency to get the DocumentProcessor

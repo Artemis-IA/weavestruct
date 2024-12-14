@@ -19,7 +19,6 @@ from langchain_community.vectorstores import Neo4jVector
 from langchain_ollama.embeddings import OllamaEmbeddings
 from langchain_ollama.chat_models import ChatOllama
 from loguru import logger
-from src.services.glinerel_service import GlinerELService
 from src.config import settings
 
 router = APIRouter()
@@ -35,8 +34,9 @@ with open('conf/gli_config.yml', 'r') as file:
     config = yaml.safe_load(file)
 gliner_extractor = GLiNERLinkExtractor(
     labels=config["labels"],
-    model="E3-JSI/gliner-multi-pii-domains-v1"
+    model="urchade/gliner_multi_pii-v1"
 )
+# urchade/enrico-two-stage
 graph_transformer = GlinerGraphTransformer(
     allowed_nodes=config["allowed_nodes"],
     allowed_relationships=config["allowed_relationships"],
@@ -49,13 +49,24 @@ graph_transformer = GlinerGraphTransformer(
 class RAGChainService:
     def __init__(self):
         self.driver = GraphDatabase.driver(settings.NEO4J_URI, auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD))
-        self.graph_transformer = GlinerELService()
+        self.gliner_extractor = GLiNERLinkExtractor(
+            labels=config["labels"],
+            model="E3-JSI/gliner-multi-pii-domains-v1"
+        )
+        self.graph_transformer = GlinerGraphTransformer(
+            allowed_nodes=config["allowed_nodes"],
+            allowed_relationships=config["allowed_relationships"],
+            gliner_model="knowledgator/gliner-multitask-large-v0.5",
+            glirel_model="jackboyla/glirel-large-v0",
+            entity_confidence_threshold=0.1,
+            relationship_confidence_threshold=0.1,
+        )
         self.retriever = Neo4jVector.from_existing_index(
             ollama_emb,
             url=settings.NEO4J_URI,
             username=settings.NEO4J_USER,
             password=settings.NEO4J_PASSWORD,
-            index_name="vector",
+            index_name="vector_index",
             keyword_index_name="keyword",
             search_type="hybrid",
         )
@@ -112,7 +123,6 @@ def index_pdfs(folder_path: Optional[str] = Form("/home/pi/Documents/IF-SRV/1pdf
     loader = PyPDFDirectoryLoader(folder_path)
     documents = loader.load()
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-    graph_transformer = GlinerELService()
     start_time = time.time()
     for doc in documents:
         if not hasattr(doc, "page_content"):
