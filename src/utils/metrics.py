@@ -96,17 +96,14 @@ class MetricsManager:
                     gpu = gpus[0]
                     self.GPU_MEMORY_USAGE_GB.set(gpu.memoryUsed / 1024)  # Convert to GB
                     self.GPU_TEMPERATURE.set(gpu.temperature)
-                    logger.info(f"GPU Memory: {gpu.memoryUsed / 1024:.2f} GB, Temp: {gpu.temperature} °C")
                 else:
                     logger.warning("No GPUs found.")
             else:
                 logger.info("Using CPU. No GPU metrics available.")
         except Exception as e:
             logger.warning(f"Error logging system metrics: {e}")
-
-    def log_hardware_usage(self):
-        hardware, _, _ = self.detect_hardware_usage()
-        self.USING_GPU.set(1 if hardware == "GPU" else 0)
+            def log_hardware_usage(self):
+                self.USING_GPU.set(1 if torch.cuda.is_available() else 0)
 
     def start_emissions_tracker(self):
         """

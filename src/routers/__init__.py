@@ -1,5 +1,6 @@
 from fastapi import Depends
 from .auth import router as auth_router
+from .chat import router as chat_router
 from .datasets import router as datasets_router
 from .documents import router as documents_router
 from .entities import router as entities_router
@@ -15,6 +16,7 @@ from ..services.security import verify_token
 # Centralized configuration of all routers
 ROUTERS = [
     {"router": auth_router, "prefix": "/auth", "tags": ["Authentication"]},
+    {"router": chat_router, "prefix": "/chat", "tags": ["Chat"]},
     {"router": datasets_router, "prefix": "/datasets", "tags": ["Datasets"]},
     {"router": documents_router, "prefix": "/documents", "tags": ["Documents"]},
     # {"router": entities_router, "prefix": "/entities", "tags": ["Entities"]},

@@ -14,7 +14,7 @@ from langchain_community.graph_vectorstores.extractors import GLiNERLinkExtracto
 from langchain_community.graph_vectorstores.links import add_links
 from src.config import settings
 
-class GlinerELService:
+class GlinerELService(GlinerGraphTransformer, GLiNERLinkExtractor):
     """
     Service unifié qui utilise GlinerGraphTransformer pour extraire entités (GLiNER) et relations (GLiREL),
     et GLiNERLinkExtractor pour créer des liens entre documents sur la base des entités reconnues.
