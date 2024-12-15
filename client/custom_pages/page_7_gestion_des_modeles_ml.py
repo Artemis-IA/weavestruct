@@ -6,7 +6,6 @@ API_URL = os.getenv("API_URL")
 
 def main():
     st.title("Gestion des Modèles ML")
-
     # Authentification
     with st.sidebar:
         st.subheader("Authentification")
@@ -14,30 +13,33 @@ def main():
         password = st.text_input("Mot de passe", type="password", key="password")
         if st.button("Se connecter", key="login_button"):
             try:
-                # Utilisation de form-urlencoded au lieu de JSON
+                # Requête POST pour s'authentifier
                 response = requests.post(
-                    f"{API_URL}/auth/client",
-                    data={"username": username, "password": password}
+                    f"{API_URL}/auth/token",
+                    data={"username": username, "password": password},
+                    headers={"Content-Type": "application/x-www-form-urlencoded"}
                 )
                 if response.status_code == 200:
                     token_data = response.json()
                     token = token_data.get("access_token")
                     st.session_state["token"] = token
-                    st.success("Connexion réussie")
+                    st.session_state["logged_in"] = True
+                    st.success("Connexion réussie.")
                 else:
-                    st.error("Authentification échouée. Vérifiez vos identifiants.")
+                    error_message = response.json().get('detail', 'Erreur d\'authentification.')
+                    st.error(f"Erreur : {error_message}")
             except Exception as e:
                 st.error(f"Erreur lors de l'authentification : {e}")
 
-    # Vérifier la connexion
-    token = st.session_state.get("token")
+    # Vérification du jeton
+    token = st.session_state.get("token", None)
     headers = {"Authorization": f"Bearer {token}"} if token else {}
 
     if not token:
         st.warning("Veuillez vous connecter pour accéder aux fonctionnalités.")
     else:
-        # Onglets pour les fonctionnalités
-        tabs = st.tabs(["Modèles Disponibles", "Télécharger un Modèle", "Gérer un Modèle"])
+        # Onglets des fonctionnalités
+        tabs = st.tabs(["Liste des Modèles", "Télécharger un Modèle", "Gérer un Modèle"])
 
         # Onglet 1 : Modèles disponibles
         with tabs[0]:
