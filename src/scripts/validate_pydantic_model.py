@@ -1,7 +1,7 @@
 import os
 from pydantic import BaseModel, ValidationError
 from pydantic_ai import Agent
-from pydantic_ai.models import OllamaModel
+from pydantic_ai.models.ollama import OllamaModel
 
 # Définir un modèle Pydantic pour valider les entrées
 class MyModel(BaseModel):

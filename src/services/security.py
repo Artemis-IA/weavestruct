@@ -44,11 +44,12 @@ def verify_token(token: str = Depends(oauth2_scheme)):
             detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"},
         )
-def users_db():
-    db = DatabaseUtils.get_db()
-    return db.query(User).all()
+def users_db() -> List[User]:
+    with DatabaseUtils.db_session() as db:  # Utilisation correcte du contexte
+        return db.query(User).all()
 
 def get_user_by_username(db: Session, username: str) -> Optional[User]:
+    """Récupère un utilisateur par son nom d'utilisateur dans la base de données."""
     return db.query(User).filter(User.username == username).first()
 
 def get_user_by_email(db: Session, email: str) -> Optional[User]:
@@ -109,7 +110,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return hmac.compare_digest(pwd_hash, stored_pwd_hash)
 
 def authenticate_user(db: Session, username: str, password: str) -> Optional[User]:
-    """Authentifie l'utilisateur en vérifiant le mot de passe."""
+    """Authentifie un utilisateur en vérifiant son mot de passe."""
     user = get_user_by_username(db, username)
     if not user:
         return None
