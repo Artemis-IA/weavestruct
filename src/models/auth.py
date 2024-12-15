@@ -1,3 +1,4 @@
+# /Models/Auth.py
 from sqlalchemy import Column, Integer, String, Boolean
 from src.utils.database import DatabaseUtils
 

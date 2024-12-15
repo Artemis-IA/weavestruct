@@ -26,9 +26,9 @@ class Settings(BaseSettings):
 
     # Neo4j
     NEO4J_URI: str = os.getenv("NEO4J_URI", "bolt://0.0.0.0:7687")
-    NEO4J_AUTH: str = os.getenv("NEO4J_AUTH", "neo4j/your_password")
+    NEO4J_AUTH: str = os.getenv("NEO4J_AUTH")
     NEO4J_USER: str = os.getenv("NEO4J_USER", "neo4j")
-    NEO4J_PASSWORD: str = os.getenv("NEO4J_PASSWORD", "your_password")
+    NEO4J_PASSWORD: str = os.getenv("NEO4J_PASSWORD")
 
     # PostgreSQL settings
     PG_MAJOR: int = int(os.getenv("PG_MAJOR", 16))

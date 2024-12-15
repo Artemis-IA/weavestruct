@@ -5,6 +5,8 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
+from src.utils.database import DatabaseUtils
+target_metadata = DatabaseUtils.Base.metadata
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -27,7 +29,7 @@ target_metadata = None
 # ... etc.
 
 # Use environment variable for the database URL
-database_url = os.getenv("SQLALCHEMY_DATABASE_URI")
+database_url = os.getenv("SQLALCHEMY_DATABASE_URI", "postgresql+psycopg2://postgre_user:postgre_password@localhost:5432/postgres_db")
 if not database_url:
     raise RuntimeError("The SQLALCHEMY_DATABASE_URI environment variable is not set.")
 
@@ -35,7 +37,6 @@ if not database_url:
 config.set_main_option("sqlalchemy.url", database_url)
 
 # Import your models and assign the metadata
-from src.utils.database import DatabaseUtils  # Import your Base metadata
 target_metadata = DatabaseUtils.Base.metadata
 
 def run_migrations_offline() -> None:
