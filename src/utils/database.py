@@ -1,11 +1,15 @@
 # utils/database.py
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import inspect
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
+from alembic.config import Config
+from alembic import command
+from alembic.migration import MigrationContext
+import os
 from src.config import settings
 import logging
+
 
 class DatabaseUtils:
     # Load database URL from settings
@@ -26,6 +30,7 @@ class DatabaseUtils:
 
     @staticmethod
     def get_db():
+        """Yields a database session."""
         db = DatabaseUtils.SessionLocal()
         try:
             yield db
@@ -39,6 +44,7 @@ class DatabaseUtils:
     @staticmethod
     @contextmanager
     def db_session():
+        """Context manager for database sessions."""
         db = DatabaseUtils.SessionLocal()
         try:
             yield db
@@ -51,9 +57,32 @@ class DatabaseUtils:
     # Create all tables
     @staticmethod
     def init_db():
-        inspector = inspect(DatabaseUtils.engine)
-        if not inspector.has_table("document_logs"):
-            DatabaseUtils.Base.metadata.create_all(bind=DatabaseUtils.engine)
-            DatabaseUtils.logger.info("Database tables created successfully.")
-        else:
-            DatabaseUtils.logger.info("Database tables already exist.")
+        """Initializes the database by creating all tables."""
+        DatabaseUtils.Base.metadata.create_all(bind=DatabaseUtils.engine)
+        DatabaseUtils.logger.info("Database tables created successfully.")
+
+    # Run Alembic migrations
+    @staticmethod
+    def run_migrations():
+        """Runs Alembic migrations automatically."""
+        alembic_cfg = Config(os.path.join(os.path.dirname(__file__), "../../alembic.ini"))
+        alembic_cfg.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+        DatabaseUtils.logger.info("Running Alembic migrations...")
+        command.upgrade(alembic_cfg, "head")
+
+    # Generate Alembic migrations
+    @staticmethod
+    def generate_migrations():
+        """Generates new Alembic migration scripts if schema changes are detected."""
+        alembic_cfg = Config(os.path.join(os.path.dirname(__file__), "../../alembic.ini"))
+        alembic_cfg.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+
+        with DatabaseUtils.engine.connect() as connection:
+            context = MigrationContext.configure(connection)
+            current_revision = context.get_current_revision()
+            if current_revision is None:
+                DatabaseUtils.logger.info("No migrations applied yet. Initializing database.")
+                command.stamp(alembic_cfg, "base")
+
+        DatabaseUtils.logger.info("Generating Alembic migration scripts...")
+        command.revision(alembic_cfg, autogenerate=True, message="Auto-generated migration")

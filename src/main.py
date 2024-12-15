@@ -84,7 +84,14 @@ class AppLauncher:
             logger.info("Application starting...")
             self.metrics_manager.start_emissions_tracker()
             system_metrics = self.metrics_manager.get_system_metrics()
-
+            try:
+                logger.info("Generating and applying Alembic migrations...")
+                DatabaseUtils.generate_migrations()
+                DatabaseUtils.run_migrations()
+                logger.info("Migrations applied successfully.")
+            except Exception as e:
+                logger.error(f"Failed to apply migrations: {e}")
+                raise e
         @self.app.on_event("shutdown")
         async def shutdown_event():
             self.metrics_manager.emissions_tracker.stop()
