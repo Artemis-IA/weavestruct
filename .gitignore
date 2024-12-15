@@ -28,3 +28,4 @@ alembic/
 alembic/env.py
 !alembic/versions/
 alembic.ini
+client/assets/*

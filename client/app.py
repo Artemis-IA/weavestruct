@@ -28,7 +28,8 @@ minio_client = Minio(
     secret_key=MINIO_SECRET_KEY,
     secure=False,
 )
-
+current_dir = os.path.dirname(os.path.abspath(__file__))
+logo_path = os.path.join(current_dir, "assets", "logo.jpeg")
 # Streamlit Config
 st.set_page_config(
     page_title="Weavestruct",
@@ -74,6 +75,11 @@ if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 
 if not st.session_state["authenticated"]:
+    # Afficher le logo avant connexion
+    st.image(logo_path, use_container_width=True)
+    st.title("Bienvenue sur Weavestruct")
+    st.subheader("Veuillez vous connecter pour continuer.")
+
     st.sidebar.title("Authentification")
     username = st.sidebar.text_input("Nom d'utilisateur")
     password = st.sidebar.text_input("Mot de passe", type="password")
