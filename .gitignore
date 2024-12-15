@@ -25,5 +25,5 @@ logs/*
 tests/*
 site/
 alembic/
-!alembic/versions/
 alembic/versions/env.py
+!alembic/versions/
