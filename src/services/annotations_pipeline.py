@@ -93,7 +93,13 @@ class AnnotationPipelines:
 
         try:
             # Ensure input adheres to required format
-            annotated_texts = [(text, {'glirel_labels': labels}) for text in texts if text.strip()]
+            annotated_texts = []
+            for text in texts:
+                if text.strip():
+                    if isinstance(labels, dict):
+                        labels_and_constraints = labels  # Initialisez `labels_and_constraints`
+                        labels = list(labels.keys())  # Extraire uniquement les clés
+                    annotated_texts.append((text, {'glirel_labels': labels}))
             docs = self.nlp.pipe(annotated_texts, as_tuples=True)
             results = []
             for doc in docs:
