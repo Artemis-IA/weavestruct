@@ -43,6 +43,9 @@ class Settings(BaseSettings):
 
     # Derived PostgreSQL settings
     DATABASE_URL: str = os.getenv("DATABASE_URL", f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}")
+    SECRET_KEY: str = "votre_clé_secrète"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ALGORITHM: str = "HS256"
 
     # MLflow settings
     MLFLOW_USER: str = os.getenv("MLFLOW_USER", "mlflow_user")

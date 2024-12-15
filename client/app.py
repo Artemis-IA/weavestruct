@@ -43,13 +43,13 @@ st.set_page_config(
     )
 
 pages = {
-    "Télécharger et Annoter un PDF": "custom_pages.page_1_telecharger_et_annoter_un_pdf",
+    "📤 Upload & Convert": "custom_pages.page_1_telecharger_et_annoter_un_pdf",
     "Extraction d'Entités & Relations": "custom_pages.page_2_extraction_d_entites_et_relations",
-    "Visualisation de Graphe": "custom_pages.page_3_visualisation_de_graphe",
-    "Métriques en Temps Réel": "custom_pages.page_4_metriques_en_temps_reel",
-    "Logs de la Base de Données": "custom_pages.page_5_logs_de_la_base_de_donnees",
+    "🕸️ Visualisation de Graphe": "custom_pages.page_3_visualisation_de_graphe",
+    "📈 Métriques en Temps Réel": "custom_pages.page_4_metriques_en_temps_reel",
+    "🔍Logs de la Base de Données": "custom_pages.page_5_logs_de_la_base_de_donnees",
     "Gestion de Fichiers MinIO": "custom_pages.page_6_visualisation_des_buckets_minio",
-    "Gestion des Modèles ML": "custom_pages.page_7_gestion_des_modeles_ml",
+    "📊 Gestion des Modèles ML": "custom_pages.page_7_gestion_des_modeles_ml",
 }
 
 # Navigation Sidebar

@@ -1,3 +1,4 @@
+# src/scripts/generate_openapi.py
 from fastapi.openapi.utils import get_openapi
 from pathlib import Path
 import json

@@ -186,9 +186,6 @@ class DocumentProcessor:
                     for table_file in tables_dir.glob("*.csv"):
                         table_file.unlink()
                         logger.info(f"Deleted local table file: {table_file}")
-
-            else:
-                logger.warning(f"Document export failed for {doc_filename}: {result.status}")
         except Exception as e:
             logger.error(f"Error exporting document: {e}")
             raise

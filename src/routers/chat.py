@@ -136,6 +136,27 @@ def index_pdfs(folder_path: Optional[str] = Form("/home/pi/Documents/IF-SRV/1pdf
 
     return {"message": "Documents indexed successfully"}
 
+# Hybrid search route
+@router.post("/search/")
+def hybrid_search(query: str):
+    index_name = "vector"
+    keyword_index_name = "keyword"
+
+    store = Neo4jVector.from_existing_index(
+        ollama_emb,
+        url=settings.NEO4J_URI,
+        username=settings.NEO4J_USER,
+        password=settings.NEO4J_PASSWORD,
+        index_name=index_name,
+        keyword_index_name=keyword_index_name,
+        search_type="hybrid",
+    )
+
+    retriever = store.as_retriever()
+    results = retriever.invoke(query)
+
+    return {"results": results}
+
 # Chat endpoint
 @router.post("/chat/")
 def chat(query: str):
