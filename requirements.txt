@@ -218,6 +218,7 @@ pydantic==2.9.2
 pydantic-settings==2.6.1
 pydantic_core==2.23.4
 pydantic[email]
+pydantic-aiofiles
 Pygments==2.18.0
 PyJWT==2.10.1
 pymdown-extensions==10.12
