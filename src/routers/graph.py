@@ -3,7 +3,7 @@ import boto3, os, re, mlflow, time, yaml
 from fastapi import APIRouter, HTTPException
 from loguru import logger
 from typing import List, Dict, Any, Optional, Literal, Union
-from fastapi import Form
+from fastapi import Form, File, UploadFile
 
 from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain_experimental.graph_transformers.gliner import GlinerGraphTransformer
@@ -228,133 +228,78 @@ def index_pdfs(
 
     return {"source_type": source_type, "message": "Documents indexés avec succès."}
 
-#######################################
-#          CRUD ENTITÉS (NODES)        #
-#######################################
 
-@router.get("/nodes", response_model=List[Dict[str, Any]])
-def get_all_nodes():
-    """ Récupère tous les nœuds de type Entity. """
-    with neo4j_service.driver.session() as session:
-        result = session.run("MATCH (e:Entity) RETURN e")
-        nodes = [record["e"] for record in result]
-    return [dict(node) for node in nodes]
 
-@router.get("/nodes/{name}", response_model=Dict[str, Any])
-def get_node(name: str):
-    """ Récupère un nœud par son nom. """
-    with neo4j_service.driver.session() as session:
-        result = session.run("MATCH (e:Entity {name:$name}) RETURN e", {"name": name})
-        record = result.single()
-    if record is None:
-        raise HTTPException(status_code=404, detail="No node found with that name.")
-    return dict(record["e"])
 
-@router.post("/nodes", response_model=Dict[str, Any])
-def create_node(name: str, type: str):
-    """ Crée ou met à jour un nœud (Entity) en évitant les doublons. 
-        Utilise MERGE pour éviter la création de doublons. 
+
+
+
+
+@router.post("/upload_pdf")
+@metrics.NEO4J_REQUEST_LATENCY.time()
+def upload_pdf(file: UploadFile = File(...)):
+    """
+    Permet de charger un PDF via un POST multipart/form-data.
+    Le PDF sera analysé et le graphe (nœuds + relations) sera inséré dans Neo4j.
+    """
+    metrics.NEO4J_REQUEST_COUNT.inc()
+    if file.content_type != "application/pdf":
+        raise HTTPException(status_code=400, detail="Veuillez uploader un fichier PDF.")
+
+    # Enregistrement temporaire du fichier PDF
+    tmp_file_path = f"/tmp/{file.filename}"
+    with open(tmp_file_path, "wb") as f:
+        f.write(file.file.read())
+
+    # Chargement du PDF avec le loader
+    loader = PyPDFDirectoryLoader("/tmp")
+    documents = loader.load()
+
+    # Transformation des documents (NER/REL)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+    for doc in documents:
+        if not hasattr(doc, "page_content"):
+            continue
+        split_docs = text_splitter.split_documents([doc])
+        graph_docs = graph_transformer.convert_to_graph_documents(split_docs)
+        add_graph_to_neo4j(graph_docs)
+
+    return {"message": "PDF analysé et ajouté au graphe avec succès."}
+
+
+@router.get("/graph", response_model=Dict[str, Any])
+def get_full_graph():
+    """
+    Récupère la totalité du graphe (tous les nœuds et relations) 
+    sous forme JSON (nodes et edges).
+    Ce format peut être facilement consommé par une appli Streamlit
+    pour construire une visualisation du graphe.
     """
     with neo4j_service.driver.session() as session:
-        result = session.run(
-            "MERGE (e:Entity {name:$name}) "
-            "SET e.type=$type "
-            "RETURN e",
-            {"name": name, "type": type}
-        ).single()
-    return dict(result["e"])
-
-@router.put("/nodes/{name}", response_model=Dict[str, Any])
-def update_node(name: str, new_type: Optional[str] = None):
-    """ Met à jour un nœud. On peut par exemple mettre à jour son type. """
-    with neo4j_service.driver.session() as session:
-        node = session.run("MATCH (e:Entity {name:$name}) RETURN e", {"name": name}).single()
-        if not node:
-            raise HTTPException(status_code=404, detail="Node not found.")
+        # Récupération de tous les nœuds
+        nodes_result = session.run("MATCH (n:Entity) RETURN n")
+        nodes = []
+        for record in nodes_result:
+            node_data = dict(record["n"])
+            node_data["id"] = record["n"].id  # On peut ajouter l'ID interne de Neo4j
+            nodes.append(node_data)
         
-        result = session.run(
-            "MATCH (e:Entity {name:$name}) SET e.type=$type RETURN e",
-            {"name": name, "type": new_type}
-        ).single()
-    return dict(result["e"])
-
-@router.delete("/nodes/{name}")
-def delete_node(name: str):
-    """ Supprime un nœud par son nom, ainsi que les relations qui y sont connectées. """
-    with neo4j_service.driver.session() as session:
-        node = session.run("MATCH (e:Entity {name:$name}) RETURN e", {"name": name}).single()
-        if not node:
-            raise HTTPException(status_code=404, detail="Node not found.")
-        
-        session.run("MATCH (e:Entity {name:$name}) DETACH DELETE e", {"name": name})
-    return {"message": f"Node '{name}' deleted successfully."}
-
-#######################################
-#       CRUD RELATIONS (EDGES)         #
-#######################################
-
-@router.get("/relationships", response_model=List[Dict[str, Any]])
-def get_all_relationships():
-    """ Récupère toutes les relations. """
-    with neo4j_service.driver.session() as session:
-        result = session.run("MATCH ()-[r:RELATED_TO]->() RETURN r")
-        relationships = [record["r"] for record in result]
-    return [dict(rel) for rel in relationships]
-
-@router.post("/relationships", response_model=Dict[str, Any])
-def create_relationship(source_name: str, target_name: str, type: str):
-    """ Crée ou fusionne une relation entre deux nœuds existants. """
-    with neo4j_service.driver.session() as session:
-        # Vérification de l'existence des deux nœuds
-        source_node = session.run("MATCH (e:Entity {name:$name}) RETURN e", {"name": source_name}).single()
-        if not source_node:
-            raise HTTPException(status_code=404, detail=f"Source node '{source_name}' not found.")
-        target_node = session.run("MATCH (e:Entity {name:$name}) RETURN e", {"name": target_name}).single()
-        if not target_node:
-            raise HTTPException(status_code=404, detail=f"Target node '{target_name}' not found.")
-
-        # Création/fusion de la relation
-        result = session.run(
-            "MATCH (s:Entity {name:$source}), (t:Entity {name:$target}) "
-            "MERGE (s)-[r:RELATED_TO {type:$type}]->(t) RETURN r",
-            {"source": source_name, "target": target_name, "type": type}
-        ).single()
-    return dict(result["r"])
-
-@router.put("/relationships/update")
-def update_relationship(source_name: str, target_name: str, new_type: str):
-    """ Met à jour le type d'une relation. """
-    with neo4j_service.driver.session() as session:
-        rel = session.run(
-            "MATCH (s:Entity {name:$source})-[r:RELATED_TO]->(t:Entity {name:$target}) RETURN r",
-            {"source": source_name, "target": target_name}
-        ).single()
-        if not rel:
-            raise HTTPException(status_code=404, detail="Relationship not found.")
-
-        result = session.run(
-            "MATCH (s:Entity {name:$source})-[r:RELATED_TO]->(t:Entity {name:$target}) "
-            "SET r.type=$new_type RETURN r",
-            {"source": source_name, "target": target_name, "new_type": new_type}
-        ).single()
-    return dict(result["r"])
-
-@router.delete("/relationships")
-def delete_relationship(source_name: str, target_name: str):
-    """ Supprime une relation entre deux nœuds. """
-    with neo4j_service.driver.session() as session:
-        rel = session.run(
-            "MATCH (s:Entity {name:$source})-[r:RELATED_TO]->(t:Entity {name:$target}) RETURN r",
-            {"source": source_name, "target": target_name}
-        ).single()
-        if not rel:
-            raise HTTPException(status_code=404, detail="Relationship not found.")
-
-        session.run(
-            "MATCH (s:Entity {name:$source})-[r:RELATED_TO]->(t:Entity {name:$target}) DELETE r",
-            {"source": source_name, "target": target_name}
+        # Récupération de toutes les relations
+        relationships_result = session.run(
+            "MATCH (a:Entity)-[r:RELATED_TO]->(b:Entity) RETURN a, r, b"
         )
-    return {"message": f"Relationship between '{source_name}' and '{target_name}' deleted successfully."}
+        edges = []
+        for record in relationships_result:
+            rel_data = dict(record["r"])
+            rel_data["source"] = record["a"].id
+            rel_data["target"] = record["b"].id
+            edges.append(rel_data)
+
+    return {"nodes": nodes, "edges": edges}
+
+
+
+
 
 #######################################
 #      ROUTES GESTION DES DOUBLONS     #

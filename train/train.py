@@ -1,93 +1,126 @@
 import os
+import argparse
+import random
+import json
+from fastapi import FastAPI
+from transformers import AutoTokenizer
+import torch
 import mlflow
-import mlflow.pytorch
-from transformers import AutoModelForTokenClassification, AutoTokenizer, Trainer, TrainingArguments
-from datasets import load_dataset
-import evaluate
-from sklearn.metrics import precision_recall_fscore_support
-from seqeval.metrics import classification_report
-from dotenv import load_dotenv
+from gliner import GLiNERConfig, GLiNER
+from gliner.training import Trainer, TrainingArguments
+from gliner.data_processing.collator import DataCollatorWithPadding, DataCollator
+from gliner.utils import load_config_as_namespace
+from gliner.data_processing import WordsSplitter, GLiNERDataset
 
-# Import GLiNER and related components
-from gliner import GLiNER, GLiNERConfig
-from transformers import AutoTokenizer, TrainingArguments, Trainer
-from datasets import Dataset
-import evaluate
+# Set environment variables
+os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
-load_dotenv()
+# Initialize FastAPI app
+app = FastAPI(docs_url="/", redoc_url=None)
 
-# Configuration MLflow
-mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI"))
-mlflow.set_experiment("GLiNER_FineTuning")
+@app.post("/train_gliner")
+def train_gliner(config_path: str, log_dir: str = 'models/', compile_model: bool = False, 
+                freeze_language_model: bool = False, new_data_schema: bool = False):
+    device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
 
-# Charger le modèle et le tokenizer
-model_name = "urchade/gliner_mediumv2.1"
-model = GLiNER.from_pretrained(model_name, num_labels=10)
-tokenizer = GLiNER.from_pretrained(model_name)
+    config = load_config_as_namespace(config_path)
+    config.log_dir = log_dir
 
-# Charger les données
-dataset = load_dataset("conll2003")
-metric = evaluate.load_metric("seqeval")
+    with open(config.train_data, 'r') as f:
+        data = json.load(f)
 
-# Préparation des données
-def tokenize_and_align_labels(examples):
-    tokenized_inputs = tokenizer(examples["tokens"], truncation=True, is_split_into_words=True, padding=True)
-    labels = []
-    for i, label in enumerate(examples[f"ner_tags"]):
-        word_ids = tokenized_inputs.word_ids(batch_index=i)
-        label_ids = [-100 if word_id is None else label[word_id] for word_id in word_ids]
-        labels.append(label_ids)
-    tokenized_inputs["labels"] = labels
-    return tokenized_inputs
+    print('Dataset size:', len(data))
+    random.shuffle(data)
+    print('Dataset is shuffled...')
 
-tokenized_datasets = dataset.map(tokenize_and_align_labels, batched=True, trust_remote_code=True)
-# Définir des métriques de validation
-def compute_metrics(p):
-    predictions, labels = p
-    predictions = predictions.argmax(axis=-1)
-    true_labels = [[label for label in example if label != -100] for example in labels]
-    true_predictions = [[pred for (pred, label) in zip(prediction, label) if label != -100]
-                        for prediction, label in zip(predictions, labels)]
-    results = metric.compute(predictions=true_predictions, references=true_labels)
-    return {
-        "precision": results["overall_precision"],
-        "recall": results["overall_recall"],
-        "f1": results["overall_f1"],
-        "accuracy": results["overall_accuracy"],
-    }
+    train_data = data[:int(len(data)*0.9)]
+    test_data = data[int(len(data)*0.9):]
 
-# Arguments d'entraînement
-training_args = TrainingArguments(
-    output_dir="./results",
-    evaluation_strategy="epoch",
-    logging_strategy="epoch",
-    save_strategy="epoch",
-    learning_rate=2e-5,
-    per_device_train_batch_size=16,
-    num_train_epochs=3,  # Réduisez pour un entraînement rapide
-    weight_decay=0.01,
-    logging_dir="./logs",
-    save_total_limit=2,
-    report_to="none",
-)
+    print('Dataset is splitted...')
 
-# Entraîner le modèle avec MLflow
-with mlflow.start_run():
+    if config.prev_path is not None:
+        tokenizer = AutoTokenizer.from_pretrained(config.prev_path)
+        model = GLiNER.from_pretrained(config.prev_path)
+        model_config = model.config
+    else:
+        model_config = GLiNERConfig(**vars(config))
+        tokenizer = AutoTokenizer.from_pretrained(model_config.model_name)
+        words_splitter = WordsSplitter(model_config.words_splitter_type)
+        model = GLiNER(model_config, tokenizer=tokenizer, words_splitter=words_splitter)
+
+        if not config.labels_encoder:
+            model_config.class_token_index = len(tokenizer)
+            tokenizer.add_tokens([model_config.ent_token, model_config.sep_token], special_tokens=True)
+            model_config.vocab_size = len(tokenizer)
+            model.resize_token_embeddings([model_config.ent_token, model_config.sep_token], 
+                                           set_class_token_index=False, add_tokens_to_tokenizer=False)
+
+    if compile_model:
+        torch.set_float32_matmul_precision('high')
+        model.to(device)
+        model.compile_for_training()
+
+    if freeze_language_model:
+        model.model.token_rep_layer.bert_layer.model.requires_grad_(False)
+    else:
+        model.model.token_rep_layer.bert_layer.model.requires_grad_(True)
+
+    if new_data_schema:
+        train_dataset = GLiNERDataset(train_data, model_config, tokenizer, WordsSplitter(model_config.words_splitter_type))
+        test_dataset = GLiNERDataset(test_data, model_config, tokenizer, WordsSplitter(model_config.words_splitter_type))
+        data_collator = DataCollatorWithPadding(model_config)
+    else:
+        train_dataset = train_data
+        test_dataset = test_data
+        data_collator = DataCollator(model.config, data_processor=model.data_processor, prepare_labels=True)
+
+    training_args = TrainingArguments(
+        output_dir=config.log_dir,
+        learning_rate=float(config.lr_encoder),
+        weight_decay=float(config.weight_decay_encoder),
+        others_lr=float(config.lr_others),
+        others_weight_decay=float(config.weight_decay_other),
+        lr_scheduler_type=config.scheduler_type,
+        warmup_ratio=config.warmup_ratio,
+        per_device_train_batch_size=config.train_batch_size,
+        per_device_eval_batch_size=config.train_batch_size,
+        max_grad_norm=config.max_grad_norm,
+        max_steps=config.num_steps,
+        evaluation_strategy="epoch",
+        save_steps=config.eval_every,
+        save_total_limit=config.save_total_limit,
+        dataloader_num_workers=8,
+        use_cpu=False,
+        report_to="none",
+        bf16=True,
+    )
+
     trainer = Trainer(
         model=model,
         args=training_args,
-        train_dataset=tokenized_datasets["train"],
-        eval_dataset=tokenized_datasets["validation"],
+        train_dataset=train_dataset,
+        eval_dataset=test_dataset,
         tokenizer=tokenizer,
-        compute_metrics=compute_metrics,
+        data_collator=data_collator,
     )
-    trainer.train()
 
-    # Log des métriques sur MLflow
-    metrics = trainer.evaluate()
-    for key, value in metrics.items():
-        mlflow.log_metric(key, value)
+    # MLflow setup
+    mlflow.set_tracking_uri("http:/localhost:5002")
+    mlflow.set_experiment("GLiNER_Training")
 
-    # Log du modèle sur MLflow
-    mlflow.pytorch.log_model(trainer.model, "model")
-    mlflow.log_artifact("./results", artifact_path="results")
+    with mlflow.start_run():
+        mlflow.log_params({
+            "learning_rate": config.lr_encoder,
+            "weight_decay": config.weight_decay_encoder,
+            "others_lr": config.lr_others,
+            "others_weight_decay": config.weight_decay_other,
+            "batch_size": config.train_batch_size,
+            "max_steps": config.num_steps
+        })
+
+        trainer.train()
+
+        # Log model and artifacts
+        mlflow.pytorch.log_model(model, "model")
+
+    return {"message": "Training completed and logged to MLflow."}

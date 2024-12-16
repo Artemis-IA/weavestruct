@@ -1,6 +1,6 @@
 # routers/entities.py
 from fastapi import APIRouter, HTTPException
-from typing import List
+from typing import List, Dict, Any, Optional
 from loguru import logger
 
 from src.services.neo4j_service import Neo4jService
@@ -13,50 +13,65 @@ router = APIRouter()
 neo4j_service: Neo4jService = get_neo4j_service()
 
 
-@router.post("/entities/", response_model=Entity)
-async def create_entity(entity: EntityCreate):
-    logger.info(f"Creating entity: {entity.name}")
-    try:
-        created_entity = neo4j_service.create_entity(entity)
-        logger.info(f"Successfully created entity: {created_entity.name}")
-        return created_entity
-    except Exception as e:
-        logger.error(f"Error creating entity: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/entities/", response_model=List[Entity])
-async def get_entities():
-    logger.info("Retrieving all entities")
-    try:
-        entities = neo4j_service.get_all_entities()
-        logger.info(f"Retrieved {len(entities)} entities")
-        return entities
-    except Exception as e:
-        logger.error(f"Error retrieving entities: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/entities/{entity_id}", response_model=Entity)
-async def get_entity(entity_id: str):
-    logger.info(f"Retrieving entity with ID: {entity_id}")
-    try:
-        entity = neo4j_service.get_entity(entity_id)
-        if not entity:
-            raise HTTPException(status_code=404, detail="Entity not found")
-        logger.info(f"Successfully retrieved entity: {entity.name}")
-        return entity
-    except Exception as e:
-        logger.error(f"Error retrieving entity: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+#######################################
+#          CRUD ENTITÉS (NODES)        #
+#######################################
 
-@router.delete("/entities/{entity_id}", response_model=dict)
-async def delete_entity(entity_id: str):
-    logger.info(f"Deleting entity with ID: {entity_id}")
-    try:
-        success = neo4j_service.delete_entity(entity_id)
-        if not success:
-            raise HTTPException(status_code=404, detail="Entity not found")
-        logger.info(f"Successfully deleted entity with ID: {entity_id}")
-        return {"message": f"Entity {entity_id} deleted successfully"}
-    except Exception as e:
-        logger.error(f"Error deleting entity: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+@router.get("/nodes", response_model=List[Dict[str, Any]])
+def get_all_nodes():
+    """ Récupère tous les nœuds de type Entity. """
+    with neo4j_service.driver.session() as session:
+        result = session.run("MATCH (e:Entity) RETURN e")
+        nodes = [record["e"] for record in result]
+    return [dict(node) for node in nodes]
+
+@router.get("/nodes/{name}", response_model=Dict[str, Any])
+def get_node(name: str):
+    """ Récupère un nœud par son nom. """
+    with neo4j_service.driver.session() as session:
+        result = session.run("MATCH (e:Entity {name:$name}) RETURN e", {"name": name})
+        record = result.single()
+    if record is None:
+        raise HTTPException(status_code=404, detail="No node found with that name.")
+    return dict(record["e"])
+
+@router.post("/nodes", response_model=Dict[str, Any])
+def create_node(name: str, type: str):
+    """ Crée ou met à jour un nœud (Entity) en évitant les doublons. 
+        Utilise MERGE pour éviter la création de doublons. 
+    """
+    with neo4j_service.driver.session() as session:
+        result = session.run(
+            "MERGE (e:Entity {name:$name}) "
+            "SET e.type=$type "
+            "RETURN e",
+            {"name": name, "type": type}
+        ).single()
+    return dict(result["e"])
+
+@router.put("/nodes/{name}", response_model=Dict[str, Any])
+def update_node(name: str, new_type: Optional[str] = None):
+    """ Met à jour un nœud. On peut par exemple mettre à jour son type. """
+    with neo4j_service.driver.session() as session:
+        node = session.run("MATCH (e:Entity {name:$name}) RETURN e", {"name": name}).single()
+        if not node:
+            raise HTTPException(status_code=404, detail="Node not found.")
+        
+        result = session.run(
+            "MATCH (e:Entity {name:$name}) SET e.type=$type RETURN e",
+            {"name": name, "type": new_type}
+        ).single()
+    return dict(result["e"])
+
+@router.delete("/nodes/{name}")
+def delete_node(name: str):
+    """ Supprime un nœud par son nom, ainsi que les relations qui y sont connectées. """
+    with neo4j_service.driver.session() as session:
+        node = session.run("MATCH (e:Entity {name:$name}) RETURN e", {"name": name}).single()
+        if not node:
+            raise HTTPException(status_code=404, detail="Node not found.")
+        
+        session.run("MATCH (e:Entity {name:$name}) DETACH DELETE e", {"name": name})
+    return {"message": f"Node '{name}' deleted successfully."}
