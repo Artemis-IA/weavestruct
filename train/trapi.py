@@ -36,11 +36,11 @@ from mlflow.pyfunc import load_model
 # ===========================================================================
 
 # Pour cet exemple, on définit quelques paramètres en variables d'environnement
-os.environ["MLFLOW_TRACKING_URI"] = "http://mlflow:5002/"
+os.environ["MLFLOW_TRACKING_URI"] = "http://0.0.0.0:5002/"
 os.environ["AWS_ACCESS_KEY_ID"] = "minio"
 os.environ["AWS_SECRET_ACCESS_KEY"] = "minio123"
 os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
-os.environ["MLFLOW_S3_ENDPOINT_URL"] = "http://minio:9000"
+os.environ["MLFLOW_S3_ENDPOINT_URL"] = "http://0.0.0.0:9000"
 os.environ["MLFLOW_EXPERIMENT_NAME"] = "docgraph"
 os.environ["DATABASE_URL"] = "postgresql://docgraph:docgraph@postgres:5432/docgraph"
 HF_API_TOKEN = os.environ.get("HF_API_TOKEN", None)

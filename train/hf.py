@@ -14,7 +14,7 @@ MODEL_NAME = "HuggingFace_Gliner_Model"
 def setup_mlflow():
     mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
     logger.info(f"MLflow tracking URI set to: {MLFLOW_TRACKING_URI}")
-    os.environ["MLFLOW_S3_ENDPOINT_URL"] = "http://minio:9000"
+    os.environ["MLFLOW_S3_ENDPOINT_URL"] = "http://0.0.0.0:9000"
     os.environ["AWS_ACCESS_KEY_ID"] = "minio"
     os.environ["AWS_SECRET_ACCESS_KEY"] = "minio123"
     logger.info("MLflow and S3 credentials configured.")

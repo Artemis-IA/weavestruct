@@ -31,16 +31,7 @@ class ModelManager:
         logger.info(f"Using device: {self.device}")
     
     def load_model(self, artifact_name: str, alias: Optional[str] = None):
-        """
-        Loads a registered model from MLflow using an alias.
 
-        Args:
-            artifact_name (str): Name of the registered model.
-            alias (Optional[str]): Alias pointing to a specific version (e.g., "champion").
-
-        Returns:
-            The loaded model.
-        """
         if not alias:
             alias = "latest" 
         try:
@@ -57,14 +48,7 @@ class ModelManager:
             )
 
     def promote_model(self, artifact_name: str, version: int, alias: str):
-        """
-        Promotes a specific version of a model by assigning an alias.
 
-        Args:
-            artifact_name (str): Name of the registered model.
-            version (int): Version number of the model.
-            alias (str): Alias to assign (e.g., "champion").
-        """
         try:
             self.mlflow_client.set_registered_model_alias(
                 name=artifact_name, alias=alias, version=version
@@ -75,9 +59,7 @@ class ModelManager:
             )
         
     def fetch_available_models(self) -> List[str]:
-        """
-        Fetch the list of available models from MLflow registered models.
-        """
+
         models = self.mlflow_service.search_registered_models()
         available_models = [model.name for model in models]
         logger.info(f"Available models fetched from MLflow: {available_models}")
@@ -165,9 +147,7 @@ class ModelManager:
             raise ValueError(f"Error fetching models: {e}")
 
     def load_or_register_model(self, artifact_name: str, model_dir: Path, alias: Optional[str] = "latest"):
-        """
-        Tente de charger un modèle. Si le modèle n'existe pas, il est enregistré.
-        """
+
         try:
             logger.info(f"Attempting to load model '{artifact_name}' with alias '{alias}'.")
             return self.mlflow_service.load_model(artifact_name, alias)
@@ -177,7 +157,7 @@ class ModelManager:
             return self.mlflow_service.load_model(artifact_name, alias)
         
     def fetch_and_register_hf_model(self, artifact_name: str, artifact_path: str, register_name: str):
-        """Download a model from Hugging Face and register it in MLflow."""
+
         try:
             logger.info(f"Fetching model '{artifact_name}' from Hugging Face...")
             model_dir = Path(f"/tmp/{artifact_name.replace('/', '_')}")
@@ -239,9 +219,8 @@ class ModelManager:
             raise
 
     def register_models_at_startup(self, model_names: list):
-        """
-        Register and log models at startup if they are not already registered.
-        """
+
+
         for artifact_name in model_names:
             existing_models = self.mlflow_client.search_registered_models(filter_string=f"name='{artifact_name}'")
             if not existing_models:

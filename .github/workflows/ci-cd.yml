@@ -35,9 +35,6 @@ jobs:
     # - name: Run tests
     #   run: pytest
 
-    # Construire l'image Docker
-    - name: Build Docker image
-      run: docker build -t weavestruct-api:${{ github.sha }} .
 
     # Se connecter au registre Docker
     - name: Login to Docker Hub
@@ -46,6 +43,10 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
+    # Construire l'image Docker
+    - name: Build Docker image
+      run: docker build -t weavestruct-api:${{ github.sha }} .
+      
     # Pousser l'image Docker vers le registre
     - name: Push Docker image
       run: docker push weavestruct-api:${{ github.sha }}
