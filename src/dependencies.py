@@ -17,7 +17,7 @@ from src.services.pgvector_service import PGVectorService
 from src.services.neo4j_service import Neo4jService
 # from src.services.rag_service import RAGChainService
 from src.services.embedding_service import EmbeddingService
-
+from src.models.document_log import DocumentLogService
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_experimental.graph_transformers.gliner import GlinerGraphTransformer
@@ -202,6 +202,7 @@ def get_document_processor(db: Session = Depends(get_db)) -> DocumentProcessor:
     mlflow_service = get_mlflow_service()
     # pgvector_service = get_pgvector_vector_store()
     text_splitter = get_text_splitter()
+    document_log_service = DocumentLogService(session_factory=get_db)
     # embedding_service = get_embedding_service()
 
     return DocumentProcessor(
@@ -213,4 +214,6 @@ def get_document_processor(db: Session = Depends(get_db)) -> DocumentProcessor:
         # glirel_service=glirel_service,
         session=db,
         text_splitter=text_splitter,
+        document_log_service=document_log_service
+
     )

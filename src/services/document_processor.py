@@ -8,6 +8,7 @@ from typing import List, Iterator
 
 import aiofiles
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from loguru import logger
 
 from langchain.text_splitter import CharacterTextSplitter
@@ -74,6 +75,7 @@ class DocumentProcessor:
         # embedding_service: EmbeddingService,
         session: Session,
         text_splitter: CharacterTextSplitter,
+        document_log_service: DocumentLogService
     ):
         self.s3_service = s3_service
         self.mlflow_service = mlflow_service
@@ -81,6 +83,7 @@ class DocumentProcessor:
         # self.embedding_service = embedding_service
         self.session = session
         self.text_splitter = text_splitter
+        self.document_log_service = document_log_service
 
     def create_converter(
         self,
@@ -108,16 +111,16 @@ class DocumentProcessor:
         return re.sub(r'\s+', ' ', text)
 
     def log_document(self, file_name: str, s3_url: str):
-        """Log document metadata into the database."""
+        """
+        Log document metadata into the database using DocumentLogService.
+        """
         try:
-            log = DocumentLog(file_name=file_name, s3_url=s3_url)
-            self.session.add(log)
-            self.session.commit()
-            logger.info(f"Document logged: {file_name}")
+            self.document_log_service.log_document(file_name=file_name, s3_url=s3_url)
+            logger.info(f"Document successfully logged: {file_name}")
+        except SQLAlchemyError as e:
+            logger.error(f"Failed to log document in database: {e}")
         except Exception as e:
-            logger.error(f"Failed to log document {file_name}: {e}")
-            self.session.rollback()
-            raise
+            logger.error(f"Unexpected error while logging document: {e}")
 
     def _export_file(
         self,
