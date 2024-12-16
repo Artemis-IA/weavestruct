@@ -214,6 +214,6 @@ def get_document_processor(db: Session = Depends(get_db)) -> DocumentProcessor:
         # glirel_service=glirel_service,
         session=db,
         text_splitter=text_splitter,
-        document_log_service=document_log_service
+        # document_log_service=document_log_service
 
     )
