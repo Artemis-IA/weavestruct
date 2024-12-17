@@ -1,10 +1,197 @@
 import streamlit as st
 import requests
-from streamlit_agraph import agraph, Node, Edge, Config
 import os
+import networkx as nx
+import matplotlib.pyplot as plt
+import seaborn as sns
+from streamlit_agraph import agraph, Node, Edge, Config
+import plotly.graph_objects as go
 
 # Charger l'URL de l'API depuis une variable d'environnement
 API_URL = os.getenv("API_URL")
+
+
+def create_interactive_graph_visualization(nodes, relationships):
+    """
+    Créer une visualisation interactive du graphe avec plusieurs options.
+    """
+    st.subheader("🔍 Visualisation Détaillée du Graphe")
+    
+    # Options de visualisation
+    viz_option = st.radio("Choisissez le type de visualisation:", 
+                           ["Graphe Interactif", "Graphe Networkx", "Graphe Plotly"])
+    
+    if viz_option == "Graphe Interactif":
+        # Configuration advanced pour agraph
+        config = Config(
+            width=900,
+            height=700,
+            directed=True,
+            nodeHighlightBehavior=True,
+            highlightColor="#FABC60",
+            collapsible=True,
+            node_color="#A3CB38",
+            edge_color="#FF6B6B"
+        )
+        
+        # Créer des nodes colorés par type
+        node_types = set(node['type'] for node in nodes)
+        color_palette = sns.color_palette("husl", len(node_types)).as_hex()
+        node_type_color_map = dict(zip(node_types, color_palette))
+        
+        graph_nodes = [
+            Node(
+                id=node["name"], 
+                label=node["name"], 
+                title=f"Type: {node['type']}", 
+                size=30,
+                color=node_type_color_map.get(node['type'], "#A3CB38")
+            ) for node in nodes
+        ]
+        
+        graph_edges = [
+            Edge(
+                source=rel["source"], 
+                target=rel["target"], 
+                label=rel["type"],
+                width=2
+            ) for rel in relationships
+        ]
+        
+        st.markdown("**Graphe interactif avec mise en évidence des relations**")
+        agraph(nodes=graph_nodes, edges=graph_edges, config=config)
+        
+        # Légende des types de nœuds
+        st.markdown("##### Légende des Types de Nœuds")
+        for node_type, color in node_type_color_map.items():
+            st.markdown(f"<span style='background-color:{color}; padding:5px; margin:5px; border-radius:5px;'>{node_type}</span>", unsafe_allow_html=True)
+    
+    elif viz_option == "Graphe Networkx":
+        # Création d'un graphe NetworkX
+        G = nx.DiGraph()
+        
+        # Ajouter les nœuds
+        for node in nodes:
+            G.add_node(node["name"], type=node["type"])
+        
+        # Ajouter les relations
+        for rel in relationships:
+            G.add_edge(rel["source"], rel["target"], type=rel["type"])
+        
+        plt.figure(figsize=(12, 8))
+        pos = nx.spring_layout(G, k=0.5)  # positions pour le layout
+        node_colors = [plt.cm.Set3(list(G.nodes).index(node)) for node in G.nodes()]
+        
+        nx.draw_networkx_nodes(G, pos, node_color=node_colors, node_size=500, alpha=0.8)
+        nx.draw_networkx_edges(G, pos, edge_color='gray', arrows=True)
+        nx.draw_networkx_labels(G, pos)
+        
+        plt.title("Graphe Réseau des Relations")
+        plt.axis('off')
+        st.pyplot(plt)
+    
+    else:  # Graphe Plotly
+        # Créer un graphe Plotly interactif
+        edge_trace = go.Scatter(
+            x=[],
+            y=[],
+            line=dict(width=0.5, color='#888'),
+            hoverinfo='none',
+            mode='lines')
+
+        node_trace = go.Scatter(
+            x=[],
+            y=[],
+            text=[],
+            mode='markers+text',
+            hoverinfo='text',
+            marker=dict(
+                showscale=True,
+                colorscale='Viridis',
+                size=10,
+                colorbar=dict(
+                    thickness=15,
+                    title='Nœuds',
+                    xanchor='left',
+                    titleside='right'
+                )
+            )
+        )
+
+        # Création du graphe Plotly
+        fig = go.Figure(data=[edge_trace, node_trace],
+                        layout=go.Layout(
+                            title='Graphe Dynamique',
+                            titlefont_size=16,
+                            showlegend=False,
+                            hovermode='closest',
+                            margin=dict(b=20,l=5,r=5,t=40),
+                            annotations=[ dict(
+                                text="Graphe de relations",
+                                showarrow=False,
+                                xref="paper", yref="paper") ],
+                            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
+                        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+def display_graph_details(nodes, relationships):
+    """
+    Afficher des détails supplémentaires sur le graphe
+    """
+    st.subheader("📊 Statistiques du Graphe")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.metric("Nombre de Nœuds", len(nodes))
+        
+        st.markdown("#### Types de Nœuds")
+        node_types = {}
+        for node in nodes:
+            node_types[node['type']] = node_types.get(node['type'], 0) + 1
+        
+        for node_type, count in node_types.items():
+            st.markdown(f"- {node_type}: {count}")
+    
+    with col2:
+        st.metric("Nombre de Relations", len(relationships))
+        
+        st.markdown("#### Types de Relations")
+        rel_types = {}
+        for rel in relationships:
+            rel_types[rel['type']] = rel_types.get(rel['type'], 0) + 1
+        
+        for rel_type, count in rel_types.items():
+            st.markdown(f"- {rel_type}: {count}")
+
+def post_upload_graph_visualization(token):
+    """
+    Récupère et visualise le graphe après upload
+    """
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    try:
+        nodes_response = requests.get(f"{API_URL}/graph", headers=headers)
+        
+        if nodes_response.status_code == 200:
+            graph_data = nodes_response.json()
+            nodes = graph_data.get("nodes", [])
+            relationships = graph_data.get("edges", [])
+            
+            if not nodes:
+                st.warning("Aucun nœud trouvé dans le graphe.")
+                return
+            
+            create_interactive_graph_visualization(nodes, relationships)
+            display_graph_details(nodes, relationships)
+        else:
+            st.error(f"Erreur lors de la récupération du graphe : {nodes_response.status_code}")
+    
+    except Exception as e:
+        st.error(f"Erreur lors de la visualisation du graphe : {e}")
+
 
 def main():
     st.title("🔗 Gestion et Visualisation du Graphe")
@@ -68,119 +255,7 @@ def main():
                     except Exception as e:
                         st.error(f"Erreur : {e}")
 
-    # Onglet 2: Gestion des entités (noeuds)
-    with tabs[1]:
-        st.header("🔍 Gestion des Entités")
-        action = st.radio("Action :", ["Lister tous les nœuds", "Rechercher un nœud", "Créer/Mettre à jour un nœud", "Supprimer un nœud"])
-
-        if action == "Lister tous les nœuds":
-            if st.button("Charger les nœuds"):
-                try:
-                    response = requests.get(f"{API_URL}/graph/nodes", headers=headers)
-                    if response.status_code == 200:
-                        nodes = response.json()
-                        st.write(nodes)
-                    else:
-                        st.error(f"Erreur : {response.status_code} - {response.text}")
-                except Exception as e:
-                    st.error(f"Erreur : {e}")
-
-        elif action == "Rechercher un nœud":
-            node_name = st.text_input("Nom du nœud à rechercher")
-            if st.button("Rechercher"):
-                try:
-                    response = requests.get(f"{API_URL}/graph/nodes/{node_name}", headers=headers)
-                    if response.status_code == 200:
-                        node = response.json()
-                        st.write(node)
-                    else:
-                        st.error(f"Erreur : {response.status_code} - {response.text}")
-                except Exception as e:
-                    st.error(f"Erreur : {e}")
-
-        elif action == "Créer/Mettre à jour un nœud":
-            node_name = st.text_input("Nom du nœud")
-            node_type = st.text_input("Type du nœud")
-            if st.button("Créer/Mettre à jour"):
-                # Envoi en query params car l'API ne spécifie pas de corps JSON
-                try:
-                    response = requests.post(f"{API_URL}/graph/nodes", headers=headers, params={"name": node_name, "type": node_type})
-                    if response.status_code == 200:
-                        st.success("Nœud créé/mis à jour avec succès.")
-                    else:
-                        st.error(f"Erreur : {response.status_code} - {response.text}")
-                except Exception as e:
-                    st.error(f"Erreur : {e}")
-
-        elif action == "Supprimer un nœud":
-            node_name = st.text_input("Nom du nœud à supprimer")
-            if st.button("Supprimer"):
-                try:
-                    response = requests.delete(f"{API_URL}/graph/nodes/{node_name}", headers=headers)
-                    if response.status_code == 200:
-                        st.success("Nœud supprimé avec succès.")
-                    else:
-                        st.error(f"Erreur : {response.status_code} - {response.text}")
-                except Exception as e:
-                    st.error(f"Erreur : {e}")
-
-    # Onglet 3: Gestion des relations
-    with tabs[2]:
-        st.header("🔗 Gestion des Relations")
-        action = st.radio("Action :", ["Lister toutes les relations", "Créer une relation", "Supprimer une relation"])
-
-        if action == "Lister toutes les relations":
-            if st.button("Charger les relations"):
-                try:
-                    response = requests.get(f"{API_URL}/graph/relationships", headers=headers)
-                    if response.status_code == 200:
-                        relationships = response.json()
-                        st.write(relationships)
-                    else:
-                        st.error(f"Erreur : {response.status_code} - {response.text}")
-                except Exception as e:
-                    st.error(f"Erreur : {e}")
-
-        elif action == "Créer une relation":
-            source_name = st.text_input("Nom de la source")
-            target_name = st.text_input("Nom de la cible")
-            relation_type = st.text_input("Type de relation")
-            if st.button("Créer la relation"):
-                # Envoi en query params
-                try:
-                    response = requests.post(
-                        f"{API_URL}/graph/relationships",
-                        headers=headers,
-                        params={
-                            "source_name": source_name,
-                            "target_name": target_name,
-                            "type": relation_type
-                        }
-                    )
-                    if response.status_code == 200:
-                        st.success("Relation créée avec succès.")
-                    else:
-                        st.error(f"Erreur : {response.status_code} - {response.text}")
-                except Exception as e:
-                    st.error(f"Erreur : {e}")
-
-        elif action == "Supprimer une relation":
-            source_name = st.text_input("Nom de la source")
-            target_name = st.text_input("Nom de la cible")
-            if st.button("Supprimer la relation"):
-                # Envoi en query params
-                try:
-                    response = requests.delete(
-                        f"{API_URL}/graph/relationships",
-                        headers=headers,
-                        params={"source_name": source_name, "target_name": target_name}
-                    )
-                    if response.status_code == 200:
-                        st.success("Relation supprimée avec succès.")
-                    else:
-                        st.error(f"Erreur : {response.status_code} - {response.text}")
-                except Exception as e:
-                    st.error(f"Erreur : {e}")
+    #                 st.error(f"Erreur : {e}")
 
     # Onglet 4: Visualisation du graphe
     with tabs[3]:

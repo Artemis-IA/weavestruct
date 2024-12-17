@@ -5,12 +5,13 @@ from loguru import logger
 from typing import List, Dict, Any, Optional, Literal, Union
 from fastapi import Form, File, UploadFile
 
-from langchain_community.document_loaders import PyPDFDirectoryLoader
+from langchain_community.document_loaders import PyPDFDirectoryLoader, PyPDFLoader
 from langchain_experimental.graph_transformers.gliner import GlinerGraphTransformer
 from langchain_community.graph_vectorstores.extractors import GLiNERLinkExtractor
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 
 from src.models.document_log import DocumentLog, DocumentLogService
 from src.services.neo4j_service import Neo4jService
@@ -60,106 +61,6 @@ def add_graph_to_neo4j(graph_docs):
                     "MERGE (source)-[:RELATED_TO {type: $type}]->(target)",
                     {"source": edge.source.id, "target": edge.target.id, "type": edge.type}
                 )
-
-
-# Endpoint to index documents
-# @router.post("/index_nerrel/")
-# @metrics.NEO4J_REQUEST_LATENCY.time()
-# def index_pdfs(folder_path: Optional[str] = Form("/home/pi/Documents/IF-SRV/1pdf_subset")):
-#     metrics.NEO4J_REQUEST_COUNT.inc()
-#     if not os.path.isdir(folder_path):
-#         raise HTTPException(status_code=400, detail="Invalid folder path")
-
-#     loader = PyPDFDirectoryLoader(folder_path)
-#     documents = loader.load()
-#     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-
-#     start_time = time.time()
-#     for doc in documents:
-#         if not hasattr(doc, "page_content"):
-#             continue
-#         split_docs = text_splitter.split_documents([doc])
-#         graph_docs = graph_transformer.convert_to_graph_documents(split_docs)
-#         add_graph_to_neo4j(graph_docs)
-
-#         file_name = doc.metadata.get("source", "unknown")
-#         s3_url = upload_to_s3(file_name, bucket_name)
-#         neo4j_url = f"neo4j://{neo4j_service.host}:{neo4j_service.port}"
-#         if neo4j_url:
-#             logger.info(f"Document {file_name} indexed successfully. S3 URL: {s3_url}, Neo4j URL: {neo4j_url}")
-#     return {"message": "Documents indexed successfully"}
-
-
-
-# @router.post("/index_nerrel/")
-# @metrics.NEO4J_REQUEST_LATENCY.time()
-# def index_pdfs(
-#     folder_path: Optional[str] = Form(
-#         None,
-#         description="Path to a local folder containing PDFs. Leave empty if using S3. /home/pi/Documents/IF-SRV/1pdf_subset",
-#         openapi_examples="/home/pi/Documents/IF-SRV/1pdf_subset"
-#     ),
-#     bucket_name: Optional[str] = Form(
-#         None,
-#         description="Name of the S3 bucket. Leave empty if using a local folder path. s3://docs-input/",
-#         openapi_examples="s3://docs-input/"
-#     ),
-#     prefix: Optional[str] = Form(
-#         "",
-#         description="Prefix for objects in the S3 bucket (if applicable).",
-#         openapi_examples="my/prefix/"
-#     ),
-# ):
-#     """
-#     Index PDFs from either a local folder or an S3 bucket into Neo4j.
-#     Automatically determines the source type based on the input fields.
-#     """
-#     metrics.NEO4J_REQUEST_COUNT.inc()
-
-#     # Determine source type
-#     folder_path = folder_path.strip() if folder_path else None
-#     bucket_name = bucket_name.strip() if bucket_name else None
-
-#     if folder_path and bucket_name:
-#         raise HTTPException(status_code=400, detail="Provide either folder_path or bucket_name, not both.")
-#     if folder_path:
-#         source_type = "local"
-#     elif bucket_name:
-#         source_type = "s3"
-#     else:
-#         raise HTTPException(status_code=400, detail="Either folder_path or bucket_name must be provided.")
-
-#     # Process documents based on the source type
-#     if source_type == "local":
-#         if not os.path.isdir(folder_path):
-#             raise HTTPException(status_code=400, detail="Invalid folder path for local source.")
-#         loader = PyPDFDirectoryLoader(folder_path)
-#         documents = loader.load()
-#     elif source_type == "s3":
-#         try:
-#             objects = s3_client.s3_client.list_objects_v2(Bucket=bucket_name, Prefix=prefix).get("Contents", [])
-#             file_paths = [
-#                 os.path.join("/tmp", obj["Key"].replace("/", "_"))
-#                 for obj in objects if s3_client.download_file(bucket_name, obj["Key"], os.path.join("/tmp", obj["Key"].replace("/", "_")))
-#             ]
-#             loader = PyPDFDirectoryLoader("/tmp")
-#             documents = loader.load()
-#         except Exception as e:
-#             logger.error(f"Failed to load documents from S3: {e}")
-#             raise HTTPException(status_code=500, detail=f"Error loading documents from S3: {e}")
-
-#     # Split and transform documents
-#     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-#     for doc in documents:
-#         if not hasattr(doc, "page_content"):
-#             continue
-#         split_docs = text_splitter.split_documents([doc])
-#         graph_docs = graph_transformer.convert_to_graph_documents(split_docs)
-#         add_graph_to_neo4j(graph_docs)
-
-#     return {"source_type": source_type, "message": "Documents indexed successfully."}
-
-
 
 
 @router.post("/index_nerrel/")
@@ -230,6 +131,69 @@ def index_pdfs(
 
 
 
+#######################################
+#          CRUD ENTITÉS (NODES)        #
+#######################################
+
+@router.get("/nodes", response_model=List[Dict[str, Any]])
+def get_all_nodes():
+    """ Récupère tous les nœuds de type Entity. """
+    with neo4j_service.driver.session() as session:
+        result = session.run("MATCH (e:Entity) RETURN e")
+        nodes = [record["e"] for record in result]
+    return [dict(node) for node in nodes]
+
+@router.get("/nodes/{name}", response_model=Dict[str, Any])
+def get_node(name: str):
+    """ Récupère un nœud par son nom. """
+    with neo4j_service.driver.session() as session:
+        result = session.run("MATCH (e:Entity {name:$name}) RETURN e", {"name": name})
+        record = result.single()
+    if record is None:
+        raise HTTPException(status_code=404, detail="No node found with that name.")
+    return dict(record["e"])
+
+@router.post("/nodes", response_model=Dict[str, Any])
+def create_node(name: str, type: str):
+    """ Crée ou met à jour un nœud (Entity) en évitant les doublons. 
+        Utilise MERGE pour éviter la création de doublons. 
+    """
+    with neo4j_service.driver.session() as session:
+        result = session.run(
+            "MERGE (e:Entity {name:$name}) "
+            "SET e.type=$type "
+            "RETURN e",
+            {"name": name, "type": type}
+        ).single()
+    return dict(result["e"])
+
+@router.put("/nodes/{name}", response_model=Dict[str, Any])
+def update_node(name: str, new_type: Optional[str] = None):
+    """ Met à jour un nœud. On peut par exemple mettre à jour son type. """
+    with neo4j_service.driver.session() as session:
+        node = session.run("MATCH (e:Entity {name:$name}) RETURN e", {"name": name}).single()
+        if not node:
+            raise HTTPException(status_code=404, detail="Node not found.")
+        
+        result = session.run(
+            "MATCH (e:Entity {name:$name}) SET e.type=$type RETURN e",
+            {"name": name, "type": new_type}
+        ).single()
+    return dict(result["e"])
+
+@router.delete("/nodes/{name}")
+def delete_node(name: str):
+    """ Supprime un nœud par son nom, ainsi que les relations qui y sont connectées. """
+    with neo4j_service.driver.session() as session:
+        node = session.run("MATCH (e:Entity {name:$name}) RETURN e", {"name": name}).single()
+        if not node:
+            raise HTTPException(status_code=404, detail="Node not found.")
+        
+        session.run("MATCH (e:Entity {name:$name}) DETACH DELETE e", {"name": name})
+    return {"message": f"Node '{name}' deleted successfully."}
+
+
+
 
 
 
@@ -252,7 +216,7 @@ def upload_pdf(file: UploadFile = File(...)):
         f.write(file.file.read())
 
     # Chargement du PDF avec le loader
-    loader = PyPDFDirectoryLoader("/tmp")
+    loader = PyPDFLoader(tmp_file_path)
     documents = loader.load()
 
     # Transformation des documents (NER/REL)
@@ -297,6 +261,69 @@ def get_full_graph():
 
     return {"nodes": nodes, "edges": edges}
 
+
+@router.get("/relationships", response_model=List[Dict[str, Any]])
+def get_all_relationships():
+    """ Récupère toutes les relations. """
+    with neo4j_service.driver.session() as session:
+        result = session.run("MATCH ()-[r:RELATED_TO]->() RETURN r")
+        relationships = [record["r"] for record in result]
+    return [dict(rel) for rel in relationships]
+
+@router.post("/relationships", response_model=Dict[str, Any])
+def create_relationship(source_name: str, target_name: str, type: str):
+    """ Crée ou fusionne une relation entre deux nœuds existants. """
+    with neo4j_service.driver.session() as session:
+        # Vérification de l'existence des deux nœuds
+        source_node = session.run("MATCH (e:Entity {name:$name}) RETURN e", {"name": source_name}).single()
+        if not source_node:
+            raise HTTPException(status_code=404, detail=f"Source node '{source_name}' not found.")
+        target_node = session.run("MATCH (e:Entity {name:$name}) RETURN e", {"name": target_name}).single()
+        if not target_node:
+            raise HTTPException(status_code=404, detail=f"Target node '{target_name}' not found.")
+
+        # Création/fusion de la relation
+        result = session.run(
+            "MATCH (s:Entity {name:$source}), (t:Entity {name:$target}) "
+            "MERGE (s)-[r:RELATED_TO {type:$type}]->(t) RETURN r",
+            {"source": source_name, "target": target_name, "type": type}
+        ).single()
+    return dict(result["r"])
+
+@router.put("/relationships/update")
+def update_relationship(source_name: str, target_name: str, new_type: str):
+    """ Met à jour le type d'une relation. """
+    with neo4j_service.driver.session() as session:
+        rel = session.run(
+            "MATCH (s:Entity {name:$source})-[r:RELATED_TO]->(t:Entity {name:$target}) RETURN r",
+            {"source": source_name, "target": target_name}
+        ).single()
+        if not rel:
+            raise HTTPException(status_code=404, detail="Relationship not found.")
+
+        result = session.run(
+            "MATCH (s:Entity {name:$source})-[r:RELATED_TO]->(t:Entity {name:$target}) "
+            "SET r.type=$new_type RETURN r",
+            {"source": source_name, "target": target_name, "new_type": new_type}
+        ).single()
+    return dict(result["r"])
+
+@router.delete("/relationships")
+def delete_relationship(source_name: str, target_name: str):
+    """ Supprime une relation entre deux nœuds. """
+    with neo4j_service.driver.session() as session:
+        rel = session.run(
+            "MATCH (s:Entity {name:$source})-[r:RELATED_TO]->(t:Entity {name:$target}) RETURN r",
+            {"source": source_name, "target": target_name}
+        ).single()
+        if not rel:
+            raise HTTPException(status_code=404, detail="Relationship not found.")
+
+        session.run(
+            "MATCH (s:Entity {name:$source})-[r:RELATED_TO]->(t:Entity {name:$target}) DELETE r",
+            {"source": source_name, "target": target_name}
+        )
+    return {"message": f"Relationship between '{source_name}' and '{target_name}' deleted successfully."}
 
 
 
